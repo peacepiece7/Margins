@@ -15,7 +15,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 
 | Request | Status | Needed By | Summary |
 | --- | --- | --- | --- |
-| none | - | - | No owner action is currently required. |
+| `harness/owner/requests/2026-06-12-runtime-secrets-and-deploy-target.md` | open | OpenAI live provider or Raspberry Pi deployment | Provide `OPENAI_API_KEY` and/or Raspberry Pi target details, or defer both. |
 
 ## Recent Reports
 
