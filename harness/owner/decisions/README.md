@@ -1,5 +1,5 @@
-# Owner Decisions
+# Owner 결정
 
-Use this directory for project-owner decisions that future agents must treat as binding input.
+이 디렉터리는 이후 agent가 반드시 따라야 하는 project owner 결정을 보관합니다.
 
-Create one markdown file per decision using `harness/templates/owner-decision-record.md`.
+결정마다 `harness/templates/owner-decision-record.md`를 사용해 markdown 파일을 하나씩 작성합니다.

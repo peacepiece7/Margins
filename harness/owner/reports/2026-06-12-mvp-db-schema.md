@@ -1,40 +1,40 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-mvp-db-schema
 
-## Task Id
+## Task ID
 
 - mvp-db-schema
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Implemented the initial MVP DB schema, seed data, reset script, and lookup queries for Margins.
+- Margins의 초기 MVP DB schema, seed data, reset script, lookup query를 구현했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Use raw SQL scripts for the MVP database bootstrap.
-- Use typed metric dimensions plus JSON `metric_details`.
-- Preserve records with `deleted_at` and make reset scripts delete only `is_test_data` rows.
+- MVP database bootstrap에는 raw SQL script를 사용합니다.
+- typed metric dimension과 JSON `metric_details`를 함께 사용합니다.
+- record는 `deleted_at`으로 보존하고, reset script는 `is_test_data` row만 삭제합니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Initial MySQL schema for MVP core domains.
+- MVP core domain의 initial MySQL schema.
 - Deterministic seed data.
 - Test-data reset path.
-- Common lookup queries for timeline, window messages, persona traceability, and metric sources.
-- DB SDD/BDD updates.
+- timeline, window message, persona traceability, metric source용 common lookup query.
+- DB SDD/BDD 갱신.
 
-## Files Changed
+## 변경 파일
 
 - `db/schema/001_create_mvp_schema.sql`
 - `db/seed/001_seed_mvp_data.sql`
@@ -47,26 +47,26 @@
 - `docs/db/bdd.md`
 - `harness/work/mvp-db-schema/`
 
-## Verification Evidence
+## 검증 증거
 
-- File-level evidence exists for schema, seed, reset, query scripts, and DB docs.
-- `validate-work-task.ps1 -TaskId mvp-db-schema` passed.
-- `git diff --check` passed.
-- `rg` confirmed all target tables exist in the schema script.
-- `rg` confirmed seed/reset test-data markers.
+- schema, seed, reset, query script, DB 문서에 대한 file-level evidence가 존재합니다.
+- `validate-work-task.ps1 -TaskId mvp-db-schema`가 통과했습니다.
+- `git diff --check`가 통과했습니다.
+- `rg`로 schema script에 모든 target table이 있음을 확인했습니다.
+- `rg`로 seed/reset test-data marker를 확인했습니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- `db/reset/001_reset_test_data.sql` uses the MySQL client `SOURCE` command to reload seed data.
-- Runtime MySQL execution is not yet wired because infra/backend are not implemented.
+- `db/reset/001_reset_test_data.sql`은 seed data reload에 MySQL client `SOURCE` command를 사용합니다.
+- infra/backend가 아직 구현 전이라 runtime MySQL execution은 아직 연결되지 않았습니다.
 
-## Result
+## 결과
 
-- MVP DB schema work was committed.
+- MVP DB schema 작업을 commit했습니다.
 
 ## Commit
 
-- Scope: DB schema, seed/reset/query scripts, DB docs, and durable work/report records.
-- Timing: After recursive file-level verification passed.
+- 범위: DB schema, seed/reset/query script, DB 문서, durable work/report record.
+- 시점: recursive file-level verification 통과 후.
 - Commit hash: `7224f15`
 - Commit message: `Add MVP database schema`

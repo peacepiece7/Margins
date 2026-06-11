@@ -1,39 +1,39 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-harness-autonomy-upgrade
 
-## Task Id
+## Task ID
 
 - harness-autonomy-upgrade
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Upgrading the harness with explicit work coordination and environment readiness roles, skills, docs, and a runtime assessment helper.
+- 명시적인 work coordination과 environment readiness를 지원하도록 role, skill, 문서, runtime assessment helper를 추가했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Add `work-coordinator` and `task-lifecycle` for task/report/dashboard consistency.
-- Add `environment-engineer` and `environment-readiness` for safe local runtime remediation before owner escalation.
-- Add `assess-runtime.ps1` as a diagnostic helper.
+- task/report/dashboard 일관성을 위해 `work-coordinator`와 `task-lifecycle`을 추가했습니다.
+- owner escalation 전에 안전한 local runtime remediation을 수행하도록 `environment-engineer`와 `environment-readiness`를 추가했습니다.
+- diagnostic helper로 `assess-runtime.ps1`를 추가했습니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Added `work-coordinator` role and `task-lifecycle` skill.
-- Added `environment-engineer` role and `environment-readiness` skill.
-- Added `harness/scripts/assess-runtime.ps1`.
-- Updated harness process, sub-agent, plugin, README, script README, harness AGENTS, and project SDD docs.
+- `work-coordinator` role과 `task-lifecycle` skill을 추가했습니다.
+- `environment-engineer` role과 `environment-readiness` skill을 추가했습니다.
+- `harness/scripts/assess-runtime.ps1`를 추가했습니다.
+- harness process, sub-agent, plugin, README, script README, harness AGENTS, project SDD 문서를 갱신했습니다.
 
-## Files Changed
+## 변경 파일
 
 - `harness/agents/`
 - `harness/skills/`
@@ -46,25 +46,25 @@
 - `docs/project/sdd.md`
 - `harness/work/harness-autonomy-upgrade/`
 
-## Verification Evidence
+## 검증 증거
 
-- `assess-runtime.ps1 -CheckDocker -CheckMySql -CheckBackendTests` passed.
-- `validate-work-task.ps1 -TaskId harness-autonomy-upgrade` passed.
-- `git diff --check` passed.
-- Reference search confirmed the new roles, skills, and script are linked from harness/project docs.
+- `assess-runtime.ps1 -CheckDocker -CheckMySql -CheckBackendTests`가 통과했습니다.
+- `validate-work-task.ps1 -TaskId harness-autonomy-upgrade`가 통과했습니다.
+- `git diff --check`가 통과했습니다.
+- Reference search로 새 role, skill, script가 harness/project 문서에 연결되어 있음을 확인했습니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- Diagnostic runtime checks are not a replacement for task-specific tests.
-- Future frontend work should add browser verification commands after `front/` is bootstrapped.
+- Diagnostic runtime check는 task-specific test를 대체하지 않습니다.
+- 향후 frontend 작업은 `front/` bootstrapping 이후 browser verification command를 추가해야 합니다.
 
-## Result
+## 결과
 
-- Harness now has explicit support for autonomous task lifecycle cleanup, local runtime readiness, and plugin fallback handling before owner escalation.
+- Harness가 owner escalation 전에 autonomous task lifecycle cleanup, local runtime readiness, plugin fallback handling을 명시적으로 지원합니다.
 
 ## Commit
 
-- Scope: autonomous harness roles, skills, runtime diagnostic script, process/plugin/project docs, task state, registry, and owner dashboard
-- Timing: committed after runtime assessment, work-task validation, reference check, and whitespace checks passed
+- 범위: autonomous harness role, skill, runtime diagnostic script, process/plugin/project 문서, task state, registry, owner dashboard
+- 시점: runtime assessment, work-task validation, reference check, whitespace check 통과 후 commit
 - Commit hash: `c809937`
 - Commit message: `Upgrade autonomous harness support`

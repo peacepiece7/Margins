@@ -1,52 +1,52 @@
-# Owner Result Report
+# Owner 결과 보고
 
-## Report Id
-
--
-
-## Task Id
+## 보고 ID
 
 -
 
-## Status
+## Task ID
+
+-
+
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
 -
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
 -
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 -
 
-## Scope Completed
+## 완료 범위
 
 -
 
-## Files Changed
+## 변경 파일
 
 -
 
-## Verification Evidence
+## 검증 증거
 
 -
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
 -
 
-## Result
+## 결과
 
 -
 
 ## Commit
 
-- Scope:
-- Timing:
+- 범위:
+- 시점:
 - Commit hash:
 - Commit message:

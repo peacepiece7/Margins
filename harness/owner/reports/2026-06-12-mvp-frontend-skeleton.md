@@ -1,65 +1,65 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-mvp-frontend-skeleton
 
-## Task Id
+## Task ID
 
 - mvp-frontend-skeleton
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Added the first runnable frontend skeleton for the MVP reading-session workflow.
+- MVP reading-session workflow를 위한 첫 runnable frontend skeleton을 추가했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Use Vite React TypeScript with Tailwind for the first frontend skeleton.
-- Use a workbench as the first screen rather than a landing page.
-- Use development-only `data-testid` through `testAttr()`.
+- 첫 frontend skeleton에는 Vite React TypeScript와 Tailwind를 사용합니다.
+- landing page가 아니라 workbench를 첫 화면으로 사용합니다.
+- `testAttr()`를 통해 development-only `data-testid`를 사용합니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Bootstrapped frontend package and Vite/Tailwind config.
-- Added model/view-model, repository, store, hook, utility, and view layers.
-- Implemented book search, candidate select, session/window creation, message, and debate UI calls.
-- Updated front SDD/BDD.
+- frontend package와 Vite/Tailwind config를 bootstrap했습니다.
+- model/view-model, repository, store, hook, utility, view layer를 추가했습니다.
+- book search, candidate select, session/window creation, message, debate UI call을 구현했습니다.
+- front SDD/BDD를 갱신했습니다.
 
-## Files Changed
+## 변경 파일
 
 - `front/`
 - `docs/front/sdd.md`
 - `docs/front/bdd.md`
 - `harness/work/mvp-frontend-skeleton/`
 
-## Verification Evidence
+## 검증 증거
 
-- `npm install` passed.
-- `npm run build` passed.
-- Vite dev server returned HTTP `200` for `/` and `/src/App.tsx`.
-- `validate-work-task.ps1 -TaskId mvp-frontend-skeleton` passed.
-- `git diff --check` passed.
+- `npm install`이 통과했습니다.
+- `npm run build`가 통과했습니다.
+- Vite dev server가 `/`와 `/src/App.tsx`에 HTTP `200`을 반환했습니다.
+- `validate-work-task.ps1 -TaskId mvp-frontend-skeleton`가 통과했습니다.
+- `git diff --check`가 통과했습니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- Backend must be running for interactive API use.
-- Playwright E2E and shadcn/ui initialization remain follow-up work.
+- interactive API 사용에는 backend가 실행 중이어야 합니다.
+- Playwright E2E와 shadcn/ui initialization은 후속 작업입니다.
 
-## Result
+## 결과
 
-- Frontend skeleton was implemented, verified, and committed.
+- Frontend skeleton을 구현, 검증, commit했습니다.
 
 ## Commit
 
-- Scope: frontend skeleton app, package lock, front docs, task state/report, registry, dashboard, and cache ignore update
-- Timing: committed after dependency install, production build, dev server response checks, task validation, and whitespace checks passed
+- 범위: frontend skeleton app, package lock, front 문서, task state/report, registry, dashboard, cache ignore update
+- 시점: dependency install, production build, dev server response check, task validation, whitespace check 통과 후 commit
 - Commit hash: `f17f7c0`
 - Commit message: `Add MVP frontend skeleton`

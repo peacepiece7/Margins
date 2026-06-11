@@ -1,38 +1,38 @@
-# Owner Request
+# Owner 요청
 
-## Request Id
-
--
-
-## Task Id
+## 요청 ID
 
 -
 
-## Status
+## Task ID
+
+-
+
+## 상태
 
 - open
 
-## Decision Needed
+## 필요한 결정
 
 -
 
-## Why Owner Judgment Is Required
+## Owner 판단이 필요한 이유
 
 -
 
-## Options
+## 선택지
 
-| Option | Summary | Tradeoff | Reversibility |
+| 옵션 | 요약 | Tradeoff | 되돌릴 수 있는지 |
 | --- | --- | --- | --- |
 | A |  |  |  |
 | B |  |  |  |
 | C |  |  |  |
 
-## Recommended Option
+## 권장 옵션
 
 -
 
-## Impact
+## 영향
 
 - Product:
 - Design:
@@ -43,10 +43,10 @@
 - QA:
 - Commit:
 
-## Consequence Of Delay
+## 지연될 때의 결과
 
 -
 
-## Final Decision Record
+## 최종 결정 기록
 
 -

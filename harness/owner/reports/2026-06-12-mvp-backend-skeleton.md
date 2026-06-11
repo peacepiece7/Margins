@@ -1,70 +1,70 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-mvp-backend-skeleton
 
-## Task Id
+## Task ID
 
 - mvp-backend-skeleton
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Implemented the initial Spring Boot backend skeleton with API controllers, DTOs, service/business boundaries, AI provider boundary, MyBatis mapper placeholders, reset guard, and tests.
+- API controller, DTO, service/business boundary, AI provider boundary, MyBatis mapper placeholder, reset guard, test를 포함한 초기 Spring Boot backend skeleton을 구현했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Use single-user mode for the first runnable auth slice.
-- Keep streaming transport deferred while using streaming-ready DTO fields.
-- Use springdoc-openapi for OpenAPI-ready controller docs.
-- Keep OpenAI behind `AiProvider` and use deterministic placeholder responses in the skeleton.
+- 첫 runnable auth slice는 single-user mode를 사용합니다.
+- streaming transport는 보류하되 streaming-ready DTO field를 둡니다.
+- OpenAPI-ready controller docs에는 springdoc-openapi를 사용합니다.
+- OpenAI는 `AiProvider` 뒤에 두고 skeleton에서는 deterministic placeholder response를 사용합니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Gradle Spring Boot project files.
-- Controller/service/business/mapper package boundaries.
+- Gradle Spring Boot project file.
+- Controller/service/business/mapper package boundary.
 - Initial MVP API skeleton.
 - Placeholder AI provider.
 - Test reset guard.
-- Controller/business tests.
-- Backend SDD/BDD updates.
+- Controller/business test.
+- Backend SDD/BDD 갱신.
 
-## Files Changed
+## 변경 파일
 
 - `back/`
 - `docs/back/sdd.md`
 - `docs/back/bdd.md`
 - `harness/work/mvp-backend-skeleton/`
 
-## Verification Evidence
+## 검증 증거
 
-- `validate-work-task.ps1 -TaskId mvp-backend-skeleton` passed.
-- `git diff --check` passed.
-- Java 21 is available.
-- Gradle and Maven commands are not installed in the current environment.
-- File-level evidence confirms controller/service/business/mapper boundaries and AI provider boundary.
+- `validate-work-task.ps1 -TaskId mvp-backend-skeleton`가 통과했습니다.
+- `git diff --check`가 통과했습니다.
+- Java 21을 사용할 수 있습니다.
+- 현재 환경에는 Gradle 및 Maven command가 설치되어 있지 않습니다.
+- File-level evidence로 controller/service/business/mapper boundary와 AI provider boundary를 확인했습니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- Tests are written but cannot run until Gradle or a Gradle wrapper is available.
-- Real MyBatis XML/SQL mappings are deferred to backend persistence work.
-- Real OpenAI network integration is deferred behind `AiProvider`.
+- test는 작성됐지만 Gradle 또는 Gradle wrapper가 준비되기 전까지 실행할 수 없습니다.
+- 실제 MyBatis XML/SQL mapping은 backend persistence 작업으로 미룹니다.
+- 실제 OpenAI network integration은 `AiProvider` 뒤에서 후속 작업으로 미룹니다.
 
-## Result
+## 결과
 
-- Backend skeleton work was committed. Test execution remains deferred until Gradle or a Gradle wrapper is available.
+- Backend skeleton 작업을 commit했습니다. test 실행은 Gradle 또는 Gradle wrapper가 준비될 때까지 보류됩니다.
 
 ## Commit
 
-- Scope: backend skeleton source, backend docs, and backend work-state/report files only
-- Timing: committed after file-level QA, work-task validation, and whitespace checks passed
+- 범위: backend skeleton source, backend 문서, backend work-state/report file
+- 시점: file-level QA, work-task validation, whitespace check 통과 후 commit
 - Commit hash: `9124315`
 - Commit message: `Add MVP backend skeleton`

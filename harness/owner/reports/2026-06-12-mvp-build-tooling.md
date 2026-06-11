@@ -1,38 +1,38 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-mvp-build-tooling
 
-## Task Id
+## Task ID
 
 - mvp-build-tooling
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Adding repeatable backend test execution for environments with Java but no system Gradle/Maven.
+- Java는 있지만 system Gradle/Maven이 없는 환경에서도 backend test를 반복 실행할 수 있게 했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Use a pinned Gradle `8.10.2` distribution downloaded into ignored `.tools/`.
-- Add a script instead of committing wrapper binaries in this task.
+- 고정된 Gradle `8.10.2` distribution을 ignored `.tools/`에 다운로드해 사용합니다.
+- 이 task에서는 wrapper binary를 commit하지 않고 script를 추가합니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Added `back/scripts/test.ps1`.
-- Ignored repository-local `.tools/` cache.
-- Updated backend SDD/BDD for local test tooling.
-- Verified first-run and cached backend test execution.
+- `back/scripts/test.ps1`를 추가했습니다.
+- repository-local `.tools/` cache를 ignore했습니다.
+- local test tooling에 맞춰 backend SDD/BDD를 갱신했습니다.
+- 최초 실행과 cached backend test 실행을 검증했습니다.
 
-## Files Changed
+## 변경 파일
 
 - `.gitignore`
 - `back/scripts/test.ps1`
@@ -40,25 +40,25 @@
 - `docs/back/bdd.md`
 - `harness/work/mvp-build-tooling/`
 
-## Verification Evidence
+## 검증 증거
 
-- `back/scripts/test.ps1` first run passed: Gradle `8.10.2` downloaded/extracted, backend tests completed with `BUILD SUCCESSFUL in 25s`.
-- `back/scripts/test.ps1` cached run passed: tasks up-to-date with `BUILD SUCCESSFUL in 5s`.
-- `validate-work-task.ps1 -TaskId mvp-build-tooling` passed.
-- `git diff --check` passed.
+- `back/scripts/test.ps1` 최초 실행이 통과했습니다. Gradle `8.10.2` download/extract 이후 backend test가 `BUILD SUCCESSFUL in 25s`로 완료됐습니다.
+- `back/scripts/test.ps1` cached run이 통과했습니다. task up-to-date 상태로 `BUILD SUCCESSFUL in 5s`가 확인됐습니다.
+- `validate-work-task.ps1 -TaskId mvp-build-tooling`가 통과했습니다.
+- `git diff --check`가 통과했습니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- First run requires network access to `services.gradle.org`.
-- Formal Gradle wrapper and CI workflow remain follow-up work.
+- 최초 실행에는 `services.gradle.org` network access가 필요합니다.
+- 정식 Gradle wrapper와 CI workflow는 후속 작업으로 남깁니다.
 
-## Result
+## 결과
 
-- Backend tests are now executable in this environment without system Gradle/Maven.
+- 이제 system Gradle/Maven 없이도 이 환경에서 backend test를 실행할 수 있습니다.
 
 ## Commit
 
-- Scope: backend test script, local build cache ignores, back docs, and build-tooling work-state/report files
-- Timing: committed after backend tests, cached rerun, task validation, and whitespace checks passed
+- 범위: backend test script, local build cache ignore, back 문서, build-tooling work-state/report file
+- 시점: backend test, cached rerun, task validation, whitespace check 통과 후 commit
 - Commit hash: `9a308ec`
 - Commit message: `Add MVP build tooling`

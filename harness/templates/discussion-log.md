@@ -27,7 +27,7 @@
 - Proposed requirements:
 - Risks:
 - Questions for other agents:
-- Owner decision needed: Yes/No
+- Owner 결정 필요: Yes/No
 
 ## Consensus
 
@@ -37,10 +37,10 @@
 
 -
 
-## Owner Decisions To Request
+## 요청할 Owner 결정
 
 -
 
-## Requirements To Carry Forward
+## 이어서 반영할 요구사항
 
 -

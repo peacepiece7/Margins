@@ -1,41 +1,41 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-harness-owner-area
 
-## Task Id
+## Task ID
 
 - harness-workflow-audit
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Added a dedicated owner-facing document area for decision requests, binding decisions, PR-like result reports, owner dashboard, and multi-work registry.
+- 결정 요청, binding decision, PR 유사 결과 보고, owner dashboard, multi-work registry를 보관하는 전용 owner-facing 문서 영역을 추가했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Created `harness/owner/` as the durable owner-facing record area.
-- Connected context refresh, process, sub-agent contract, commit manager, and project SDD to that owner area.
-- Added `harness/owner/dashboard.md` as the owner entry point.
-- Added `harness/work/registry.md` as the cross-work history index.
+- `harness/owner/`를 지속적인 owner-facing 기록 영역으로 만들었습니다.
+- context refresh, process, sub-agent contract, commit manager, project SDD를 owner 영역과 연결했습니다.
+- `harness/owner/dashboard.md`를 owner 진입점으로 추가했습니다.
+- `harness/work/registry.md`를 여러 작업을 아우르는 history index로 추가했습니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Owner request, decision, and report templates.
+- Owner request, decision, report template.
 - Owner directory structure.
-- Owner dashboard and work registry.
-- Binding decision guidance for future development.
-- Result-report flow for work that is handled first and reported afterward.
+- Owner dashboard와 work registry.
+- 향후 개발이 따라야 하는 binding decision guidance.
+- 먼저 처리하고 이후 보고하는 작업의 result-report flow.
 
-## Files Changed
+## 변경 파일
 
 - `harness/owner/`
 - `harness/owner/dashboard.md`
@@ -53,24 +53,24 @@
 - `harness/scripts/refresh-context.ps1`
 - `docs/project/sdd.md`
 
-## Verification Evidence
+## 검증 증거
 
-- Context refresh includes `harness/owner/README.md` and owner record files.
-- Context refresh includes `harness/owner/dashboard.md` and `harness/work/registry.md`.
-- Owner decision record exists and is marked active.
+- Context refresh가 `harness/owner/README.md`와 owner record file을 포함합니다.
+- Context refresh가 `harness/owner/dashboard.md`와 `harness/work/registry.md`를 포함합니다.
+- Owner decision record가 존재하며 `active` 상태입니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- Future work should create task-specific owner reports when durable owner visibility is useful.
-- Do not store secrets or credentials in owner-facing reports.
+- 지속적인 owner visibility가 필요한 future work는 task-specific owner report를 작성해야 합니다.
+- Owner-facing report에는 secret 또는 credential을 저장하지 않습니다.
 
-## Result
+## 결과
 
-- Owner-facing decision/report area is ready.
+- Owner-facing decision/report 영역이 준비되었습니다.
 
 ## Commit
 
-- Scope: AI-owned after gates pass.
-- Timing: AI-owned after gates pass.
+- 범위: gate 통과 후 AI-owned로 처리.
+- 시점: gate 통과 후 AI-owned로 처리.
 - Commit hash: `acb7472`
 - Commit message: `Add project harness workflow`

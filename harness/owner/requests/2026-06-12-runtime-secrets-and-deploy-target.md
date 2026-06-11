@@ -1,64 +1,64 @@
-# Owner Request
+# Owner 요청
 
-## Request Id
+## 요청 ID
 
 - 2026-06-12-runtime-secrets-and-deploy-target
 
-## Status
+## 상태
 
 - open
 
-## Needed By
+## 필요한 시점
 
-- OpenAI provider live verification.
-- Raspberry Pi deployment automation.
+- OpenAI provider live 검증.
+- Raspberry Pi 배포 자동화.
 
-## Why This Needs Owner
+## Owner 판단이 필요한 이유
 
-- OpenAI live calls require a secret `OPENAI_API_KEY`.
-- Raspberry Pi deployment requires target host, SSH user, destination path, and service/run policy.
-- These are credential and production-target details, so agents should not invent them.
+- OpenAI live call에는 secret인 `OPENAI_API_KEY`가 필요합니다.
+- Raspberry Pi 배포에는 target host, SSH user, destination path, service/run policy가 필요합니다.
+- 이 정보는 credential 및 production target 세부 정보이므로 agent가 임의로 만들면 안 됩니다.
 
-## Requested Inputs
+## 요청 입력
 
 ### Runtime Secret
 
 - `OPENAI_API_KEY`
-- Optional: preferred OpenAI model for MVP text responses.
+- 선택 사항: MVP text response에 사용할 선호 OpenAI model.
 
 ### Raspberry Pi Target
 
-- Hostname or IP.
+- Hostname 또는 IP.
 - SSH username.
 - Deployment directory.
-- Service manager choice if already known.
-- Whether MySQL should remain Docker-only on the Pi for the next deploy slice.
+- 이미 정해져 있다면 service manager 선택.
+- 다음 deploy slice에서 Raspberry Pi의 MySQL을 Docker-only로 유지할지 여부.
 
-## Recommended Default
+## 권장 기본값
 
-- Keep using placeholder AI provider until `OPENAI_API_KEY` is provided.
-- Prepare deployment scripts only up to non-secret local build artifact packaging.
-- Keep MySQL Docker-only on Raspberry Pi for the next deploy slice.
+- `OPENAI_API_KEY`가 제공되기 전까지 placeholder AI provider를 유지합니다.
+- 배포 script는 secret이 필요 없는 local build artifact packaging까지만 준비합니다.
+- 다음 deploy slice에서는 Raspberry Pi의 MySQL을 Docker-only로 유지합니다.
 
-## Options
+## 선택지
 
-- A: Provide `OPENAI_API_KEY` first; agents implement and live-verify OpenAI provider next.
-- B: Provide Raspberry Pi target first; agents implement deploy packaging/transfer scripts next.
-- C: Defer secrets/target; agents continue only non-secret local improvements.
+- A: `OPENAI_API_KEY`를 먼저 제공합니다. agent는 다음으로 OpenAI provider를 구현하고 live 검증합니다.
+- B: Raspberry Pi target을 먼저 제공합니다. agent는 다음으로 deploy packaging/transfer script를 구현합니다.
+- C: secret/target 제공을 보류합니다. agent는 secret이 필요 없는 local 개선만 계속합니다.
 
-## Impact
+## 영향
 
-- Choosing A completes the real AI requirement path.
-- Choosing B moves toward deployability.
-- Choosing C keeps work local and test-focused.
+- A를 선택하면 실제 AI 요구사항 경로를 완성할 수 있습니다.
+- B를 선택하면 배포 가능성 확보 쪽으로 진행합니다.
+- C를 선택하면 작업은 local 및 test 중심으로 유지됩니다.
 
-## Current Safe State
+## 현재 안전한 상태
 
-- Backend persistence, reset, frontend skeleton, and full-stack Playwright smoke are verified locally.
-- No production credential is stored in the repository.
+- Backend persistence, reset, frontend skeleton, full-stack Playwright smoke는 local에서 검증되었습니다.
+- production credential은 repository에 저장되어 있지 않습니다.
 
-## Resolution Record
+## 결정 기록
 
-- Chosen option:
-- Owner notes:
-- Decision path:
+- 선택한 옵션:
+- Owner 메모:
+- 결정 경로:
