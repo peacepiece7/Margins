@@ -62,11 +62,11 @@
 
 ## Result
 
-- Pending final validation and commit.
+- Full-stack E2E smoke was implemented, verified, and committed.
 
 ## Commit
 
-- Scope:
-- Timing:
-- Commit hash:
-- Commit message:
+- Scope: Playwright E2E config/test, frontend user-message display fix, front docs, task state/report, registry, dashboard, and E2E output ignores
+- Timing: committed after build, browser install remediation, E2E pass, server shutdown, DB seed restore, task validation, and whitespace checks passed
+- Commit hash: `5b633cc`
+- Commit message: `Add full-stack E2E smoke`

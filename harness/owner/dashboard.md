@@ -30,7 +30,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 | `harness/owner/reports/2026-06-12-harness-autonomy-upgrade.md` | reported | Work coordination and environment readiness support verified; committed in `c809937`. |
 | `harness/owner/reports/2026-06-12-mvp-test-reset-runtime.md` | reported | Test reset endpoint now restores seed data through JDBC; committed in `570a749`. |
 | `harness/owner/reports/2026-06-12-mvp-frontend-skeleton.md` | reported | Frontend skeleton builds and dev server responds; committed in `f17f7c0`. |
-| `harness/owner/reports/2026-06-12-mvp-fullstack-e2e-smoke.md` | reported | Playwright full-stack smoke passes; commit pending. |
+| `harness/owner/reports/2026-06-12-mvp-fullstack-e2e-smoke.md` | reported | Playwright full-stack smoke passes; committed in `5b633cc`. |
 
 ## Active Decisions
 

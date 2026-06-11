@@ -44,3 +44,16 @@
 - Missing or weak evidence: final validation pending
 - Next micro-step: run final validation and commit scoped work
 - Risks: CI should automate server startup later
+
+### Handoff 4
+
+- From: commit-manager
+- To: owner-report
+- Reason: scoped full-stack E2E smoke commit was created after verification gate
+- Files read: `harness/work/mvp-fullstack-e2e-smoke/verification-report.md`, `harness/owner/reports/2026-06-12-mvp-fullstack-e2e-smoke.md`
+- Files changed: git commit history
+- Commands run: `git commit -m "Add full-stack E2E smoke"`
+- Evidence: commit `5b633cc`
+- Missing or weak evidence: none for smoke scope
+- Next micro-step: choose next MVP implementation item or deployment prep
+- Risks: CI should automate server startup later
