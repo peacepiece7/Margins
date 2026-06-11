@@ -75,5 +75,5 @@
 
 - 범위: planning-development readiness docs, audit script, work state, owner report, registry, dashboard
 - 시점: readiness audit, doc consistency audit, backend test, frontend build, task validation, whitespace check 통과 후 AI가 결정
-- Commit hash: `2f9f69f`
+- Commit hash: `316edbe`
 - Commit message: `Add planning development readiness audit`

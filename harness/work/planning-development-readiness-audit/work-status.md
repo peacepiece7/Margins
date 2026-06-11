@@ -1,4 +1,4 @@
-﻿# Work Status
+# Work Status
 
 ## Task Id
 
@@ -40,7 +40,7 @@
 | 2026-06-12 | product-planner | planning-to-development readiness 문서 작성 | `docs/project/development-readiness.md` |
 | 2026-06-12 | work-coordinator | readiness audit script 추가 | `harness/scripts/audit-mvp-readiness.ps1` |
 | 2026-06-12 | qa-engineer | readiness audit, doc consistency audit, backend test, frontend build, task validation 통과 | `verification-report.md` |
-| 2026-06-12 | commit-manager | readiness audit 범위를 commit하고 owner report에 commit hash를 반영 | `2f9f69f` |
+| 2026-06-12 | commit-manager | readiness audit 범위를 commit하고 owner report에 commit hash를 반영 | `316edbe` |
 
 ## Current Blockers
 
@@ -53,4 +53,3 @@
 3. Read `harness/process.md`, `harness/sub-agents.md`, and `harness/handoffs.md`.
 4. Read this task directory.
 5. Continue from `Next Micro-Step`.
-
