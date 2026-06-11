@@ -62,6 +62,7 @@ Each stage produces a task packet using `harness/templates/task-packet.md`. The 
 
 Use `harness/work/` for multi-agent work that must survive context clear:
 
+- `harness/work/registry.md`
 - `harness/work/<task-id>/task-packet.md`
 - `harness/work/<task-id>/work-status.md`
 - `harness/work/<task-id>/handoff-log.md`
@@ -76,6 +77,7 @@ Sub-agents should read these files before acting and update them before handoff.
 
 Use `harness/owner/` for owner-facing records:
 
+- `harness/owner/dashboard.md`: owner's entry point for requests, decisions, reports, and history.
 - `harness/owner/requests/`: choices that genuinely need owner judgment before irreversible work.
 - `harness/owner/decisions/`: recorded owner decisions that become binding development input.
 - `harness/owner/reports/`: PR-like post-work reports for AI-owned work already completed.

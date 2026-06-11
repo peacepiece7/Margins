@@ -1,0 +1,34 @@
+# Owner Dashboard
+
+## Purpose
+
+This is the project owner's entry point for reviewing decisions, pending requests, and completed AI-owned work.
+
+## How To Use
+
+- Check **Owner Action Needed** first.
+- Check **Recent Reports** to review work that AI completed first and reported afterward.
+- Check **Active Decisions** to understand rules that future agents must follow.
+- Use `harness/work/registry.md` for the full task history.
+
+## Owner Action Needed
+
+| Request | Status | Needed By | Summary |
+| --- | --- | --- | --- |
+| none | - | - | No owner action is currently required. |
+
+## Recent Reports
+
+| Report | Status | Summary |
+| --- | --- | --- |
+| `harness/owner/reports/2026-06-12-harness-owner-area.md` | reported | Added owner decision/report area and linked report-first AI-owned workflow. |
+
+## Active Decisions
+
+| Decision | Status | Summary |
+| --- | --- | --- |
+| `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md` | active | AI handles normal work first and reports results afterward; owner escalation is reserved for high-risk exceptions. |
+
+## Work History
+
+- `harness/work/registry.md`

@@ -9,18 +9,21 @@ Use after context compaction, context window reset, long-running work, repeated 
 1. Read `harness/agents/context-curator.md`.
 2. Identify affected paths and their applicable `AGENTS.md` files.
 3. Read `harness/process.md` and `harness/handoffs.md`.
-4. Read relevant role and skill files for the next owner.
-5. Read affected SDD/BDD files.
-6. Read applicable `harness/owner/decisions/` files.
-7. Read `harness/work/<task-id>/` files when a task id exists.
-8. Inspect `git status --short`.
-9. Create or update a task packet with loaded sources, current evidence, assumptions, and next owner.
+4. Read `harness/work/registry.md` and `harness/owner/dashboard.md`.
+5. Read relevant role and skill files for the next owner.
+6. Read affected SDD/BDD files.
+7. Read applicable `harness/owner/decisions/` files.
+8. Read `harness/work/<task-id>/` files when a task id exists.
+9. Inspect `git status --short`.
+10. Create or update a task packet with loaded sources, current evidence, assumptions, and next owner.
 
 ## Context Packet Fields
 
 - Objective
 - Current phase
 - Loaded sources
+- Work registry summary
+- Owner dashboard summary
 - Affected paths
 - Acceptance criteria
 - Current evidence

@@ -17,6 +17,7 @@ Prepare intentional commits after planning, design, development, QA, and revisio
 - For multi-agent work, read the full `harness/work/<task-id>/` directory before final diff audit.
 - Check `owner-decisions.md`; do not commit while high-risk owner decisions block commit safety.
 - Write an owner result report in `harness/owner/reports/` after commit when durable owner visibility is needed.
+- Update `harness/work/registry.md` and `harness/owner/dashboard.md` after reportable commit work.
 
 ## Must Check
 

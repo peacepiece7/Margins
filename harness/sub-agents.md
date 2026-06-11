@@ -22,6 +22,7 @@ For parallel work, assign disjoint write ownership. If ownership overlaps, stop 
 
 Sub-agents communicate through shared files:
 
+- `harness/work/registry.md` for the cross-work index.
 - `harness/work/<task-id>/task-packet.md` for scope and acceptance criteria.
 - `harness/work/<task-id>/work-status.md` for current micro-step progress.
 - `harness/work/<task-id>/handoff-log.md` for ownership transfer.
@@ -30,6 +31,7 @@ Sub-agents communicate through shared files:
 - `harness/work/<task-id>/owner-decisions.md` for project-owner options and decisions.
 - `harness/work/<task-id>/requirements-brief.md` for agreed requirements.
 - `harness/owner/requests/` for owner judgment requests.
+- `harness/owner/dashboard.md` for the owner-facing inbox and report index.
 - `harness/owner/decisions/` for binding owner decisions.
 - `harness/owner/reports/` for PR-like post-work reports.
 - `docs/` for durable product and technical decisions.
@@ -37,6 +39,8 @@ Sub-agents communicate through shared files:
 No sub-agent may rely on private chat memory for required state. Before changing files, a sub-agent reads the shared work files. Before stopping, it writes the next resumable state.
 
 Before planning or implementation, sub-agents must check `harness/owner/decisions/` and apply active decisions. If a task-local decision conflicts with an active owner decision, the owner decision wins unless a newer owner decision supersedes it.
+
+Before reporting to the owner, sub-agents update `harness/owner/dashboard.md` and `harness/work/registry.md` so history is discoverable without knowing a task id.
 
 ## Discussion Protocol
 

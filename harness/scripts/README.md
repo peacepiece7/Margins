@@ -19,3 +19,4 @@ These scripts provide lightweight local helpers for creating task packets, verif
 - For transient work, agents may paste packet/report content into the conversation instead of saving files.
 - For multi-agent discussion or owner decisions, prefer a durable `harness/work/<task-id>/` directory over transient chat.
 - Owner-facing requests, binding decisions, and result reports live under `harness/owner/`.
+- `harness/work/registry.md` and `harness/owner/dashboard.md` are the main indexes for history and owner review.

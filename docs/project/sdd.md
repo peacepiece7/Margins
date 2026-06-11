@@ -74,6 +74,8 @@ Normal commit scope and timing are AI-owned decisions made by `commit-manager` a
 
 Owner-facing decision and result records live under `harness/owner/`. Requests capture rare choices that need owner judgment before irreversible work, decisions record owner choices that future agents must follow, and reports are PR-like post-work summaries for AI-owned work that was handled first and reported afterward.
 
+Multiple work items are supported. `harness/work/registry.md` indexes all durable work history, while `harness/owner/dashboard.md` is the owner-facing entry point for pending requests, active decisions, recent reports, and links to work history.
+
 ## Open Decisions
 
 - [ ] First runnable auth mode: single-user or JWT.

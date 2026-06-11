@@ -15,6 +15,8 @@ $sources.Add("harness/process.md")
 $sources.Add("harness/handoffs.md")
 $sources.Add("harness/sub-agents.md")
 $sources.Add("harness/owner/README.md")
+$sources.Add("harness/owner/dashboard.md")
+$sources.Add("harness/work/registry.md")
 
 $expandedDomains = foreach ($domainValue in $Domains) {
   $domainValue -split "," | ForEach-Object { $_.Trim() } | Where-Object { $_ }

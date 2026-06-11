@@ -50,6 +50,7 @@ Sub-agent execution should follow `harness/sub-agents.md`. Verification output s
 For multi-agent work, create a task directory:
 
 ```text
+harness/work/registry.md
 harness/work/<task-id>/
   task-packet.md
   work-status.md
@@ -64,6 +65,8 @@ All sub-agent communication that affects task state must be written there or int
 
 Owner-facing requests, durable decisions, and PR-like result reports belong in `harness/owner/`. Task-local `owner-decisions.md` may summarize owner choices for one task, but durable owner decisions that should guide future work must also be recorded under `harness/owner/decisions/`.
 
+Multiple work items may be active or historical at once. `harness/work/registry.md` is the cross-work index, and `harness/owner/dashboard.md` is the owner-facing inbox/report view.
+
 Required update points:
 
 1. Before a sub-agent starts: read the task directory, applicable `AGENTS.md`, process, role, skill, SDD, and BDD files.
@@ -74,6 +77,7 @@ Required update points:
 6. After context reset: run context refresh and continue from `work-status.md`.
 7. During requirement shaping: update `discussion-log.md`, `owner-decisions.md`, and `requirements-brief.md`.
 8. After AI-owned work completes, write an owner result report when durable owner visibility is needed.
+9. Update `harness/work/registry.md` and `harness/owner/dashboard.md` when work status, owner requests, decisions, or reports change.
 
 Work must be split into micro-steps small enough that a different agent can resume from the latest status entry without reading prior chat.
 

@@ -17,9 +17,12 @@ harness/work/<task-id>/
   requirements-brief.md
 ```
 
+Use `harness/work/registry.md` as the index across all work items.
+
 ## Rules
 
 - Use short, stable `task-id` names such as `mvp-db-schema` or `session-window-ui`.
+- Add every durable task to `harness/work/registry.md`.
 - Sub-agents read the full task directory before acting.
 - Sub-agents update `work-status.md` after each micro-step.
 - Sub-agents append `handoff-log.md` before transferring ownership.

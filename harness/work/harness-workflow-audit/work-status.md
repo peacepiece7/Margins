@@ -40,6 +40,7 @@
 | 2026-06-12 | agent-council | Added discussion-first requirement creation and owner decision structures | `discussion-log.md`, `requirements-brief.md`, `owner-decisions.md` |
 | 2026-06-12 | commit-manager | Updated normal commit scope/timing to AI-owned decision with owner result report | `harness/process.md`, `harness/agents/commit-manager.md`, `harness/skills/commit.md`, `docs/project/sdd.md` |
 | 2026-06-12 | context-curator | Added owner decision/report area and active owner decision record | `harness/owner/`, `harness/templates/owner-*.md`, `harness/scripts/refresh-context.ps1` |
+| 2026-06-12 | context-curator | Added owner dashboard and work registry for multi-work history | `harness/owner/dashboard.md`, `harness/work/registry.md` |
 
 ## Current Blockers
 

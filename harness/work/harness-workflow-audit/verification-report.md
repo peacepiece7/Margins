@@ -41,6 +41,7 @@
 | Owner judgment document area | Owner-facing requests, binding decisions, and PR-like reports have dedicated directories and templates | `harness/owner/README.md`; `harness/owner/requests/README.md`; `harness/owner/decisions/README.md`; `harness/owner/reports/README.md`; `harness/templates/owner-request.md`; `harness/templates/owner-decision-record.md`; `harness/templates/owner-result-report.md` | pass |
 | Development follows documented owner decisions | Active owner decisions are loaded during context refresh and treated as binding input | `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`; `harness/process.md`; `harness/sub-agents.md`; `harness/skills/context-refresh.md`; `harness/scripts/refresh-context.ps1` | pass |
 | Report-first PR-like owner visibility | AI-owned work proceeds after gates and writes post-work owner reports | `harness/owner/reports/2026-06-12-harness-owner-area.md`; `harness/process.md`; `harness/agents/commit-manager.md`; `harness/skills/commit.md`; `docs/project/sdd.md` | pass |
+| Multiple work history and owner inbox | Work registry indexes all durable work; owner dashboard is the owner entry point | `harness/work/registry.md`; `harness/owner/dashboard.md`; `harness/process.md`; `harness/sub-agents.md`; `docs/project/sdd.md` | pass |
 
 ## Commands
 
@@ -54,6 +55,7 @@
 | `rg -n "harness/work\|work-status\|handoff-log\|recursive\|context" harness docs\project\sdd.md` | pass | Confirmed durable communication and recursive/context rules |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File harness\scripts\validate-work-task.ps1 -TaskId harness-workflow-audit` | pass | Required work files exist and no open owner decisions remain |
 | `powershell -NoProfile -ExecutionPolicy Bypass -File harness\scripts\refresh-context.ps1 -Domains project -TaskId harness-workflow-audit` | pass | Listed owner decision and report documents |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File harness\scripts\refresh-context.ps1 -Domains project -TaskId harness-workflow-audit` | pass | Listed owner dashboard and work registry |
 
 ## Missing Or Weak Evidence
 
@@ -69,6 +71,7 @@
 - Completed: add `agent-council`, discussion-first readiness, owner decision gates across stages and roles, stronger owner decision template, and validation script.
 - Completed: update commit policy so normal commit scope and timing are AI-owned by `commit-manager`.
 - Completed: add `harness/owner/` request/decision/report area and record the report-first owner workflow as an active owner decision.
+- Completed: add `harness/owner/dashboard.md` and `harness/work/registry.md` so owner can review history and current action items without knowing task ids.
 
 ## Context Refresh Required
 

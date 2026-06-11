@@ -14,6 +14,7 @@ Rebuild accurate working context from repository documents and current state whe
 - For multi-agent work, load `harness/work/<task-id>/` and identify the next micro-step from `work-status.md`.
 - Surface open owner decisions and discussion status in the context packet.
 - Load active records from `harness/owner/decisions/` and include applicable owner guidance in the context packet.
+- Load `harness/work/registry.md` and `harness/owner/dashboard.md` when orienting across multiple work items.
 
 ## Must Check
 
@@ -22,6 +23,8 @@ Rebuild accurate working context from repository documents and current state whe
 - `harness/process.md`
 - `harness/handoffs.md`
 - `harness/owner/README.md`
+- `harness/work/registry.md`
+- `harness/owner/dashboard.md`
 - Affected `docs/<domain>/sdd.md`
 - Affected `docs/<domain>/bdd.md`
 - `git status --short`
