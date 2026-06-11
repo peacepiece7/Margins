@@ -53,7 +53,7 @@
 
 ## Commit
 
-- Scope:
-- Timing:
-- Commit hash:
-- Commit message:
+- Scope: backend persistence task packet, discussion, requirements, owner-decision state, handoff, readiness verification, registry, and dashboard
+- Timing: committed after task validation and whitespace checks passed
+- Commit hash: `e176434`
+- Commit message: `Prepare backend persistence task`

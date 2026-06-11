@@ -26,7 +26,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 | `harness/owner/reports/2026-06-12-mvp-backend-skeleton.md` | reported | Backend skeleton was committed in `9124315`; test execution is deferred until Gradle or wrapper is available. |
 | `harness/owner/reports/2026-06-12-mvp-build-tooling.md` | reported | Backend test script passed first-run and cached Gradle execution; committed in `9a308ec`. |
 | `harness/owner/reports/2026-06-12-mvp-infra-mysql-runtime.md` | reported | MySQL runtime verified on port `3307` with schema/seed applied; committed in `d93d797`. |
-| `harness/owner/reports/2026-06-12-mvp-backend-persistence-slice.md` | prepared | Backend persistence slice is scoped and ready; implementation pending. |
+| `harness/owner/reports/2026-06-12-mvp-backend-persistence-slice.md` | prepared | Backend persistence slice is scoped and ready; task prep committed in `e176434`. |
 
 ## Active Decisions
 
