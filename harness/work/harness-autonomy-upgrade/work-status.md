@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Commit scoped harness autonomy upgrade.
+- Use the upgraded harness in the next implementation task.
 
 ## Micro-Step Checklist
 
@@ -29,7 +29,7 @@
 | Discuss gaps | agent-council | prior task reports | discussion/brief/decisions | Missing autonomy capabilities identified | completed |
 | Implement harness upgrade | work-coordinator | requirements brief | roles/skills/script/docs | New capabilities documented | completed |
 | Verify | qa-engineer | changed files | verification report | Validation commands pass or warnings documented | completed |
-| Report and commit | commit-manager | verification/report | owner report and commit | Scoped commit created after gates | pending |
+| Report and commit | commit-manager | verification/report | owner report and commit | Scoped commit created after gates | completed |
 
 ## Completed Work
 
@@ -38,6 +38,7 @@
 | 2026-06-12 | agent-council | Identified missing autonomous support roles and skills | `discussion-log.md`, `requirements-brief.md` |
 | 2026-06-12 | work-coordinator | Added roles, skills, runtime assessment script, and process docs | harness docs and script files |
 | 2026-06-12 | qa-engineer | Verified runtime assessment, task validation, references, and whitespace | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed autonomous harness upgrade | `c809937` |
 
 ## Current Blockers
 

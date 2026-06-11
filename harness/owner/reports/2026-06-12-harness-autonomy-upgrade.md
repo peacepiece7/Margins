@@ -64,7 +64,7 @@
 
 ## Commit
 
-- Scope:
-- Timing:
-- Commit hash:
-- Commit message:
+- Scope: autonomous harness roles, skills, runtime diagnostic script, process/plugin/project docs, task state, registry, and owner dashboard
+- Timing: committed after runtime assessment, work-task validation, reference check, and whitespace checks passed
+- Commit hash: `c809937`
+- Commit message: `Upgrade autonomous harness support`

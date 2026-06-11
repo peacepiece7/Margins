@@ -44,3 +44,16 @@
 - Missing or weak evidence: none
 - Next micro-step: commit scoped harness upgrade
 - Risks: exclude unrelated `README.md` deletion from commit
+
+### Handoff 4
+
+- From: commit-manager
+- To: owner-report
+- Reason: scoped autonomous harness upgrade was committed
+- Files read: `harness/work/harness-autonomy-upgrade/verification-report.md`, `harness/owner/reports/2026-06-12-harness-autonomy-upgrade.md`
+- Files changed: git commit history
+- Commands run: `git commit -m "Upgrade autonomous harness support"`
+- Evidence: commit `c809937`
+- Missing or weak evidence: none
+- Next micro-step: use upgraded harness for backend persistence implementation
+- Risks: diagnostic runtime checks remain supplementary to task-specific tests

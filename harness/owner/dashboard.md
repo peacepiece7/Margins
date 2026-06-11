@@ -27,7 +27,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 | `harness/owner/reports/2026-06-12-mvp-build-tooling.md` | reported | Backend test script passed first-run and cached Gradle execution; committed in `9a308ec`. |
 | `harness/owner/reports/2026-06-12-mvp-infra-mysql-runtime.md` | reported | MySQL runtime verified on port `3307` with schema/seed applied; committed in `d93d797`. |
 | `harness/owner/reports/2026-06-12-mvp-backend-persistence-slice.md` | prepared | Backend persistence slice is scoped and ready; task prep committed in `e176434`. |
-| `harness/owner/reports/2026-06-12-harness-autonomy-upgrade.md` | reported | Work coordination and environment readiness support verified; commit pending. |
+| `harness/owner/reports/2026-06-12-harness-autonomy-upgrade.md` | reported | Work coordination and environment readiness support verified; committed in `c809937`. |
 
 ## Active Decisions
 
