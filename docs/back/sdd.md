@@ -70,6 +70,18 @@ The first backend persistence slice writes through MyBatis annotation mappers an
 
 Persistence model classes live under package-level `model` directories and are mapper parameter/result objects, not API DTOs. All first-slice writes are marked `is_test_data=true` so local verification rows can be reset by DB reset scripts. The default DB connection is environment-driven through `MARGINS_DB_URL` or `MARGINS_MYSQL_*` variables.
 
+## Test Reset Runtime
+
+`POST /api/test/reset` is guarded to `local` and `test` profiles. When allowed, `TestResetBusiness` delegates to `TestDataResetExecutor`.
+
+Current executor:
+
+- `JdbcTestDataResetExecutor`
+- Deletes `is_test_data=true` rows in dependency order.
+- Reapplies `../db/seed/001_seed_mvp_data.sql` by default.
+- Configurable with `margins.test-support.seed-script`.
+- Returns mode `jdbc-seed-reset`.
+
 ## AI Contract
 
 - Provider: OpenAI API.

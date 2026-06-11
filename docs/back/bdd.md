@@ -94,6 +94,15 @@ When the reset endpoint or reset script runs
 Then test-owned data is removed or restored to seed state
 And non-test data is not modified
 
+### Scenario: Reset endpoint restores seed data in local profile
+
+Given the backend is running with `local` profile
+And test-owned data exists
+When `/api/test/reset` is called
+Then the backend deletes test-owned rows
+And reloads seed data
+And returns reset mode `jdbc-seed-reset`
+
 ### Scenario: Reset is blocked outside local and test profiles
 
 Given the active profile is not `local` or `test`

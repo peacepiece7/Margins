@@ -11,9 +11,11 @@ import org.springframework.http.HttpStatus;
 public class TestResetBusiness {
 
     private final Environment environment;
+    private final TestDataResetExecutor testDataResetExecutor;
 
-    public TestResetBusiness(Environment environment) {
+    public TestResetBusiness(Environment environment, TestDataResetExecutor testDataResetExecutor) {
         this.environment = environment;
+        this.testDataResetExecutor = testDataResetExecutor;
     }
 
     public ResetResponse reset() {
@@ -21,9 +23,11 @@ public class TestResetBusiness {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "reset is only available in local/test profiles");
         }
 
+        testDataResetExecutor.resetTestData();
+
         return ResetResponse.builder()
             .reset(true)
-            .mode("script-placeholder")
+            .mode("jdbc-seed-reset")
             .build();
     }
 
