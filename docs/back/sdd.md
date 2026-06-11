@@ -77,10 +77,11 @@ com.margins
 - Service/business tests for AI orchestration decisions.
 - Mapper tests for persistence queries.
 - Reset API must be unavailable or protected outside local/test profiles.
+- Local backend tests can be run through `back/scripts/test.ps1`. The script downloads Gradle `8.10.2` into the repository-local ignored `.tools/` cache when no system Gradle is available, then runs the requested Gradle task from `back/`.
 - Skeleton tests:
   - `HealthControllerTest`
   - `TestResetBusinessTest`
-- Local test execution requires Gradle or a generated Gradle wrapper. The current environment has Java 21 but no Gradle/Maven command.
+- The current environment has Java 21 but no system Gradle/Maven command; `back/scripts/test.ps1` is the repeatable fallback.
 
 ## Open Decisions
 

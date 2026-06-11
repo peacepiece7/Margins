@@ -64,3 +64,20 @@ Given the active profile is not `local` or `test`
 When `/api/test/reset` is called
 Then the reset business rejects the request
 And production-like profiles cannot reset data
+
+## Feature: Backend Test Tooling
+
+### Scenario: Backend tests run without system Gradle
+
+Given Java is installed
+And no system `gradle` command is available
+When `back/scripts/test.ps1` is run
+Then the script prepares Gradle in the ignored `.tools/` cache
+And runs the requested Gradle task from `back/`
+
+### Scenario: Cached Gradle is reused
+
+Given `.tools/gradle-8.10.2/bin/gradle.bat` exists
+When `back/scripts/test.ps1` is run again
+Then the script reuses the cached Gradle distribution
+And does not require a committed wrapper binary

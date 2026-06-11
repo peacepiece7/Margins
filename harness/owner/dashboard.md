@@ -24,6 +24,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 | `harness/owner/reports/2026-06-12-harness-owner-area.md` | reported | Added owner decision/report area and linked report-first AI-owned workflow. |
 | `harness/owner/reports/2026-06-12-mvp-db-schema.md` | reported | MVP DB schema scripts, seed/reset/query scripts, and docs were committed in `7224f15`. |
 | `harness/owner/reports/2026-06-12-mvp-backend-skeleton.md` | reported | Backend skeleton was committed in `9124315`; test execution is deferred until Gradle or wrapper is available. |
+| `harness/owner/reports/2026-06-12-mvp-build-tooling.md` | reported | Backend test script passed first-run and cached Gradle execution; commit pending. |
 
 ## Active Decisions
 
