@@ -10,7 +10,7 @@
 
 ## Status
 
-- in progress
+- reported
 
 ## Summary
 
@@ -61,11 +61,11 @@
 
 ## Result
 
-- Pending final validation commands and commit.
+- Backend persistence slice was implemented, verified, and committed.
 
 ## Commit
 
-- Scope: backend persistence task packet, discussion, requirements, owner-decision state, handoff, readiness verification, registry, and dashboard
-- Timing: committed after task validation and whitespace checks passed
-- Commit hash: `e176434`
-- Commit message: `Prepare backend persistence task`
+- Scope: backend persistence implementation, tests, back docs, task verification/report files, registry, and dashboard
+- Timing: committed after unit tests, runtime API/SQL verification, DB seed restore, task validation, and whitespace checks passed
+- Commit hash: `43c3fef`
+- Commit message: `Add backend persistence slice`

@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Run final validation commands and commit scoped backend persistence slice.
+- Start the next MVP implementation work item.
 
 ## Micro-Step Checklist
 
@@ -29,7 +29,7 @@
 | Discuss and scope requirements | agent-council | backend/db/infra docs | discussion/brief/decisions | No owner-blocking decision remains | completed |
 | Implement persistence slice | backend-engineer | schema and skeleton code | mapper/business/tests/docs | Persisted create paths return generated IDs | completed |
 | Verify recursively | qa-engineer | code/docs/tests | verification report | Tests pass and requirements map to evidence | completed |
-| Report and commit | commit-manager | verification/report | owner report and commit | Scoped commit created after gates | pending |
+| Report and commit | commit-manager | verification/report | owner report and commit | Scoped commit created after gates | completed |
 
 ## Completed Work
 
@@ -39,6 +39,7 @@
 | 2026-06-12 | commit-manager | Committed persistence task preparation | `e176434` |
 | 2026-06-12 | backend-engineer | Implemented mapper-backed persistence slice and docs | `back/`, `docs/back/` |
 | 2026-06-12 | qa-engineer | Verified tests, runtime API persistence, SQL evidence, and DB cleanup | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed backend persistence slice | `43c3fef` |
 
 ## Current Blockers
 
