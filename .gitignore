@@ -1,0 +1,24 @@
+# Generated frontend API models
+front/src/types/__generated__/
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+.next/
+out/
+target/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
