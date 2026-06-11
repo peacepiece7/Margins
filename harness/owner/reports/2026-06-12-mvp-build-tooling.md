@@ -58,7 +58,7 @@
 
 ## Commit
 
-- Scope: pending final commit
-- Timing: pending final commit
-- Commit hash:
-- Commit message:
+- Scope: backend test script, local build cache ignores, back docs, and build-tooling work-state/report files
+- Timing: committed after backend tests, cached rerun, task validation, and whitespace checks passed
+- Commit hash: `9a308ec`
+- Commit message: `Add MVP build tooling`

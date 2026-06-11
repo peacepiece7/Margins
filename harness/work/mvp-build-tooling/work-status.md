@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Run final validation commands, update owner report, and commit scoped build tooling work.
+- Start the next MVP implementation work item.
 
 ## Micro-Step Checklist
 
@@ -29,7 +29,7 @@
 | Discuss requirements | agent-council | backend verification report | discussion/brief/decisions | No owner-blocking decision remains | completed |
 | Implement script/docs | backend-engineer | requirements brief | script/docs | Script and docs exist | completed |
 | Verify recursively | qa-engineer | script/source | verification report | Test command passes or concrete failure is revised | completed |
-| Report and commit | commit-manager | verification/report | report and commit | Scoped commit created after gates | pending |
+| Report and commit | commit-manager | verification/report | report and commit | Scoped commit created after gates | completed |
 
 ## Completed Work
 
@@ -38,6 +38,7 @@
 | 2026-06-12 | agent-council | Selected local Gradle cache script approach | `discussion-log.md`, `requirements-brief.md`, `owner-decisions.md` |
 | 2026-06-12 | backend-engineer | Added backend test script and docs | `back/scripts/test.ps1`, `docs/back/` |
 | 2026-06-12 | qa-engineer | Verified first-run and cached backend test execution | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed MVP build tooling work | `9a308ec` |
 
 ## Current Blockers
 
