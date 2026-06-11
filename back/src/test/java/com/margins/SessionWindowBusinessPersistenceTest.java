@@ -63,6 +63,7 @@ class SessionWindowBusinessPersistenceTest {
         assertThat(messageMapper.inserted.get(1).getRole()).isEqualTo("assistant");
         assertThat(messageMapper.inserted.get(1).getParentMessageId()).isEqualTo(100L);
         assertThat(messageMapper.inserted.get(1).getQuestionId()).isEqualTo(9L);
+        assertThat(messageMapper.orderWindowIds).containsExactly(10L, 10L);
     }
 
     @Test
@@ -107,6 +108,7 @@ class SessionWindowBusinessPersistenceTest {
 
     private static class FakeMessageMapper implements MessageMapper {
         private final List<MessageRecord> inserted = new ArrayList<>();
+        private final List<Long> orderWindowIds = new ArrayList<>();
         private int nextId = 100;
         private int nextOrder = 1;
 
@@ -118,7 +120,8 @@ class SessionWindowBusinessPersistenceTest {
         }
 
         @Override
-        public int selectNextOrder(Long sessionId) {
+        public int selectNextOrder(Long sessionId, Long windowId) {
+            orderWindowIds.add(windowId);
             return nextOrder++;
         }
     }

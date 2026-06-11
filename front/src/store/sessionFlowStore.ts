@@ -50,42 +50,66 @@ export function useSessionFlowStore() {
       if (!state.window) {
         return Promise.resolve();
       }
-      return run(async () => {
-        const response = await marginsRepository.sendMessage(state.window!.windowId, content);
-        return {
-          messages: [
-            ...state.messages,
-            { id: `local-user-${Date.now()}`, role: 'user', content },
-            {
-              id: `assistant-${response.messageId}`,
-              role: response.role,
-              content: response.content,
-              persistedMessageId: response.messageId,
-            },
-          ],
-        };
-      });
+      const windowId = state.window.windowId;
+      setState((current) => ({ ...current, loading: true, error: undefined }));
+      return marginsRepository
+        .sendMessage(windowId, content)
+        .then((response) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            messages: [
+              ...current.messages,
+              { id: `local-user-${Date.now()}`, role: 'user', content },
+              {
+                id: `assistant-${response.messageId}`,
+                role: response.role,
+                content: response.content,
+                persistedMessageId: response.messageId,
+              },
+            ],
+          }));
+        })
+        .catch((error) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }));
+        });
     },
     debate(content: string) {
       if (!state.window) {
         return Promise.resolve();
       }
-      return run(async () => {
-        const response = await marginsRepository.debate(state.window!.windowId, content);
-        return {
-          messages: [
-            ...state.messages,
-            { id: `local-debate-${Date.now()}`, role: 'user', content },
-            {
-              id: `persona-${response.messageId}`,
-              role: response.role,
-              content: response.content,
-              personaId: response.personaId,
-              persistedMessageId: response.messageId,
-            },
-          ],
-        };
-      });
+      const windowId = state.window.windowId;
+      setState((current) => ({ ...current, loading: true, error: undefined }));
+      return marginsRepository
+        .debate(windowId, content)
+        .then((response) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            messages: [
+              ...current.messages,
+              { id: `local-debate-${Date.now()}`, role: 'user', content },
+              {
+                id: `persona-${response.messageId}`,
+                role: response.role,
+                content: response.content,
+                personaId: response.personaId,
+                persistedMessageId: response.messageId,
+              },
+            ],
+          }));
+        })
+        .catch((error) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }));
+        });
     },
   };
 }

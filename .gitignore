@@ -8,6 +8,7 @@ build/
 .next/
 out/
 target/
+back/bin/
 .tools/
 .gradle/
 *.tsbuildinfo

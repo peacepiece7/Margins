@@ -4,6 +4,7 @@ import com.margins.common.dto.ApiResponse;
 import com.margins.session.dto.CreateReadingSessionRequest;
 import com.margins.session.dto.CreateReadingSessionResponse;
 import com.margins.session.service.ReadingSessionService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,7 +19,7 @@ public class ReadingSessionController {
     private final ReadingSessionService readingSessionService;
 
     @PostMapping
-    public ApiResponse<CreateReadingSessionResponse> create(@RequestBody CreateReadingSessionRequest request) {
+    public ApiResponse<CreateReadingSessionResponse> create(@Valid @RequestBody CreateReadingSessionRequest request) {
         return ApiResponse.ok(readingSessionService.create(request));
     }
 }

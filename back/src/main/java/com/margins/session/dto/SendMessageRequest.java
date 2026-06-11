@@ -1,5 +1,6 @@
 package com.margins.session.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -9,6 +10,7 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class SendMessageRequest {
     Long userId;
+    @NotBlank
     String content;
     Long questionId;
     String clientCorrelationId;
