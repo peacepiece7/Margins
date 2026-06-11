@@ -59,4 +59,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File infra/scripts/deploy-raspber
 
 ## Commit
 
-- pending
+- `a46c69e` Add Raspberry Pi deploy artifact flow
