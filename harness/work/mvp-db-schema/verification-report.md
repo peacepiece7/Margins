@@ -48,4 +48,4 @@
 
 ## Next Owner
 
-- commit-manager
+- completed; next recommended owner is backend-engineer for backend skeleton

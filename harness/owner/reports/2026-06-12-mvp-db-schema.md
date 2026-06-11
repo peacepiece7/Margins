@@ -62,11 +62,11 @@
 
 ## Result
 
-- MVP DB schema work is ready for commit.
+- MVP DB schema work was committed.
 
 ## Commit
 
-- Scope:
-- Timing:
-- Commit hash:
-- Commit message:
+- Scope: DB schema, seed/reset/query scripts, DB docs, and durable work/report records.
+- Timing: After recursive file-level verification passed.
+- Commit hash: `7224f15`
+- Commit message: `Add MVP database schema`

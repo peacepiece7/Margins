@@ -16,4 +16,4 @@ This file is the index for all durable work items under `harness/work/`.
 | Task Id | Status | Current Owner | Next Action | Owner Attention | Work Dir | Owner Request | Owner Decision | Owner Report |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | `harness-workflow-audit` | completed | qa-engineer | none | report available | `harness/work/harness-workflow-audit/` | none | `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md` | `harness/owner/reports/2026-06-12-harness-owner-area.md` |
-| `mvp-db-schema` | active | commit-manager | commit scoped DB schema work | none | `harness/work/mvp-db-schema/` | none | `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md` | `harness/owner/reports/2026-06-12-mvp-db-schema.md` |
+| `mvp-db-schema` | completed | commit-manager | none | report available | `harness/work/mvp-db-schema/` | none | `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md` | `harness/owner/reports/2026-06-12-mvp-db-schema.md` |
