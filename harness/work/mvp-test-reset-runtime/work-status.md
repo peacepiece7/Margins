@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Run final validation and commit scoped reset runtime work.
+- Start the next MVP implementation work item.
 
 ## Micro-Step Checklist
 
@@ -29,7 +29,7 @@
 | Discuss and scope reset | agent-council | persistence verification | discussion/brief/decisions | No owner-blocking decision remains | completed |
 | Implement reset runtime | backend-engineer | reset skeleton and seed script | testsupport code/docs | Unit tests pass | completed |
 | Verify recursively | qa-engineer | code/docs/runtime DB | verification report | Runtime reset restores seed counts | completed |
-| Report and commit | commit-manager | verification/report | commit | Scoped commit created after gates | pending |
+| Report and commit | commit-manager | verification/report | commit | Scoped commit created after gates | completed |
 
 ## Completed Work
 
@@ -37,6 +37,7 @@
 | --- | --- | --- | --- |
 | 2026-06-12 | backend-engineer | Added JDBC reset executor and docs | `back/src/main/java/com/margins/testsupport/`, `docs/back/` |
 | 2026-06-12 | qa-engineer | Verified unit tests and runtime reset counts | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed backend test reset runtime | `570a749` |
 
 ## Current Blockers
 

@@ -44,3 +44,16 @@
 - Missing or weak evidence: final validation pending
 - Next micro-step: run final validation and commit scoped work
 - Risks: exclude unrelated `README.md` deletion
+
+### Handoff 4
+
+- From: commit-manager
+- To: owner-report
+- Reason: scoped reset runtime commit was created after verification gate
+- Files read: `harness/work/mvp-test-reset-runtime/verification-report.md`, `harness/owner/reports/2026-06-12-mvp-test-reset-runtime.md`
+- Files changed: git commit history
+- Commands run: `git commit -m "Add backend test reset runtime"`
+- Evidence: commit `570a749`
+- Missing or weak evidence: none
+- Next micro-step: start next MVP implementation work item
+- Risks: packaged deployments must set `margins.test-support.seed-script` if `../db/seed/001_seed_mvp_data.sql` is not available

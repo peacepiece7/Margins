@@ -28,7 +28,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 | `harness/owner/reports/2026-06-12-mvp-infra-mysql-runtime.md` | reported | MySQL runtime verified on port `3307` with schema/seed applied; committed in `d93d797`. |
 | `harness/owner/reports/2026-06-12-mvp-backend-persistence-slice.md` | reported | Backend persistence slice verified with tests, runtime API flow, SQL evidence, seed restore, and committed in `43c3fef`. |
 | `harness/owner/reports/2026-06-12-harness-autonomy-upgrade.md` | reported | Work coordination and environment readiness support verified; committed in `c809937`. |
-| `harness/owner/reports/2026-06-12-mvp-test-reset-runtime.md` | reported | Test reset endpoint now restores seed data through JDBC; commit pending. |
+| `harness/owner/reports/2026-06-12-mvp-test-reset-runtime.md` | reported | Test reset endpoint now restores seed data through JDBC; committed in `570a749`. |
 
 ## Active Decisions
 
