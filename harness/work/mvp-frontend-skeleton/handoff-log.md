@@ -44,3 +44,16 @@
 - Missing or weak evidence: browser E2E deferred
 - Next micro-step: run final validation and commit scoped work
 - Risks: exclude unrelated `README.md` deletion
+
+### Handoff 4
+
+- From: commit-manager
+- To: owner-report
+- Reason: scoped frontend skeleton commit was created after verification gate
+- Files read: `harness/work/mvp-frontend-skeleton/verification-report.md`, `harness/owner/reports/2026-06-12-mvp-frontend-skeleton.md`
+- Files changed: git commit history
+- Commands run: `git commit -m "Add MVP frontend skeleton"`
+- Evidence: commit `f17f7c0`
+- Missing or weak evidence: browser E2E deferred
+- Next micro-step: start next MVP implementation work item
+- Risks: backend must be running for interactive API use

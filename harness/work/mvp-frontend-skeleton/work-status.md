@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Run final validation and commit scoped frontend skeleton work.
+- Start the next MVP implementation work item.
 
 ## Micro-Step Checklist
 
@@ -29,7 +29,7 @@
 | Discuss and scope frontend | agent-council | front docs/backend docs | discussion/brief/decisions | No owner-blocking decision remains | completed |
 | Implement skeleton | frontend-engineer | requirements brief | front app/docs | Build passes | completed |
 | Verify recursively | qa-engineer | front app/docs | verification report | Build and dev response pass | completed |
-| Report and commit | commit-manager | verification/report | commit | Scoped commit created after gates | pending |
+| Report and commit | commit-manager | verification/report | commit | Scoped commit created after gates | completed |
 
 ## Completed Work
 
@@ -37,6 +37,7 @@
 | --- | --- | --- | --- |
 | 2026-06-12 | frontend-engineer | Added Vite React workbench skeleton | `front/` |
 | 2026-06-12 | qa-engineer | Verified install, build, and dev server HTTP responses | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed MVP frontend skeleton | `f17f7c0` |
 
 ## Current Blockers
 
