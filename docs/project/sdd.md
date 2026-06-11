@@ -62,7 +62,7 @@ Broad tasks require recursive verification: the QA/revision loop checks the orig
 
 Sub-agent execution is defined in `harness/sub-agents.md`. Each sub-agent receives a bounded task packet, role file, skill file, owned paths, read-only context, acceptance criteria, and expected verification evidence.
 
-Commit is a harness stage, but the commit manager may create a git commit only after explicit user approval for the current scope. Helper scripts under `harness/scripts/` can create task packets, verification reports, and context source lists for repeatable execution.
+Commit is a harness stage. Normal commit scope and timing are AI-owned by the commit manager after QA and recursive verification; owner escalation is reserved for destructive, security-sensitive, credential-related, production-impacting, or explicitly ambiguous commit decisions. Helper scripts under `harness/scripts/` can create task packets, verification reports, and context source lists for repeatable execution.
 
 For resumable multi-agent work, sub-agents communicate through shared files rather than private memory. Execution state belongs in `harness/work/<task-id>/task-packet.md`, `work-status.md`, `handoff-log.md`, and `verification-report.md`; durable product and technical decisions still belong in `docs/`. Work should be split into micro-steps with owner, inputs, outputs, acceptance check, evidence, and next owner so another agent can continue after context clear.
 

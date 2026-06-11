@@ -10,7 +10,7 @@
 
 ## Status
 
-- in progress
+- reported
 
 ## Summary
 
@@ -60,11 +60,11 @@
 
 ## Result
 
-- Backend skeleton work is ready for commit with test execution deferred until Gradle or wrapper is available.
+- Backend skeleton work was committed. Test execution remains deferred until Gradle or a Gradle wrapper is available.
 
 ## Commit
 
-- Scope:
-- Timing:
-- Commit hash:
-- Commit message:
+- Scope: backend skeleton source, backend docs, and backend work-state/report files only
+- Timing: committed after file-level QA, work-task validation, and whitespace checks passed
+- Commit hash: `9124315`
+- Commit message: `Add MVP backend skeleton`

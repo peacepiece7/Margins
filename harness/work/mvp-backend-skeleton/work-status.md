@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Commit backend skeleton if staged diff remains within scope.
+- Start a follow-up work item for build tooling/test execution or backend persistence.
 
 ## Micro-Step Checklist
 
@@ -30,7 +30,7 @@
 | Implement skeleton | backend-engineer | requirements brief | `back/` source files | Context and representative tests pass | completed |
 | Update docs/report | backend-engineer | implementation | back docs and owner report | Docs match skeleton | completed |
 | Verify recursively | qa-engineer | code/docs | verification report | Tests/checks pass or limits documented | completed |
-| Commit | commit-manager | verification/report | commit | Commit created if gates pass | pending |
+| Commit | commit-manager | verification/report | commit | Commit created if gates pass | completed |
 
 ## Completed Work
 
@@ -39,6 +39,7 @@
 | 2026-06-12 | agent-council | Created backend skeleton work and requirements | `harness/work/mvp-backend-skeleton/` |
 | 2026-06-12 | backend-engineer | Implemented Spring Boot skeleton, tests, docs, and report | `back/`, `docs/back/`, `harness/owner/reports/2026-06-12-mvp-backend-skeleton.md` |
 | 2026-06-12 | qa-engineer | Verified file structure and documented test tooling blocker | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed backend skeleton work | `9124315` |
 
 ## Current Blockers
 

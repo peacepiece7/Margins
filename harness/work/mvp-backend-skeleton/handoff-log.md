@@ -44,3 +44,16 @@
 - Missing or weak evidence: tests written but not executed
 - Next micro-step: commit scoped backend skeleton work
 - Risks: future environment should add Gradle wrapper or install Gradle before runtime testing
+
+### Handoff 4
+
+- From: commit-manager
+- To: owner-report
+- Reason: scoped backend skeleton commit was created after verification gate
+- Files read: `harness/work/mvp-backend-skeleton/verification-report.md`, `harness/owner/reports/2026-06-12-mvp-backend-skeleton.md`
+- Files changed: git commit history
+- Commands run: `git status --short`, `git commit -m "Add MVP backend skeleton"`
+- Evidence: commit `9124315`
+- Missing or weak evidence: automated backend tests still need Gradle or wrapper
+- Next micro-step: follow-up work should remove test tooling blocker or implement persistence
+- Risks: backend skeleton remains non-runtime-verified until build tooling exists
