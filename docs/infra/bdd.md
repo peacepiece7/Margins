@@ -5,9 +5,24 @@
 ### Scenario: Developer starts MySQL
 
 Given Docker is installed
-When the MySQL startup script runs
-Then MySQL is available to the backend
-And seed scripts can initialize development data
+When `infra/scripts/mysql-up.ps1 -ApplySchema` runs
+Then the `margins-mysql` container becomes healthy
+And `db/schema/001_create_mvp_schema.sql` is applied
+And `db/seed/001_seed_mvp_data.sql` initializes development data
+
+### Scenario: Developer stops MySQL
+
+Given the `margins-mysql` container is running
+When `infra/scripts/mysql-down.ps1` runs
+Then the local MySQL container is stopped
+And local data remains available for the next start
+
+### Scenario: Developer removes MySQL data
+
+Given local MySQL data should be reset completely
+When `infra/scripts/mysql-down.ps1 -Volumes` runs
+Then the local MySQL container is stopped
+And the Docker volume is removed
 
 ## Feature: Raspberry Pi Deployment
 
