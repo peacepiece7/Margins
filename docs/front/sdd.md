@@ -33,6 +33,15 @@ front/
     __generated__/    # ignored; generated OpenAPI DTOs only
 ```
 
+Implemented skeleton:
+
+- `src/repository/marginsRepository.ts`: API client for MVP backend routes through the Vite `/api` proxy.
+- `src/store/sessionFlowStore.ts`: local session workflow state.
+- `src/hooks/useSessionFlow.ts`: UI-facing hook.
+- `src/types/models/`: curated API models.
+- `src/types/view-models/`: frontend workflow state.
+- `src/components/views/SessionWorkbench.tsx`: first MVP workbench view.
+
 ## Model Flow
 
 1. Fetch OpenAPI spec from backend URL.
@@ -46,6 +55,12 @@ front/
 - Development and E2E builds use stable `data-*` selectors.
 - Production build strips test-only `data-*` attributes.
 - Selector names should describe domain action or region, not visual placement.
+- The skeleton uses `testAttr()` so `data-testid` is emitted only outside production builds.
+
+## API Proxy
+
+- Vite dev server proxies `/api` to `http://localhost:8080`.
+- Backend should be running before interactive frontend verification.
 
 ## Socket Contract
 
@@ -59,4 +74,4 @@ front/
 
 - [ ] Exact API client generator.
 - [ ] Exact state library, if React hooks alone are insufficient.
-- [ ] Production mechanism for stripping `data-*` selectors.
+- [x] Production mechanism for stripping `data-*` selectors: `testAttr()` omits selectors in production.

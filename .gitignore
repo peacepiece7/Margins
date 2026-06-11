@@ -10,6 +10,7 @@ out/
 target/
 .tools/
 .gradle/
+*.tsbuildinfo
 
 # Local environment and secrets
 .env

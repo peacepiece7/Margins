@@ -9,6 +9,13 @@ When the user searches for a book title or description
 Then the UI shows AI-proposed candidates with title, author, and stable candidate identifier
 And selecting one candidate creates a saved book
 
+### Scenario: Skeleton creates a session from a candidate
+
+Given the backend is running
+When the user searches, selects the first candidate, and waits for creation
+Then the UI shows the saved book title
+And shows the generated session and window identifiers
+
 ## Feature: Reading Session
 
 ### Scenario: User starts a reading session
@@ -27,6 +34,13 @@ When the user submits an answer
 Then the UI shows the user's message
 And the AI response streams or appears in the same window
 And both messages remain after refresh
+
+### Scenario: Skeleton shows persisted AI message id
+
+Given the user created a session window
+When the user sends a message
+Then the UI shows the assistant response returned by the backend
+And labels the response with the generated message id
 
 ## Feature: Persona Debate
 
