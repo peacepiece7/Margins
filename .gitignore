@@ -11,6 +11,8 @@ target/
 .tools/
 .gradle/
 *.tsbuildinfo
+test-results/
+playwright-report/
 
 # Local environment and secrets
 .env

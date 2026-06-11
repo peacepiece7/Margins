@@ -103,9 +103,10 @@ export function SessionWorkbench() {
               <div className="py-16 text-center text-sm text-stone-500">Create a session from a candidate, then write inside the window.</div>
             )}
             {flow.state.messages.map((item) => (
-              <div className="rounded border border-stone-200 bg-stone-50 p-3" key={item.messageId} {...testAttr('message-item')}>
+              <div className="rounded border border-stone-200 bg-stone-50 p-3" key={item.id} {...testAttr('message-item')}>
                 <div className="text-xs font-medium uppercase tracking-wide text-stone-500">
-                  {item.personaId ? `Persona ${item.personaId}` : item.role} · #{item.messageId}
+                  {item.personaId ? `Persona ${item.personaId}` : item.role}
+                  {item.persistedMessageId ? ` · #${item.persistedMessageId}` : ''}
                 </div>
                 <div className="mt-2 text-sm leading-6">{item.content}</div>
               </div>

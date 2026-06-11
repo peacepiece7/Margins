@@ -41,6 +41,8 @@ Implemented skeleton:
 - `src/types/models/`: curated API models.
 - `src/types/view-models/`: frontend workflow state.
 - `src/components/views/SessionWorkbench.tsx`: first MVP workbench view.
+- `playwright.config.ts`: full-stack smoke test configuration.
+- `tests/e2e/session-workbench.spec.ts`: book/session/window/message/debate smoke flow.
 
 ## Model Flow
 
@@ -61,6 +63,12 @@ Implemented skeleton:
 
 - Vite dev server proxies `/api` to `http://localhost:8080`.
 - Backend should be running before interactive frontend verification.
+
+## E2E Smoke
+
+- `npm run e2e` runs Playwright tests.
+- Current smoke assumes backend is already running with `SPRING_PROFILES_ACTIVE=local` and MySQL on the configured backend port.
+- Test setup calls `/api/test/reset` before exercising the UI flow.
 
 ## Socket Contract
 

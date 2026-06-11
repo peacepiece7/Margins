@@ -39,7 +39,8 @@ And both messages remain after refresh
 
 Given the user created a session window
 When the user sends a message
-Then the UI shows the assistant response returned by the backend
+Then the UI shows the user's submitted message
+And shows the assistant response returned by the backend
 And labels the response with the generated message id
 
 ## Feature: Persona Debate
@@ -56,3 +57,4 @@ And the persona identity remains visible in the message history
 - Use Playwright.
 - Prefer selectors from the `data-*` contract.
 - Reset persisted data through backend test reset API or DB script.
+- Current smoke test covers book search, candidate selection, session/window creation, message send, and persona debate display.

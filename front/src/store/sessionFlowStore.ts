@@ -52,7 +52,18 @@ export function useSessionFlowStore() {
       }
       return run(async () => {
         const response = await marginsRepository.sendMessage(state.window!.windowId, content);
-        return { messages: [...state.messages, response] };
+        return {
+          messages: [
+            ...state.messages,
+            { id: `local-user-${Date.now()}`, role: 'user', content },
+            {
+              id: `assistant-${response.messageId}`,
+              role: response.role,
+              content: response.content,
+              persistedMessageId: response.messageId,
+            },
+          ],
+        };
       });
     },
     debate(content: string) {
@@ -61,7 +72,19 @@ export function useSessionFlowStore() {
       }
       return run(async () => {
         const response = await marginsRepository.debate(state.window!.windowId, content);
-        return { messages: [...state.messages, response] };
+        return {
+          messages: [
+            ...state.messages,
+            { id: `local-debate-${Date.now()}`, role: 'user', content },
+            {
+              id: `persona-${response.messageId}`,
+              role: response.role,
+              content: response.content,
+              personaId: response.personaId,
+              persistedMessageId: response.messageId,
+            },
+          ],
+        };
       });
     },
   };

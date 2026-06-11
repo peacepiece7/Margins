@@ -1,9 +1,16 @@
 import type { BookCandidate, SaveBookResponse } from '../models/book';
 import type {
-  AiMessageResponse,
   CreateReadingSessionResponse,
   CreateSessionWindowResponse,
 } from '../models/session';
+
+export interface SessionDisplayMessage {
+  id: string;
+  role: string;
+  content: string;
+  personaId?: number;
+  persistedMessageId?: number;
+}
 
 export interface SessionFlowState {
   query: string;
@@ -11,7 +18,7 @@ export interface SessionFlowState {
   selectedBook?: SaveBookResponse;
   session?: CreateReadingSessionResponse;
   window?: CreateSessionWindowResponse;
-  messages: AiMessageResponse[];
+  messages: SessionDisplayMessage[];
   loading: boolean;
   error?: string;
 }
