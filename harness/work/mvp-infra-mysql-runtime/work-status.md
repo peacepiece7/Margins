@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- commit gate
+- completed
 
 ## Current Owner
 
-- commit-manager
+- none
 
 ## Owner Decision State
 
@@ -20,7 +20,7 @@
 
 ## Next Micro-Step
 
-- Run final validation commands, update owner report, and commit scoped infra runtime work.
+- Start backend persistence work against the verified MySQL runtime.
 
 ## Micro-Step Checklist
 
@@ -29,7 +29,7 @@
 | Discuss requirements | agent-council | infra/db docs | discussion/brief/decisions | No owner-blocking decision remains | completed |
 | Implement runtime | infra-engineer | requirements brief | compose/scripts/docs | Runtime files and docs exist | completed |
 | Verify recursively | qa-engineer | compose/scripts/db scripts | verification report | MySQL healthy and seed query passes | completed |
-| Report and commit | commit-manager | verification/report | report and commit | Scoped commit created after gates | pending |
+| Report and commit | commit-manager | verification/report | report and commit | Scoped commit created after gates | completed |
 
 ## Completed Work
 
@@ -38,6 +38,7 @@
 | 2026-06-12 | agent-council | Selected MySQL-only Docker runtime scope | `discussion-log.md`, `requirements-brief.md` |
 | 2026-06-12 | infra-engineer | Added compose file, scripts, and infra docs | `infra/docker/mysql-compose.yml`, `infra/scripts/`, `docs/infra/` |
 | 2026-06-12 | qa-engineer | Verified MySQL health, schema, and seed data on port `3307` | `verification-report.md` |
+| 2026-06-12 | commit-manager | Committed MVP MySQL runtime work | `d93d797` |
 
 ## Current Blockers
 

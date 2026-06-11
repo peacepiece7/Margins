@@ -61,7 +61,7 @@
 
 ## Commit
 
-- Scope:
-- Timing:
-- Commit hash:
-- Commit message:
+- Scope: MySQL compose runtime, infra scripts, infra docs, and infra runtime work-state/report files
+- Timing: committed after Docker runtime, schema/seed SQL verification, task validation, and whitespace checks passed
+- Commit hash: `d93d797`
+- Commit message: `Add MVP MySQL runtime`

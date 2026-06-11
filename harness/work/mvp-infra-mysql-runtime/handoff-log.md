@@ -44,3 +44,16 @@
 - Missing or weak evidence: final validation commands pending
 - Next micro-step: run final validation and commit scoped work
 - Risks: local default port `3306` may conflict; use `MARGINS_MYSQL_PORT` override
+
+### Handoff 4
+
+- From: commit-manager
+- To: owner-report
+- Reason: scoped MySQL runtime commit was created after verification gate
+- Files read: `harness/work/mvp-infra-mysql-runtime/verification-report.md`, `harness/owner/reports/2026-06-12-mvp-infra-mysql-runtime.md`
+- Files changed: git commit history
+- Commands run: `git commit -m "Add MVP MySQL runtime"`
+- Evidence: commit `d93d797`
+- Missing or weak evidence: none
+- Next micro-step: backend persistence can use verified MySQL runtime
+- Risks: local default port `3306` may conflict; use `MARGINS_MYSQL_PORT`
