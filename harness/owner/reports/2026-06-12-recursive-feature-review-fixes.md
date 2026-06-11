@@ -71,5 +71,5 @@
 
 - 범위: recursive feature review fixes, tests, docs, work state, owner report, registry, dashboard
 - 시점: backend test, frontend build, E2E, reset restore, doc audit, task validation, whitespace check 통과 후 AI가 결정
-- Commit hash:
-- Commit message:
+- Commit hash: `1645b84`
+- Commit message: `Fix recursive feature review issues`
