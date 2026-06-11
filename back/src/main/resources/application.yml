@@ -1,6 +1,15 @@
 spring:
   application:
     name: margins-back
+  datasource:
+    url: ${MARGINS_DB_URL:jdbc:mysql://localhost:${MARGINS_MYSQL_PORT:3306}/${MARGINS_MYSQL_DATABASE:margins}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${MARGINS_MYSQL_USER:margins}
+    password: ${MARGINS_MYSQL_PASSWORD:margins-pass}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
 
 server:
   port: 8080

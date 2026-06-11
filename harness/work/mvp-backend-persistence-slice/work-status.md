@@ -6,11 +6,11 @@
 
 ## Current Phase
 
-- ready for implementation
+- commit gate
 
 ## Current Owner
 
-- backend-engineer
+- commit-manager
 
 ## Owner Decision State
 
@@ -20,15 +20,15 @@
 
 ## Next Micro-Step
 
-- Implement mapper-backed insert paths for book/session/window/message persistence.
+- Run final validation commands and commit scoped backend persistence slice.
 
 ## Micro-Step Checklist
 
 | Step | Owner | Input Files | Output Files | Acceptance Check | Status |
 | --- | --- | --- | --- | --- | --- |
 | Discuss and scope requirements | agent-council | backend/db/infra docs | discussion/brief/decisions | No owner-blocking decision remains | completed |
-| Implement persistence slice | backend-engineer | schema and skeleton code | mapper/business/tests/docs | Persisted create paths return generated IDs | pending |
-| Verify recursively | qa-engineer | code/docs/tests | verification report | Tests pass and requirements map to evidence | pending |
+| Implement persistence slice | backend-engineer | schema and skeleton code | mapper/business/tests/docs | Persisted create paths return generated IDs | completed |
+| Verify recursively | qa-engineer | code/docs/tests | verification report | Tests pass and requirements map to evidence | completed |
 | Report and commit | commit-manager | verification/report | owner report and commit | Scoped commit created after gates | pending |
 
 ## Completed Work
@@ -37,6 +37,8 @@
 | --- | --- | --- | --- |
 | 2026-06-12 | agent-council | Prepared persistence slice scope and handoff documents | `task-packet.md`, `discussion-log.md`, `requirements-brief.md`, `owner-decisions.md` |
 | 2026-06-12 | commit-manager | Committed persistence task preparation | `e176434` |
+| 2026-06-12 | backend-engineer | Implemented mapper-backed persistence slice and docs | `back/`, `docs/back/` |
+| 2026-06-12 | qa-engineer | Verified tests, runtime API persistence, SQL evidence, and DB cleanup | `verification-report.md` |
 
 ## Current Blockers
 

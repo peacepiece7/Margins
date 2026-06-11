@@ -10,11 +10,11 @@
 
 ## Status
 
-- prepared
+- in progress
 
 ## Summary
 
-- Prepared the next backend persistence task so implementation can continue after context reset.
+- Implementing and verifying the first backend persistence slice for books, reading sessions, session windows, and messages.
 
 ## AI-Owned Decisions Made
 
@@ -28,6 +28,8 @@
 ## Scope Completed
 
 - Task packet, discussion log, requirements brief, owner-decision state, handoff log, and readiness verification were prepared.
+- Mapper-backed insert paths were implemented for books, reading sessions, session windows, and messages.
+- Business tests and runtime MySQL API verification were added/run.
 
 ## Files Changed
 
@@ -35,12 +37,22 @@
 - `harness/owner/reports/2026-06-12-mvp-backend-persistence-slice.md`
 - `harness/work/registry.md`
 - `harness/owner/dashboard.md`
+- `back/src/main/java/`
+- `back/src/main/resources/application.yml`
+- `back/src/test/java/`
+- `docs/back/sdd.md`
+- `docs/back/bdd.md`
 
 ## Verification Evidence
 
-- Task readiness files are complete.
-- No open owner decisions are recorded.
-- Implementation remains pending by design.
+- `back/scripts/test.ps1` passed.
+- Fixed-id search passed with no matches for persisted path placeholders.
+- Backend booted with `MARGINS_MYSQL_PORT=3307`.
+- Runtime API flow persisted generated ids: `bookId=3`, `sessionId=3`, `windowId=4`, `messageId=10`, `debateMessageId=12`.
+- SQL verification confirmed stored runtime book/session/window rows and four linked messages with parent, question, persona, and order evidence.
+- Runtime test rows were cleaned and seed state was restored to `users=1`, `books=1`, `messages=4`.
+- `validate-work-task.ps1 -TaskId mvp-backend-persistence-slice` passed.
+- `git diff --check` passed.
 
 ## Risks And Follow-Ups
 
@@ -49,7 +61,7 @@
 
 ## Result
 
-- Task is ready for backend implementation.
+- Pending final validation commands and commit.
 
 ## Commit
 

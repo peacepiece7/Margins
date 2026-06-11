@@ -27,7 +27,7 @@ public class PlaceholderAiProvider implements AiProvider {
     @Override
     public AiMessageResponse answerWindowMessage(Long windowId, SendMessageRequest request) {
         return AiMessageResponse.builder()
-            .messageId(1L)
+            .messageId(null)
             .windowId(windowId)
             .role("assistant")
             .content("Placeholder AI response. OpenAI integration will replace this boundary.")
@@ -39,7 +39,7 @@ public class PlaceholderAiProvider implements AiProvider {
     @Override
     public AiMessageResponse answerDebateMessage(Long windowId, DebateMessageRequest request) {
         return AiMessageResponse.builder()
-            .messageId(1L)
+            .messageId(null)
             .windowId(windowId)
             .role("assistant")
             .personaId(request.getPersonaId())

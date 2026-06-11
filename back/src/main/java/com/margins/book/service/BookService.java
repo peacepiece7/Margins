@@ -7,6 +7,7 @@ import com.margins.book.dto.SaveBookRequest;
 import com.margins.book.dto.SaveBookResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +19,7 @@ public class BookService {
         return bookBusiness.searchCandidates(request);
     }
 
+    @Transactional
     public SaveBookResponse saveBook(SaveBookRequest request) {
         return bookBusiness.saveBook(request);
     }
