@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: margins-back
+
+server:
+  port: 8080
+
+margins:
+  auth:
+    mode: single-user
+  ai:
+    provider: openai
+    streaming-ready: true
