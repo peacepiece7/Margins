@@ -22,6 +22,7 @@ This is the project owner's entry point for reviewing decisions, pending request
 | Report | Status | Summary |
 | --- | --- | --- |
 | `harness/owner/reports/2026-06-12-harness-owner-area.md` | reported | Added owner decision/report area and linked report-first AI-owned workflow. |
+| `harness/owner/reports/2026-06-12-mvp-db-schema.md` | reported | MVP DB schema scripts, seed/reset/query scripts, and docs are ready for commit. |
 
 ## Active Decisions
 

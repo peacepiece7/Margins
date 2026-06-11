@@ -22,6 +22,29 @@ DB owns durable records for books, sessions, windows, messages, personas, questi
 | `messages` | User/AI/persona/system records | Core analysis source |
 | `metrics` | Derived or manually generated metrics | Future statistics |
 
+Implemented in `db/schema/001_create_mvp_schema.sql`.
+
+## Schema Decisions
+
+- Migration format: raw MySQL SQL scripts for MVP bootstrap.
+- Primary ids: `BIGINT AUTO_INCREMENT`.
+- JSON usage: `context_snapshot`, `prompt_snapshot`, `response_snapshot`, `token_usage`, `raw_metadata`, and `metric_details` use MySQL `JSON` for AI/context payloads that will evolve.
+- Test data: every table includes `is_test_data` where seed/reset scripts need deterministic cleanup.
+- Deletion policy: user-facing durable records include `deleted_at`; raw conversation records are preserved by default and test reset deletes only `is_test_data` rows.
+- Metric shape: `metrics` uses typed dimensions (`user_id`, `book_id`, `session_id`, `window_id`, `question_id`, `persona_id`, period columns) plus `metric_details` JSON for extensibility.
+
+## Key Relationships
+
+| Parent | Child | Notes |
+| --- | --- | --- |
+| `users` | `books`, `book_candidates`, `reading_sessions`, `session_windows`, `questions`, `messages`, `metrics` | Single-user MVP and later JWT users share the same owner model. |
+| `books` | `reading_sessions`, `metrics` | Book-level aggregation is supported. |
+| `reading_sessions` | `session_windows`, `questions`, `messages`, `metrics` | Session timeline can be reconstructed. |
+| `session_windows` | `questions`, `messages`, `metrics` | Window-level Q/A and debate records are queryable. |
+| `personas` | `messages`, `metrics` | Persona debate identity is preserved. |
+| `questions` | `messages`, `metrics` | Prompt effectiveness can be measured later. |
+| `messages` | `messages.parent_message_id` | Threading/reply linkage is available for future UI. |
+
 ## Message Columns To Preserve
 
 - `id`
@@ -41,11 +64,29 @@ DB owns durable records for books, sessions, windows, messages, personas, questi
 
 ```text
 db/
-  schema/
-  seed/
-  queries/
-  reset/
+  schema/001_create_mvp_schema.sql
+  seed/001_seed_mvp_data.sql
+  queries/001_session_timeline.sql
+  queries/002_window_messages.sql
+  queries/003_persona_trace.sql
+  queries/004_metric_sources.sql
+  reset/001_reset_test_data.sql
 ```
+
+## Seed And Reset
+
+- Seed creates deterministic MVP data:
+  - `test-reader`
+  - one saved book
+  - one AI book candidate
+  - one reading session
+  - one question window and one debate window
+  - two personas
+  - one reflection question
+  - four messages including a persona response
+  - one sample session metric
+- Reset deletes rows where `is_test_data = TRUE` and reloads seed data through the MySQL client `SOURCE` command.
+- Non-test rows are not deleted by reset scripts.
 
 ## Metric Constraints
 
@@ -56,6 +97,6 @@ db/
 
 ## Open Decisions
 
-- [ ] Exact migration tool.
-- [ ] Whether metric details use typed columns, JSON, or both.
-- [ ] Soft delete policy.
+- [x] Exact migration tool: raw SQL scripts for MVP bootstrap.
+- [x] Whether metric details use typed columns, JSON, or both: both typed dimensions and JSON details.
+- [x] Soft delete policy: `deleted_at` on durable user-facing records; reset deletes only `is_test_data`.
