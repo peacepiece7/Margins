@@ -76,6 +76,13 @@ Owner-facing decision and result records live under `harness/owner/`. Requests c
 
 Multiple work items are supported. `harness/work/registry.md` indexes all durable work history, while `harness/owner/dashboard.md` is the owner-facing entry point for pending requests, active decisions, recent reports, and links to work history.
 
+Autonomous execution uses two support roles before escalating to the owner:
+
+- `work-coordinator`: keeps task packets, registry, owner dashboard, reports, handoffs, and commit evidence aligned.
+- `environment-engineer`: checks and repairs local reversible runtime blockers such as missing build-tool commands, stopped Docker daemon, occupied development ports, ignored local caches, and MySQL runtime readiness.
+
+Runtime readiness checks can be summarized with `harness/scripts/assess-runtime.ps1`. It is evidence-gathering support, not a replacement for task-specific verification commands.
+
 ## Open Decisions
 
 - [ ] First runnable auth mode: single-user or JWT.

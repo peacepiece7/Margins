@@ -22,6 +22,8 @@ This directory records project-local agent roles, repeatable skills, plugin expe
 - Revision engineer: `harness/agents/revision-engineer.md`
 - Commit manager: `harness/agents/commit-manager.md`
 - Context curator: `harness/agents/context-curator.md`
+- Work coordinator: `harness/agents/work-coordinator.md`
+- Environment engineer: `harness/agents/environment-engineer.md`
 
 ## End-To-End Process
 
@@ -98,3 +100,5 @@ This differs from a pull request because AI-owned work proceeds first after the 
 - Recursive verification: `harness/skills/recursive-verification.md`
 - Multi-agent requirements discussion: `harness/skills/requirements-discussion.md`
 - Project owner decision options: `harness/skills/owner-decision.md`
+- Task lifecycle: `harness/skills/task-lifecycle.md`
+- Environment readiness: `harness/skills/environment-readiness.md`

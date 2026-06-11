@@ -11,6 +11,7 @@ These scripts provide lightweight local helpers for creating task packets, verif
 - `new-work-task.ps1`: create a full `harness/work/<task-id>/` directory.
 - `validate-work-task.ps1`: check required work-state files and unresolved owner decisions.
 - `refresh-context.ps1`: print the core context sources an agent should reload.
+- `assess-runtime.ps1`: check local Java/git/Docker/MySQL/backend-test readiness before QA or implementation depends on them.
 
 ## Rules
 

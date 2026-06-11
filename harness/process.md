@@ -9,19 +9,23 @@ This file defines the default harness process for moving Margins work from plann
 ```text
 0. context-curator
    -> context packet from AGENTS, docs, current state, and task packet
-1. agent-council / product-planner
+1. work-coordinator
+   -> task registry/dashboard alignment and task lifecycle readiness
+2. agent-council / product-planner
    -> multi-agent discussion, owner decision options, requirements brief
-2. product-planner
+3. product-planner
    -> scope, BDD, affected domains, open decisions
-3. designer
+4. designer
    -> workflow, UI states, accessibility, E2E selector implications
-4. db-engineer / backend-engineer / frontend-engineer
+5. db-engineer / backend-engineer / frontend-engineer
    -> schema, API, AI/socket, UI, tests, docs
-5. qa-engineer
+6. environment-engineer
+   -> local runtime/tool readiness when verification depends on services or generated tooling
+7. qa-engineer
    -> command verification, BDD coverage, reset/seed validation
-6. revision-engineer
+8. revision-engineer
    -> targeted fixes from QA or review, then return to QA
-7. commit-manager
+9. commit-manager
    -> diff audit, final checks, commit message, commit
 ```
 
@@ -78,6 +82,8 @@ Required update points:
 7. During requirement shaping: update `discussion-log.md`, `owner-decisions.md`, and `requirements-brief.md`.
 8. After AI-owned work completes, write an owner result report when durable owner visibility is needed.
 9. Update `harness/work/registry.md` and `harness/owner/dashboard.md` when work status, owner requests, decisions, or reports change.
+10. Use `work-coordinator` for task preparation, task cleanup, status correction, and report/commit evidence alignment.
+11. Use `environment-engineer` before owner escalation when the blocker is a missing local tool, stopped daemon, occupied port, cache setup, or local runtime issue.
 
 Work must be split into micro-steps small enough that a different agent can resume from the latest status entry without reading prior chat.
 
@@ -189,6 +195,7 @@ Passes when:
 - Backend changes include API/OpenAPI, tests, and reset support where relevant.
 - Frontend changes include models/view-models, stores/hooks/repositories, selectors, and tests where relevant.
 - Any implementation option requiring project-owner decision is recorded before code proceeds.
+- Environment prerequisites that block implementation are either satisfied by repository scripts or documented with exact blocker evidence.
 
 ### QA Gate
 
@@ -199,6 +206,7 @@ Passes when:
 - Persisted E2E data can be seeded and reset.
 - Stored messages and records are queryable for debugging.
 - QA has checked `owner-decisions.md` and no unresolved owner decision invalidates verification.
+- Environment-readiness blockers have been routed to `environment-engineer` before being escalated as owner blockers.
 
 ### Recursive Verification Gate
 
@@ -252,7 +260,9 @@ Use this loop for broad tasks:
 
 ```text
 context-curator
+  -> work-coordinator prepares or refreshes task state
   -> owner sub-agent performs work
+  -> environment-engineer repairs local runtime gaps when needed
   -> qa-engineer verifies evidence
   -> recursive-verification checks original objective coverage
   -> revision-engineer fixes gaps

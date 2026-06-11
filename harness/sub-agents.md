@@ -95,12 +95,14 @@ Rules:
 | Mode | Owner | Typical Output |
 | --- | --- | --- |
 | Context injection | `context-curator` | Context packet |
+| Work coordination | `work-coordinator` | Registry/dashboard/task state updates |
 | Requirement discussion | `agent-council` plus relevant domain agents | Discussion log, owner decisions, requirements brief |
 | Planning | `product-planner` | Scope, BDD, affected domains |
 | Design | `designer` | UI/workflow states and risks |
 | DB development | `db-engineer` | Schema, seed, queries, reset |
 | Backend development | `backend-engineer` | APIs, AI/socket, tests |
 | Frontend development | `frontend-engineer` | UI, state, selectors, tests |
+| Environment readiness | `environment-engineer` | Runtime/tool/service readiness evidence |
 | QA | `qa-engineer` | Verification result and findings |
 | Revision/redevelopment | `revision-engineer` | Focused fixes and rerun checks |
 | Commit | `commit-manager` | Final diff audit and commit |
@@ -110,7 +112,7 @@ Rules:
 For large tasks, sub-agents run as a loop:
 
 ```text
-context-curator -> owner -> qa-engineer -> recursive-verification
+context-curator -> work-coordinator -> owner -> environment-engineer when needed -> qa-engineer -> recursive-verification
   -> revision-engineer -> qa-engineer -> context-curator when needed
 ```
 
@@ -146,6 +148,8 @@ Every sub-agent returns:
 - Owner decisions needed or recorded
 - Requirement changes proposed or accepted
 - Next recommended owner
+
+When the next blocker is local runtime readiness rather than source behavior, the next recommended owner should be `environment-engineer`, not the project owner.
 
 ## Micro-Step Standard
 
