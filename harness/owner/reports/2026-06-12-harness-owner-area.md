@@ -66,5 +66,5 @@
 
 - Scope: AI-owned after gates pass.
 - Timing: AI-owned after gates pass.
-- Commit hash:
-- Commit message:
+- Commit hash: `acb7472`
+- Commit message: `Add project harness workflow`
