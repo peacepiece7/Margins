@@ -20,8 +20,8 @@ Project-level SDD records cross-domain contracts and decisions that affect front
 | --- | --- | --- | --- |
 | OpenAPI spec | back | front | Planned |
 | Socket AI streaming events | back | front | Planned |
-| Test reset endpoint/scripts | back/db | front E2E | Planned |
-| Seed test data | db | back/front tests | Planned |
+| Test reset endpoint/scripts | back/db | front E2E | Implemented |
+| Seed test data | db | back/front tests | Implemented |
 | Build artifacts | front/back | infra | Planned |
 | Sub-agent delivery harness | harness | all domains | Defined |
 
@@ -85,6 +85,10 @@ Runtime readiness checks can be summarized with `harness/scripts/assess-runtime.
 
 ## Open Decisions
 
-- [ ] First runnable auth mode: single-user or JWT.
+- [x] First runnable auth mode: single-user or JWT. Decision: single-user mode for the first runnable slice; JWT remains later-compatible.
 - [ ] First socket technology.
 - [ ] First deployment trigger: GitHub Actions or Raspberry Pi CLI pull script.
+
+## Development Readiness
+
+MVP planning-to-development readiness is tracked in `docs/project/development-readiness.md`. It maps each MVP requirement to implementation evidence, remaining gaps, owner-needed inputs, and the next development slice.

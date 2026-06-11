@@ -13,6 +13,7 @@ These scripts provide lightweight local helpers for creating task packets, verif
 - `refresh-context.ps1`: print the core context sources an agent should reload.
 - `assess-runtime.ps1`: check local Java/git/Docker/MySQL/backend-test readiness before QA or implementation depends on them.
 - `audit-doc-consistency.ps1`: check work registry rows, work directories, owner report task links, and docs SDD/BDD pairs.
+- `audit-mvp-readiness.ps1`: map MVP requirements to implementation evidence and report remaining development slices.
 
 ## Rules
 

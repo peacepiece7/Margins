@@ -32,6 +32,7 @@
 | `harness/owner/reports/2026-06-12-mvp-frontend-skeleton.md` | reported | Frontend skeleton build와 dev server 응답을 검증했고, `f17f7c0`에 commit했습니다. |
 | `harness/owner/reports/2026-06-12-mvp-fullstack-e2e-smoke.md` | reported | Playwright full-stack smoke가 통과했고, `5b633cc`에 commit했습니다. |
 | `harness/owner/reports/2026-06-12-docs-consistency-audit.md` | reported | 문서 정합성을 전면 점검하고, 빈 orphan work directory를 정리했으며, 반복 가능한 audit script를 추가했습니다. |
+| `harness/owner/reports/2026-06-12-planning-development-readiness-audit.md` | reported | MVP 요구사항을 구현 증거와 다음 개발 slice에 매핑하고, owner input이 필요한 항목을 분리했습니다. |
 
 ## 활성 결정
 
