@@ -1,55 +1,55 @@
-# Owner Decisions
+# Owner 결정
 
-## Task Id
+## Task ID
 
 -
 
-## Open Decisions
+## 열린 결정
 
-### Decision 1
+### 결정 1
 
-- Title:
-- Stage:
-- Why now:
-- Owner question:
-- Recommended option:
-- Options:
+- 제목:
+- 단계:
+- 지금 필요한 이유:
+- Owner 질문:
+- 권장 옵션:
+- 선택지:
   - A:
   - B:
   - C:
 - Tradeoffs:
-- Domain impact:
-- Default if owner does not decide:
-- Reversibility:
-- Consequence of delay:
-- Record final decision in:
+- Domain 영향:
+- Owner가 결정하지 않을 때의 기본값:
+- 되돌릴 수 있는지:
+- 지연될 때의 결과:
+- 최종 결정 기록 위치:
 - Status: pending/open/resolved/deferred
 
-## AI-Owned Decisions
+## AI가 결정한 사항
 
-These decisions are made by the responsible sub-agent and reported to the project owner instead of blocking for owner choice.
+이 결정은 owner 선택을 기다리며 작업을 멈추지 않고, 담당 sub-agent가 결정한 뒤 project owner에게 보고합니다.
 
-### AI Decision 1
+### AI 결정 1
 
-- Title:
-- Stage:
-- Deciding agent:
-- Decision:
-- Rationale:
-- Evidence:
-- Owner report:
+- 제목:
+- 단계:
+- 결정 agent:
+- 결정:
+- 근거:
+- 증거:
+- Owner 보고:
 - Status: decided
 
-## Resolved Decisions
+## 완료된 결정
 
-### Resolved Decision 1
+### 완료된 결정 1
 
-- Title:
-- Stage:
-- Chosen option:
-- Decision date:
-- Owner rationale:
-- Tradeoffs accepted:
-- Follow-up actions:
-- Recorded in:
+- 제목:
+- 단계:
+- 선택한 옵션:
+- 결정 일시:
+- Owner 근거:
+- 수용한 tradeoff:
+- 후속 작업:
+- 기록 위치:
 - Status: resolved

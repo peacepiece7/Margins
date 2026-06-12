@@ -69,6 +69,7 @@ Implemented skeleton:
 - `npm run e2e` runs Playwright tests.
 - Current smoke assumes backend is already running with `SPRING_PROFILES_ACTIVE=local` and MySQL on the configured backend port.
 - Test setup calls `/api/test/reset` before exercising the UI flow.
+- Message append state uses the latest React state when async API calls resolve, so rapid message/debate responses do not overwrite messages captured before the request completed.
 
 ## Socket Contract
 

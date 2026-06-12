@@ -4,6 +4,7 @@ import com.margins.message.model.MessageRecord;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 @Mapper
@@ -46,7 +47,8 @@ public interface MessageMapper {
         SELECT COALESCE(MAX(message_order), 0) + 1
         FROM messages
         WHERE session_id = #{sessionId}
+          AND window_id = #{windowId}
           AND deleted_at IS NULL
         """)
-    int selectNextOrder(Long sessionId);
+    int selectNextOrder(@Param("sessionId") Long sessionId, @Param("windowId") Long windowId);
 }

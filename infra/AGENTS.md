@@ -21,6 +21,7 @@ Applies to deployment, Docker, Raspberry Pi, and CI/CD files under `infra/`.
 - Scripts must be repeatable.
 - Prefer explicit environment variables over hidden machine assumptions.
 - Document required Raspberry Pi paths and service names.
+- Deployment scripts may read `.env`, but must not print or persist secret values.
 
 ## Docs
 

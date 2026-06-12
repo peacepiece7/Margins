@@ -35,9 +35,9 @@ foreach ($entry in $templates.GetEnumerator()) {
     Copy-Item -LiteralPath $entry.Value -Destination $destination
   }
 
-  $content = Get-Content -LiteralPath $destination -Raw
+  $content = Get-Content -LiteralPath $destination -Raw -Encoding UTF8
   $content = $content -replace "(?m)(^## Task Id\r?\n\r?\n)-[^\S\r\n]*$", "`${1}- $safeTaskId"
-  Set-Content -LiteralPath $destination -Value $content
+  Set-Content -LiteralPath $destination -Value $content -Encoding UTF8
 }
 
 Write-Output $taskDir

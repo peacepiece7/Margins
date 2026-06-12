@@ -130,7 +130,7 @@ public class SessionWindowBusiness {
     }
 
     private MessageRecord insertMessage(MessageRecord record) {
-        record.setMessageOrder(messageMapper.selectNextOrder(record.getSessionId()));
+        record.setMessageOrder(messageMapper.selectNextOrder(record.getSessionId(), record.getWindowId()));
         messageMapper.insert(record);
         return record;
     }

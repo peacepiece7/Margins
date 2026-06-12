@@ -38,3 +38,13 @@ Given E2E tests create books, sessions, windows, personas, questions, messages, 
 When the reset mechanism runs
 Then test-owned records are removed or restored to seed state
 And another test run can start from the same known baseline
+
+## Feature: Planning To Development Readiness
+
+### Scenario: Next development slice is chosen from evidence
+
+Given MVP requirements are recorded in project docs
+And implementation evidence exists across `front`, `back`, `db`, `infra`, and `harness`
+When the readiness audit runs
+Then each MVP requirement is classified as implemented, partial, planned, or blocked
+And the next development slices are documented with owner-needed inputs separated from AI-owned work

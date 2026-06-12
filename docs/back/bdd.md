@@ -126,3 +126,28 @@ Given `.tools/gradle-8.10.2/bin/gradle.bat` exists
 When `back/scripts/test.ps1` is run again
 Then the script reuses the cached Gradle distribution
 And does not require a committed wrapper binary
+
+## Feature: Request Validation
+
+### Scenario: Invalid book request is rejected before business logic
+
+Given a book search or save request is missing a required field
+When the backend controller receives the request
+Then it returns `400`
+And the service layer is not called
+
+### Scenario: Invalid session request is rejected before persistence
+
+Given a reading session, session window, message, or debate request is missing a required field
+When the backend controller receives the request
+Then it returns `400`
+And no mapper write is attempted
+
+## Feature: Window Message Ordering
+
+### Scenario: Message order is scoped to a session window
+
+Given one reading session has multiple windows
+When messages are inserted into one window
+Then the next `message_order` is calculated for that `window_id`
+And messages in another window do not advance this window's order

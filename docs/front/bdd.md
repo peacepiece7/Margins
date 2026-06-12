@@ -43,6 +43,13 @@ Then the UI shows the user's submitted message
 And shows the assistant response returned by the backend
 And labels the response with the generated message id
 
+### Scenario: Async message responses preserve existing messages
+
+Given a session window already shows messages
+When another AI or persona response returns from the backend
+Then the UI appends the new user and assistant messages to the latest message list
+And previously displayed messages remain visible
+
 ## Feature: Persona Debate
 
 ### Scenario: User debates with a persona

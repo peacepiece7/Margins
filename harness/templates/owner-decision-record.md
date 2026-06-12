@@ -1,41 +1,41 @@
-# Owner Decision Record
+# Owner 결정 기록
 
-## Decision Id
+## 결정 ID
 
 -
 
-## Status
+## 상태
 
 - active
 
-## Decision
+## 결정
 
 -
 
-## Chosen Option
+## 선택한 옵션
 
 -
 
-## Owner Rationale
+## Owner 근거
 
 -
 
-## Applies To
+## 적용 범위
 
 -
 
-## Supersedes
+## 대체하는 내용
 
 -
 
-## Development Guidance
+## 개발 지침
 
 -
 
-## Result Documents
+## 결과 문서
 
 -
 
-## Recorded At
+## 기록 일시
 
 -

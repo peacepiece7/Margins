@@ -1,39 +1,39 @@
-# Owner Result Report
+﻿# Owner 결과 보고
 
-## Report Id
+## 보고 ID
 
 - 2026-06-12-mvp-infra-mysql-runtime
 
-## Task Id
+## Task ID
 
 - mvp-infra-mysql-runtime
 
-## Status
+## 상태
 
 - reported
 
-## Summary
+## 요약
 
-- Adding a MySQL-only Docker runtime and schema/seed verification path for local MVP development.
+- local MVP 개발을 위한 MySQL-only Docker runtime과 schema/seed verification path를 추가했습니다.
 
-## AI-Owned Decisions Made
+## AI가 결정한 사항
 
-- Use MySQL `8.4` image for the initial local runtime.
-- Keep front/back out of Docker Compose for this task.
-- Provide local development defaults with environment variable overrides.
+- initial local runtime에는 MySQL `8.4` image를 사용합니다.
+- 이 task에서는 front/back을 Docker Compose에 포함하지 않습니다.
+- environment variable override가 가능한 local development default를 제공합니다.
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 - `harness/owner/decisions/2026-06-12-ai-owned-report-first-workflow.md`
 
-## Scope Completed
+## 완료 범위
 
-- Added MySQL-only Docker Compose file.
-- Added MySQL start and stop scripts.
-- Updated infra SDD/BDD with local runtime behavior and defaults.
-- Verified schema and seed application against a running MySQL container.
+- MySQL-only Docker Compose file을 추가했습니다.
+- MySQL start/stop script를 추가했습니다.
+- local runtime behavior와 default를 infra SDD/BDD에 반영했습니다.
+- 실행 중인 MySQL container에 schema와 seed 적용을 검증했습니다.
 
-## Files Changed
+## 변경 파일
 
 - `infra/docker/mysql-compose.yml`
 - `infra/scripts/mysql-up.ps1`
@@ -42,26 +42,26 @@
 - `docs/infra/bdd.md`
 - `harness/work/mvp-infra-mysql-runtime/`
 
-## Verification Evidence
+## 검증 증거
 
-- Docker CLI and Compose are installed.
-- Docker Desktop engine was started and `docker info` passed.
-- First `mysql-up.ps1 -ApplySchema` attempt reached Docker but failed because host port `3306` was allocated.
-- `MARGINS_MYSQL_PORT=3307` with `mysql-up.ps1 -ApplySchema` passed.
-- SQL verification passed: 10 MVP tables exist, seed counts are `users=1`, `personas=2`, `books=1`.
+- Docker CLI와 Compose가 설치되어 있습니다.
+- Docker Desktop engine을 시작했고 `docker info`가 통과했습니다.
+- 첫 `mysql-up.ps1 -ApplySchema` 시도는 Docker까지 도달했지만 host port `3306`이 사용 중이라 실패했습니다.
+- `MARGINS_MYSQL_PORT=3307`로 `mysql-up.ps1 -ApplySchema`가 통과했습니다.
+- SQL verification이 통과했습니다. MVP table 10개가 존재하고 seed count는 `users=1`, `personas=2`, `books=1`입니다.
 
-## Risks And Follow-Ups
+## Risk 및 후속 작업
 
-- Raspberry Pi production credentials must be provided through environment variables.
-- Front/back Docker Compose integration remains a later task.
+- Raspberry Pi production credential은 environment variable로 제공해야 합니다.
+- Front/back Docker Compose integration은 후속 작업입니다.
 
-## Result
+## 결과
 
-- Local MySQL runtime is available and verified for backend persistence work.
+- backend persistence 작업에 사용할 local MySQL runtime을 사용할 수 있고 검증도 완료했습니다.
 
 ## Commit
 
-- Scope: MySQL compose runtime, infra scripts, infra docs, and infra runtime work-state/report files
-- Timing: committed after Docker runtime, schema/seed SQL verification, task validation, and whitespace checks passed
+- 범위: MySQL compose runtime, infra script, infra 문서, infra runtime work-state/report file
+- 시점: Docker runtime, schema/seed SQL verification, task validation, whitespace check 통과 후 commit
 - Commit hash: `d93d797`
 - Commit message: `Add MVP MySQL runtime`

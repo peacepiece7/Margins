@@ -7,6 +7,7 @@ import com.margins.session.dto.CreateSessionWindowResponse;
 import com.margins.session.dto.DebateMessageRequest;
 import com.margins.session.dto.SendMessageRequest;
 import com.margins.session.service.SessionWindowService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,14 +23,14 @@ public class SessionWindowController {
     private final SessionWindowService sessionWindowService;
 
     @PostMapping
-    public ApiResponse<CreateSessionWindowResponse> create(@RequestBody CreateSessionWindowRequest request) {
+    public ApiResponse<CreateSessionWindowResponse> create(@Valid @RequestBody CreateSessionWindowRequest request) {
         return ApiResponse.ok(sessionWindowService.create(request));
     }
 
     @PostMapping("/{id}/messages")
     public ApiResponse<AiMessageResponse> sendMessage(
         @PathVariable("id") Long windowId,
-        @RequestBody SendMessageRequest request
+        @Valid @RequestBody SendMessageRequest request
     ) {
         return ApiResponse.ok(sessionWindowService.sendMessage(windowId, request));
     }
@@ -37,7 +38,7 @@ public class SessionWindowController {
     @PostMapping("/{id}/debate")
     public ApiResponse<AiMessageResponse> debate(
         @PathVariable("id") Long windowId,
-        @RequestBody DebateMessageRequest request
+        @Valid @RequestBody DebateMessageRequest request
     ) {
         return ApiResponse.ok(sessionWindowService.debate(windowId, request));
     }

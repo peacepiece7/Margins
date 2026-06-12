@@ -34,6 +34,21 @@ Then frontend and backend artifacts are built
 And artifacts are transferred to Raspberry Pi
 And the running service is restarted with the new version
 
+### Scenario: Local artifact package is created
+
+Given backend and frontend build commands pass
+When `infra/scripts/build-artifacts.ps1` runs
+Then `infra/artifacts/margins-release.zip` is created
+And the package contains backend jar, frontend dist, MySQL compose file, and manifest
+
+### Scenario: Raspberry Pi SSH authentication is missing
+
+Given Raspberry Pi host, user, deploy directory, and service manager are configured
+And no usable SSH key or authenticated session is available
+When `infra/scripts/deploy-raspberry-pi.ps1` runs
+Then deployment stops before transfer
+And no secret value is printed or stored in the repository
+
 ## Feature: Future Compose Migration
 
 ### Scenario: Front/back are added to Docker Compose later

@@ -12,7 +12,7 @@
 
 -
 
-## Owner Decision State
+## Owner 결정 상태
 
 - Open:
 - Resolved:

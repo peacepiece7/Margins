@@ -8,11 +8,13 @@ build/
 .next/
 out/
 target/
+back/bin/
 .tools/
 .gradle/
 *.tsbuildinfo
 test-results/
 playwright-report/
+infra/artifacts/
 
 # Local environment and secrets
 .env

@@ -1,5 +1,5 @@
-# Owner Reports
+﻿# Owner 蹂닿퀬
 
-Use this directory for PR-like reports after AI-owned work is completed.
+???붾젆?곕━??AI媛 owner 媛쒖엯 ?놁씠 ?묒뾽???꾨즺?????묒꽦?섎뒗 PR ?좎궗 寃곌낵 蹂닿퀬瑜?蹂닿??⑸땲??
 
-Create one markdown file per report using `harness/templates/owner-result-report.md`.
+蹂닿퀬留덈떎 `harness/templates/owner-result-report.md`瑜??ъ슜??markdown ?뚯씪???섎굹???묒꽦?⑸땲??

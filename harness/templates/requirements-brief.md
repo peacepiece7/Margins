@@ -20,15 +20,15 @@
 
 -
 
-## Owner Decisions Applied
+## 적용한 Owner 결정
 
 -
 
-## Open Owner Decisions
+## 열린 Owner 결정
 
 -
 
-## Agent Discussion Summary
+## Agent 논의 요약
 
 -
 
