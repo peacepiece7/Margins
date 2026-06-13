@@ -18,11 +18,12 @@ Project-level SDD records cross-domain contracts and decisions that affect front
 
 | Contract | Producer | Consumer | Status |
 | --- | --- | --- | --- |
-| OpenAPI spec | back | front | Planned |
-| Socket AI streaming events | back | front | Planned |
+| OpenAPI spec | back | front | Implemented |
+| SSE AI streaming events | back | front | Implemented |
 | Test reset endpoint/scripts | back/db | front E2E | Implemented |
 | Seed test data | db | back/front tests | Implemented |
-| Build artifacts | front/back | infra | Planned |
+| Build artifacts | front/back | infra | Implemented |
+| Visual screenshot artifacts | front | harness QA | Implemented |
 | Sub-agent delivery harness | harness | all domains | Defined |
 
 ## MVP Domain Flow
@@ -83,11 +84,13 @@ Autonomous execution uses two support roles before escalating to the owner:
 
 Runtime readiness checks can be summarized with `harness/scripts/assess-runtime.ps1`. It is evidence-gathering support, not a replacement for task-specific verification commands.
 
+Acceptance traceability is verified by `harness/scripts/audit-acceptance-traceability.ps1`. The audit checks each MVP acceptance requirement against planning text, SDD/BDD behavior, implementation paths, and test or audit evidence so completion claims cannot rely on a single indirect signal.
+
 ## Open Decisions
 
-- [x] First runnable auth mode: single-user or JWT. Decision: single-user mode for the first runnable slice; JWT remains later-compatible.
-- [ ] First socket technology.
-- [ ] First deployment trigger: GitHub Actions or Raspberry Pi CLI pull script.
+- [x] First runnable auth mode: simple JWT login with single-user-compatible ownership. `/api/auth/login` issues an HMAC-signed bearer token, `/api/**` routes require it except documented public/test routes, and social login remains out of MVP scope.
+- [x] First socket technology. Decision: SSE over `POST /api/session-windows/{id}/messages/stream`; WebSocket remains deferred until multi-client delivery is needed.
+- [x] First deployment trigger: GitHub Actions builds and uploads release artifacts on `main`; Raspberry Pi CLI transfer/restart remains available through infra scripts once SSH access is configured.
 
 ## Development Readiness
 

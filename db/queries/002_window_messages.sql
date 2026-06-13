@@ -12,6 +12,7 @@ SELECT
   m.streaming_status,
   m.created_at
 FROM messages m
+JOIN session_windows sw ON sw.id = m.window_id AND sw.deleted_at IS NULL
 LEFT JOIN personas p ON p.id = m.persona_id
 WHERE m.window_id = ? AND m.deleted_at IS NULL
 ORDER BY m.message_order, m.id;

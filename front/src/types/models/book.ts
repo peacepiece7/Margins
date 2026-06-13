@@ -15,3 +15,7 @@ export interface SaveBookResponse {
   title: string;
   author: string;
 }
+
+export interface BookListResponse {
+  books: SaveBookResponse[];
+}

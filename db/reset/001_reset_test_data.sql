@@ -2,6 +2,9 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM metrics WHERE is_test_data = TRUE;
 DELETE FROM messages WHERE is_test_data = TRUE;
+DELETE FROM session_insights WHERE is_test_data = TRUE;
+DELETE FROM session_tags WHERE is_test_data = TRUE;
+DELETE FROM session_highlights WHERE is_test_data = TRUE;
 DELETE FROM questions WHERE is_test_data = TRUE;
 DELETE FROM personas WHERE is_test_data = TRUE;
 DELETE FROM session_windows WHERE is_test_data = TRUE;

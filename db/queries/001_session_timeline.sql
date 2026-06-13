@@ -1,6 +1,11 @@
 SELECT
   rs.id AS session_id,
   rs.title AS session_title,
+  rs.reading_goal,
+  rs.start_page,
+  rs.current_page,
+  rs.target_page,
+  rs.progress_note,
   sw.id AS window_id,
   sw.window_type,
   sw.title AS window_title,
@@ -18,3 +23,18 @@ LEFT JOIN personas p ON p.id = m.persona_id
 LEFT JOIN questions q ON q.id = m.question_id
 WHERE rs.id = ? AND rs.deleted_at IS NULL AND sw.deleted_at IS NULL
 ORDER BY sw.position, m.message_order, m.id;
+
+SELECT
+  h.id AS highlight_id,
+  h.session_id,
+  h.book_id,
+  h.page_number,
+  h.location_label,
+  h.quote_text,
+  h.note,
+  h.highlight_order,
+  h.created_at
+FROM session_highlights h
+WHERE h.session_id = ?
+  AND h.deleted_at IS NULL
+ORDER BY h.highlight_order, h.id;

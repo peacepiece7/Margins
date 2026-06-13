@@ -2,6 +2,7 @@ package com.margins.session.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Value;
 import lombok.extern.jackson.Jacksonized;
@@ -13,7 +14,9 @@ public class CreateSessionWindowRequest {
     @NotNull
     Long sessionId;
     @NotBlank
+    @Size(max = 40)
     String windowType;
     @NotBlank
+    @Size(max = 255)
     String title;
 }

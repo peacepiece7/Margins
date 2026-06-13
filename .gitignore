@@ -15,6 +15,7 @@ back/bin/
 test-results/
 playwright-report/
 infra/artifacts/
+harness/artifacts/
 
 # Local environment and secrets
 .env

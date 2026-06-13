@@ -76,6 +76,12 @@ INSERT INTO reading_sessions (
   book_id,
   title,
   status,
+  is_pinned,
+  reading_goal,
+  start_page,
+  current_page,
+  target_page,
+  progress_note,
   summary,
   context_snapshot,
   is_test_data
@@ -86,12 +92,24 @@ VALUES (
   1,
   'Seed reflection session',
   'active',
+  FALSE,
+  'Notice how estrangement changes the narrator.',
+  1,
+  42,
+  120,
+  'Seed progress note for MVP session tracking.',
   'Deterministic MVP seed session.',
   JSON_OBJECT('seedKey', 'mvp-db-schema'),
   TRUE
 )
 ON DUPLICATE KEY UPDATE
   status = VALUES(status),
+  is_pinned = VALUES(is_pinned),
+  reading_goal = VALUES(reading_goal),
+  start_page = VALUES(start_page),
+  current_page = VALUES(current_page),
+  target_page = VALUES(target_page),
+  progress_note = VALUES(progress_note),
   summary = VALUES(summary),
   is_test_data = VALUES(is_test_data),
   deleted_at = NULL;
@@ -195,6 +213,39 @@ ON DUPLICATE KEY UPDATE
   content = VALUES(content),
   message_order = VALUES(message_order),
   token_usage = VALUES(token_usage),
+  is_test_data = VALUES(is_test_data),
+  deleted_at = NULL;
+
+INSERT INTO session_highlights (
+  id,
+  session_id,
+  book_id,
+  user_id,
+  page_number,
+  location_label,
+  quote_text,
+  note,
+  highlight_order,
+  is_test_data
+)
+VALUES (
+  1,
+  1,
+  1,
+  1,
+  42,
+  'Chapter 1',
+  'The tension between belonging and estrangement stands out.',
+  'Seed highlight tied to the opening reflection.',
+  1,
+  TRUE
+)
+ON DUPLICATE KEY UPDATE
+  page_number = VALUES(page_number),
+  location_label = VALUES(location_label),
+  quote_text = VALUES(quote_text),
+  note = VALUES(note),
+  highlight_order = VALUES(highlight_order),
   is_test_data = VALUES(is_test_data),
   deleted_at = NULL;
 

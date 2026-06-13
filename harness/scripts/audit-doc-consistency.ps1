@@ -118,6 +118,49 @@ if (Test-Path -LiteralPath $DocsRoot) {
   }
 }
 
+$projectMvpPath = Join-Path $DocsRoot "project/mvp.md"
+if (Test-Path -LiteralPath $projectMvpPath) {
+  $projectMvp = Get-Content -LiteralPath $projectMvpPath -Raw -Encoding UTF8
+  foreach ($requiredText in @("Book search and add", "DB persistence for every meaningful conversation", "AI-proposed candidates", "Raspberry Pi is the deployment target")) {
+    if (-not $projectMvp.Contains($requiredText)) {
+      $failures.Add("Project MVP document is stale or unreadable; missing '$requiredText'.") | Out-Null
+    }
+  }
+
+  $mojibakeMarkers = @(
+    ([char]0xFFFD).ToString(),
+    ([char]0xF9E2).ToString(),
+    ([char]0x7B4C).ToString()
+  )
+  foreach ($mojibakeText in $mojibakeMarkers) {
+    if ($projectMvp.Contains($mojibakeText)) {
+      $failures.Add("Project MVP document appears to contain mojibake text: $mojibakeText") | Out-Null
+    }
+  }
+}
+
+$projectSddPath = Join-Path $DocsRoot "project/sdd.md"
+$backSddPath = Join-Path $DocsRoot "back/sdd.md"
+$authFilterPath = "back/src/main/java/com/margins/auth/filter/AuthTokenFilter.java"
+$jwtServicePath = "back/src/main/java/com/margins/auth/service/JwtTokenService.java"
+if ((Test-Path -LiteralPath $projectSddPath) -and (Test-Path -LiteralPath $backSddPath)) {
+  $projectSdd = Get-Content -LiteralPath $projectSddPath -Raw -Encoding UTF8
+  $backSdd = Get-Content -LiteralPath $backSddPath -Raw -Encoding UTF8
+  $jwtImplementationExists = (Test-Path -LiteralPath $authFilterPath) -and (Test-Path -LiteralPath $jwtServicePath)
+
+  if ($jwtImplementationExists -and $backSdd.Contains("HMAC-signed bearer JWT")) {
+    foreach ($requiredText in @("/api/auth/login", "HMAC-signed bearer token", "/api/**")) {
+      if (-not $projectSdd.Contains($requiredText)) {
+        $failures.Add("Project SDD auth decision is stale or incomplete; missing '$requiredText' while JWT auth is implemented.") | Out-Null
+      }
+    }
+
+    if ($projectSdd.Contains("JWT remains later-compatible")) {
+      $failures.Add("Project SDD auth decision still says JWT remains later-compatible, but JWT auth is implemented.") | Out-Null
+    }
+  }
+}
+
 Write-Output "# Documentation Consistency Audit"
 Write-Output ""
 Write-Output "Work directories checked: $($workDirs.Count)"

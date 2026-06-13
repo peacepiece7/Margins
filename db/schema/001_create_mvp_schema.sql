@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS books (
   PRIMARY KEY (id),
   KEY idx_books_user (user_id),
   KEY idx_books_title (title),
+  KEY idx_books_user_title_author (user_id, title, author),
   KEY idx_books_test_data (is_test_data),
   CONSTRAINT fk_books_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -70,6 +71,12 @@ CREATE TABLE IF NOT EXISTS reading_sessions (
   book_id BIGINT NOT NULL,
   title VARCHAR(255) NOT NULL,
   status VARCHAR(40) NOT NULL DEFAULT 'active',
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  reading_goal VARCHAR(500) NULL,
+  start_page INT NULL,
+  current_page INT NULL,
+  target_page INT NULL,
+  progress_note TEXT NULL,
   started_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   completed_at TIMESTAMP NULL,
   summary TEXT NULL,
@@ -82,6 +89,7 @@ CREATE TABLE IF NOT EXISTS reading_sessions (
   KEY idx_reading_sessions_user (user_id),
   KEY idx_reading_sessions_book (book_id),
   KEY idx_reading_sessions_status (status),
+  KEY idx_reading_sessions_pinned (user_id, is_pinned, updated_at),
   KEY idx_reading_sessions_test_data (is_test_data),
   CONSTRAINT fk_reading_sessions_user FOREIGN KEY (user_id) REFERENCES users (id),
   CONSTRAINT fk_reading_sessions_book FOREIGN KEY (book_id) REFERENCES books (id)
@@ -151,6 +159,67 @@ CREATE TABLE IF NOT EXISTS questions (
   CONSTRAINT fk_questions_session FOREIGN KEY (session_id) REFERENCES reading_sessions (id),
   CONSTRAINT fk_questions_window FOREIGN KEY (window_id) REFERENCES session_windows (id),
   CONSTRAINT fk_questions_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS session_highlights (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  session_id BIGINT NOT NULL,
+  book_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  page_number INT NULL,
+  location_label VARCHAR(120) NULL,
+  quote_text TEXT NOT NULL,
+  note TEXT NULL,
+  highlight_order INT NOT NULL,
+  is_test_data BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL,
+  PRIMARY KEY (id),
+  KEY idx_session_highlights_session_order (session_id, highlight_order, id),
+  KEY idx_session_highlights_book (book_id),
+  KEY idx_session_highlights_user (user_id),
+  KEY idx_session_highlights_test_data (is_test_data),
+  CONSTRAINT fk_session_highlights_session FOREIGN KEY (session_id) REFERENCES reading_sessions (id),
+  CONSTRAINT fk_session_highlights_book FOREIGN KEY (book_id) REFERENCES books (id),
+  CONSTRAINT fk_session_highlights_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS session_tags (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  session_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  label VARCHAR(80) NOT NULL,
+  is_test_data BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL,
+  PRIMARY KEY (id),
+  KEY idx_session_tags_session (session_id, deleted_at),
+  KEY idx_session_tags_user_label (user_id, label),
+  KEY idx_session_tags_test_data (is_test_data),
+  CONSTRAINT fk_session_tags_session FOREIGN KEY (session_id) REFERENCES reading_sessions (id),
+  CONSTRAINT fk_session_tags_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS session_insights (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  session_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  insight_type VARCHAR(60) NOT NULL DEFAULT 'takeaway',
+  title VARCHAR(160) NULL,
+  content TEXT NOT NULL,
+  evidence TEXT NULL,
+  insight_order INT NOT NULL,
+  is_test_data BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL,
+  PRIMARY KEY (id),
+  KEY idx_session_insights_session_order (session_id, insight_order, id),
+  KEY idx_session_insights_user_type (user_id, insight_type),
+  KEY idx_session_insights_test_data (is_test_data),
+  CONSTRAINT fk_session_insights_session FOREIGN KEY (session_id) REFERENCES reading_sessions (id),
+  CONSTRAINT fk_session_insights_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS messages (

@@ -1,6 +1,7 @@
 package com.margins.book.service;
 
 import com.margins.book.business.BookBusiness;
+import com.margins.book.dto.BookListResponse;
 import com.margins.book.dto.BookCandidateSearchRequest;
 import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.book.dto.SaveBookRequest;
@@ -17,6 +18,11 @@ public class BookService {
 
     public BookCandidateSearchResponse searchCandidates(BookCandidateSearchRequest request) {
         return bookBusiness.searchCandidates(request);
+    }
+
+    @Transactional(readOnly = true)
+    public BookListResponse findSavedBooks() {
+        return bookBusiness.findSavedBooks();
     }
 
     @Transactional

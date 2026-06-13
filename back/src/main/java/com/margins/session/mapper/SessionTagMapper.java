@@ -1,0 +1,58 @@
+package com.margins.session.mapper;
+
+import com.margins.session.model.SessionTagRecord;
+import java.util.List;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
+
+@Mapper
+public interface SessionTagMapper {
+
+    @Insert("""
+        INSERT INTO session_tags (
+          session_id,
+          user_id,
+          label,
+          is_test_data
+        )
+        VALUES (
+          #{sessionId},
+          #{userId},
+          #{label},
+          #{testData}
+        )
+        """)
+    @Options(useGeneratedKeys = true, keyProperty = "id")
+    int insert(SessionTagRecord record);
+
+    @Select("""
+        SELECT id, session_id, user_id, label, is_test_data
+        FROM session_tags
+        WHERE session_id = #{sessionId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+        ORDER BY label ASC, id ASC
+        """)
+    List<SessionTagRecord> findBySessionId(
+        @Param("sessionId") Long sessionId,
+        @Param("userId") Long userId
+    );
+
+    @Update("""
+        UPDATE session_tags
+        SET deleted_at = CURRENT_TIMESTAMP
+        WHERE id = #{tagId}
+          AND session_id = #{sessionId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+        """)
+    int softDelete(
+        @Param("sessionId") Long sessionId,
+        @Param("tagId") Long tagId,
+        @Param("userId") Long userId
+    );
+}

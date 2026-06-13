@@ -1,0 +1,108 @@
+name: Margins CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-package:
+    name: Build, test, and package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: front
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: front
+        run: npx playwright install chromium
+
+      - name: Project readiness audit
+        shell: powershell
+        run: ./harness/scripts/audit-mvp-readiness.ps1
+
+      - name: Documentation consistency audit
+        shell: powershell
+        run: ./harness/scripts/audit-doc-consistency.ps1
+
+      - name: DB contract audit
+        shell: powershell
+        run: ./harness/scripts/audit-db-contract.ps1
+
+      - name: Live deploy guard audit
+        shell: powershell
+        run: ./harness/scripts/audit-live-deploy-guard.ps1
+
+      - name: Artifact secret guard audit
+        shell: powershell
+        run: ./harness/scripts/audit-artifact-secret-guard.ps1
+
+      - name: CI workflow audit
+        shell: powershell
+        run: ./harness/scripts/audit-ci-workflow.ps1
+
+      - name: Completion command audit
+        shell: powershell
+        run: ./harness/scripts/audit-completion-command.ps1
+
+      - name: Quality gate composition audit
+        shell: powershell
+        run: ./harness/scripts/audit-quality-gate-composition.ps1
+
+      - name: Acceptance traceability audit
+        shell: powershell
+        run: ./harness/scripts/audit-acceptance-traceability.ps1
+
+      - name: Final acceptance boundary audit
+        shell: powershell
+        run: ./harness/scripts/audit-final-acceptance.ps1
+
+      - name: Backend tests
+        shell: powershell
+        run: ./back/scripts/test.ps1
+
+      - name: Frontend unit tests
+        working-directory: front
+        run: npm run test:unit
+
+      - name: Frontend build
+        working-directory: front
+        run: npm run build
+
+      - name: Frontend production selector check
+        working-directory: front
+        run: npm run verify:production-selectors
+
+      - name: Build release artifact
+        shell: powershell
+        run: ./infra/scripts/build-artifacts.ps1 -SkipTests
+
+      - name: Verify release artifact
+        shell: powershell
+        run: ./infra/scripts/verify-artifacts.ps1
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: margins-release
+          path: infra/artifacts/margins-release.zip
+          if-no-files-found: error

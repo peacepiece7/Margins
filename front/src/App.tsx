@@ -1,5 +1,5 @@
 import { createRoot } from 'react-dom/client';
-import { SessionWorkbench } from './components/views/SessionWorkbench';
+import { LoginGate } from './components/views/LoginGate';
 import './index.css';
 
-createRoot(document.getElementById('root') as HTMLElement).render(<SessionWorkbench />);
+createRoot(document.getElementById('root') as HTMLElement).render(<LoginGate />);

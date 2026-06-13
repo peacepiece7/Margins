@@ -7,7 +7,13 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "e2e": "playwright test"
+    "test": "npm run test:unit && npm run e2e",
+    "test:unit": "vitest run src",
+    "pree2e": "node scripts/check-e2e-prereqs.mjs",
+    "e2e": "playwright test",
+    "screenshots:workbench": "node scripts/capture-workbench-screenshots.mjs",
+    "verify:production-selectors": "node scripts/verify-production-selectors.mjs",
+    "openapi:pull": "node scripts/pull-openapi.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.3.4",
@@ -22,6 +28,7 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3"
+    "@types/react-dom": "^19.2.3",
+    "vitest": "^4.1.8"
   }
 }

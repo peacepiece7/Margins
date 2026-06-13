@@ -37,16 +37,22 @@ public class JdbcTestDataResetExecutor implements TestDataResetExecutor {
     private void deleteTestData(Connection connection) {
         try (Statement statement = connection.createStatement()) {
             statement.execute("SET FOREIGN_KEY_CHECKS = 0");
-            statement.executeUpdate("DELETE FROM metrics WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM messages WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM questions WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM personas WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM session_windows WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM reading_sessions WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM book_candidates WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM books WHERE is_test_data = TRUE");
-            statement.executeUpdate("DELETE FROM users WHERE is_test_data = TRUE");
-            statement.execute("SET FOREIGN_KEY_CHECKS = 1");
+            try {
+                statement.executeUpdate("DELETE FROM metrics WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM messages WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM session_insights WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM session_tags WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM session_highlights WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM questions WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM personas WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM session_windows WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM reading_sessions WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM book_candidates WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM books WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM users WHERE is_test_data = TRUE");
+            } finally {
+                statement.execute("SET FOREIGN_KEY_CHECKS = 1");
+            }
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to delete test data", exception);
         }

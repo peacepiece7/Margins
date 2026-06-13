@@ -48,3 +48,18 @@ And implementation evidence exists across `front`, `back`, `db`, `infra`, and `h
 When the readiness audit runs
 Then each MVP requirement is classified as implemented, partial, planned, or blocked
 And the next development slices are documented with owner-needed inputs separated from AI-owned work
+
+### Scenario: Final acceptance boundary is explicit
+
+Given MVP implementation evidence and project readiness documents exist
+When `harness/scripts/audit-final-acceptance.ps1` runs
+Then implemented MVP slices have repeatable audit evidence
+And the remaining Raspberry Pi live deploy blocker is visible before anyone claims project completion
+
+### Scenario: MVP acceptance trace stays complete
+
+Given MVP requirements are recorded in `docs/project/mvp.md`
+And SDD and BDD files describe the cross-domain behavior
+When `harness/scripts/audit-acceptance-traceability.ps1` runs
+Then each MVP acceptance requirement has planning, design, BDD, implementation, and test evidence
+And weak or missing evidence fails before final acceptance can pass

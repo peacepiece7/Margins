@@ -2,25 +2,25 @@
 
 ## Goal
 
-책을 읽은 사용자가 책을 추가하고, 독후감 session 안에서 여러 window를 통해 기록과 AI 대화를 남기며, 이후 metric/statistics로 확장 가능한 데이터를 축적한다.
+Margins helps a reader save a book, create reading sessions, write notes and AI conversations in multiple session windows, and preserve structured records that can later support metrics and statistics.
 
 ## MVP Features
 
-1. 책 검색 및 추가
-2. 책 기반 독후감 `ReadingSession` 생성
-3. session 내부 `SessionWindow` 생성
-4. 각 window별 AI 질문/답변
-5. 토론 window에서 `Persona` 기반 AI 응답
-6. 모든 대화/기록 DB 저장
-7. 추후 `Metric`/statistics 확장을 고려한 DB 설계
+1. Book search and add.
+2. Book-based `ReadingSession` creation.
+3. `SessionWindow` creation inside a session.
+4. AI question and answer flow per window.
+5. `Persona`-based AI response in a debate window.
+6. DB persistence for every meaningful conversation and reading record.
+7. DB design that supports future `Metric` and statistics expansion.
 
 ## Deferred Features
 
-- 소셜 로그인
-- 외부 도서 API 연동
-- RAG
-- 전체 front/back/db Docker Compose 통합
-- 고급 통계 화면과 언어 능력 분석 자동화
+- Social login.
+- Required external book API integration.
+- RAG.
+- Full front/back/db Docker Compose integration.
+- Advanced statistics screens and automated language ability analysis.
 
 ## Initial Technical Decisions
 

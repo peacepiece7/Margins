@@ -1,5 +1,6 @@
 package com.margins.book.controller;
 
+import com.margins.book.dto.BookListResponse;
 import com.margins.book.dto.BookCandidateSearchRequest;
 import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.book.dto.SaveBookRequest;
@@ -8,6 +9,7 @@ import com.margins.book.service.BookService;
 import com.margins.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +25,11 @@ public class BookController {
     @PostMapping("/search-candidates")
     public ApiResponse<BookCandidateSearchResponse> searchCandidates(@Valid @RequestBody BookCandidateSearchRequest request) {
         return ApiResponse.ok(bookService.searchCandidates(request));
+    }
+
+    @GetMapping
+    public ApiResponse<BookListResponse> list() {
+        return ApiResponse.ok(bookService.findSavedBooks());
     }
 
     @PostMapping

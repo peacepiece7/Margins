@@ -8,7 +8,7 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Resolve-Path (Join-Path $scriptRoot "..\..")
 $composeFile = Join-Path $repoRoot "infra\docker\mysql-compose.yml"
-$schemaFile = Join-Path $repoRoot "db\schema\001_create_mvp_schema.sql"
+$schemaDir = Join-Path $repoRoot "db\schema"
 $seedFile = Join-Path $repoRoot "db\seed\001_seed_mvp_data.sql"
 
 $containerName = "margins-mysql"
@@ -38,7 +38,9 @@ do {
 Write-Host "$containerName is healthy"
 
 if ($ApplySchema) {
-  foreach ($file in @($schemaFile, $seedFile)) {
+  $schemaFiles = Get-ChildItem -LiteralPath $schemaDir -Filter "*.sql" | Sort-Object Name | Select-Object -ExpandProperty FullName
+
+  foreach ($file in @($schemaFiles + $seedFile)) {
     if (-not (Test-Path -LiteralPath $file)) {
       throw "Missing SQL file: $file"
     }

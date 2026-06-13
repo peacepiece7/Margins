@@ -1,11 +1,13 @@
 package com.margins.message.mapper;
 
 import com.margins.message.model.MessageRecord;
+import java.util.List;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface MessageMapper {
@@ -51,4 +53,87 @@ public interface MessageMapper {
           AND deleted_at IS NULL
         """)
     int selectNextOrder(@Param("sessionId") Long sessionId, @Param("windowId") Long windowId);
+
+    @Select("""
+        SELECT
+          m.id,
+          m.session_id,
+          m.window_id,
+          m.user_id,
+          m.parent_message_id,
+          m.role,
+          m.content,
+          m.message_order,
+          m.ai_model,
+          m.persona_id,
+          m.question_id,
+          m.streaming_status,
+          m.is_test_data
+        FROM messages m
+        INNER JOIN session_windows sw ON sw.id = m.window_id
+        WHERE m.session_id = #{sessionId}
+          AND m.deleted_at IS NULL
+          AND sw.deleted_at IS NULL
+        ORDER BY sw.position ASC, m.message_order ASC, m.id ASC
+        """)
+    List<MessageRecord> findBySessionId(Long sessionId);
+
+    @Select("""
+        SELECT
+          m.id,
+          m.session_id,
+          m.window_id,
+          m.user_id,
+          m.parent_message_id,
+          m.role,
+          m.content,
+          m.message_order,
+          m.ai_model,
+          m.persona_id,
+          m.question_id,
+          m.streaming_status,
+          m.is_test_data
+        FROM messages m
+        INNER JOIN session_windows sw ON sw.id = m.window_id
+        INNER JOIN reading_sessions rs ON rs.id = m.session_id
+        WHERE m.id = #{messageId}
+          AND m.user_id = #{userId}
+          AND m.role = 'user'
+          AND m.deleted_at IS NULL
+          AND sw.deleted_at IS NULL
+          AND rs.deleted_at IS NULL
+        """)
+    MessageRecord findEditableById(
+        @Param("messageId") Long messageId,
+        @Param("userId") Long userId
+    );
+
+    @Update("""
+        UPDATE messages
+        SET content = #{content}
+        WHERE id = #{messageId}
+          AND user_id = #{userId}
+          AND role = 'user'
+          AND deleted_at IS NULL
+        """)
+    int updateContent(
+        @Param("messageId") Long messageId,
+        @Param("userId") Long userId,
+        @Param("content") String content
+    );
+
+    @Update("""
+        UPDATE messages
+        SET deleted_at = CURRENT_TIMESTAMP
+        WHERE user_id = #{userId}
+          AND deleted_at IS NULL
+          AND (
+            (id = #{messageId} AND role = 'user')
+            OR parent_message_id = #{messageId}
+          )
+        """)
+    int softDelete(
+        @Param("messageId") Long messageId,
+        @Param("userId") Long userId
+    );
 }
