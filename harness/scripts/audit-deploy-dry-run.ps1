@@ -195,6 +195,7 @@ try {
   try {
     $invalidServiceOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
       -EnvPath ".env.does-not-exist" `
+      -ArtifactPath $ArtifactPath `
       -DryRun 2>&1
   }
   finally {
@@ -216,6 +217,7 @@ try {
   try {
     $invalidSshKeyOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
       -EnvPath ".env.does-not-exist" `
+      -ArtifactPath $ArtifactPath `
       -DryRun 2>&1
   }
   finally {
