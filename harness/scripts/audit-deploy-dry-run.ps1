@@ -251,3 +251,5 @@ finally {
     [Environment]::SetEnvironmentVariable($name, $previous[$name], "Process")
   }
 }
+
+exit 0

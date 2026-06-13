@@ -52,3 +52,5 @@ try {
 finally {
   [Environment]::SetEnvironmentVariable("MARGINS_DEPLOY_HEALTH_URL", $previousHealthUrl, "Process")
 }
+
+exit 0

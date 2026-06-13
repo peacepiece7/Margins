@@ -238,3 +238,5 @@ finally {
     Remove-Item -LiteralPath $auditRoot -Recurse -Force
   }
 }
+
+exit 0
