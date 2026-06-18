@@ -18,4 +18,7 @@ public class CreatePersonaRequest {
     String systemPrompt;
     @Size(max = 120)
     String tone;
+    @Size(max = 80)
+    String roleKey;
+    Long sessionId;
 }

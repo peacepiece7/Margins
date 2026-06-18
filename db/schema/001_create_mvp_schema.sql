@@ -124,6 +124,8 @@ CREATE TABLE IF NOT EXISTS personas (
   description TEXT NULL,
   system_prompt TEXT NOT NULL,
   tone VARCHAR(120) NULL,
+  role_key VARCHAR(80) NULL,
+  source_session_id BIGINT NULL,
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   is_test_data BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -131,8 +133,11 @@ CREATE TABLE IF NOT EXISTS personas (
   deleted_at TIMESTAMP NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uk_personas_name (name),
+  KEY idx_personas_session_role (source_session_id, role_key),
+  KEY idx_personas_source_session (source_session_id),
   KEY idx_personas_active (is_active),
-  KEY idx_personas_test_data (is_test_data)
+  KEY idx_personas_test_data (is_test_data),
+  CONSTRAINT fk_personas_source_session FOREIGN KEY (source_session_id) REFERENCES reading_sessions (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS questions (
@@ -235,6 +240,7 @@ CREATE TABLE IF NOT EXISTS messages (
   ai_model VARCHAR(120) NULL,
   persona_id BIGINT NULL,
   question_id BIGINT NULL,
+  prompt_snapshot JSON NULL,
   context_snapshot JSON NULL,
   token_usage JSON NULL,
   streaming_status VARCHAR(40) NOT NULL DEFAULT 'complete',

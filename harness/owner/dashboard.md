@@ -21,6 +21,20 @@
 
 | 보고서 | 상태 | 요약 |
 | --- | --- | --- |
+| `harness/owner/reports/2026-06-14-ask-book-debate-separation.md` | reported | The workbench now separates Ask book from Debate personas and labels book answers distinctly from persona responses. |
+| `harness/owner/reports/2026-06-14-ai-response-grounding-contract.md` | reported | OpenAI answer and debate prompts now include a shared grounding contract for evidence, uncertainty, and reading-boundary respect. |
+| `harness/owner/reports/2026-06-14-ai-prompt-snapshot-audit.md` | reported | Generated assistant and persona messages now persist compact prompt policy metadata in `messages.prompt_snapshot`. |
+| `harness/owner/reports/2026-06-14-ai-token-usage-capture.md` | reported | OpenAI usage metadata is now captured and persisted as optional `messages.token_usage` for generated responses. |
+| `harness/owner/reports/2026-06-14-ai-answer-quality-sections.md` | reported | Final OpenAI answer and debate content now includes minimum Evidence and Uncertainty sections before persistence. |
+| `harness/owner/reports/2026-06-14-ai-safety-policy-generation.md` | reported | AI generated personas are screened by a shared MVP safety policy and unsafe drafts are replaced before display. |
+| `harness/owner/reports/2026-06-14-persona-role-quality-controls.md` | reported | Personas now carry MVP role keys, duplicate session roles are guarded, and role labels appear in the reading room. |
+| `harness/owner/reports/2026-06-14-highlight-evidence-snapshot.md` | reported | AI evidence snapshots now include saved quote references and the reading room warns when current page is missing. |
+| `harness/owner/reports/2026-06-13-ai-evidence-trace.md` | reported | AI assistant and persona messages now persist context snapshots and render evidence chips in the frontend. |
+| `harness/owner/reports/2026-06-13-spoiler-progress-boundary.md` | reported | OpenAI context now includes recorded reading position and a no-beyond-current-page instruction. |
+| `harness/owner/reports/2026-06-13-reading-room-first-ui.md` | reported | Active sessions now show a reading-room board for Questions, Persona cast, Capture, and Discussion before window/admin controls. |
+| `harness/owner/reports/2026-06-13-competitive-reading-product-gap-analysis.md` | reported | Comparable reading products were reviewed, Margins gaps were prioritized, and the next recommended slice is Reading Room First UI. |
+| `harness/owner/reports/2026-06-13-simplified-book-onboarding-ai-debate.md` | reported | Book registration now auto-prepares questions and personas, OpenAI debate context includes reader records, and management UI is de-emphasized. |
+| `harness/owner/reports/2026-06-13-ai-assisted-discovery-improvements.md` | reported | AI-assisted book discovery, persona drafts, and question drafts were implemented with tests and docs. |
 | `harness/owner/reports/2026-06-12-local-deploy-run-verification.md` | blocked | OpenAI key, artifact build, local backend/frontend 실행은 검증되었습니다. Raspberry Pi 배포는 SSH 인증 부재로 transfer 전 중단되었습니다. |
 | `harness/owner/reports/2026-06-12-recursive-feature-review-fixes.md` | reported | 전체 MVP 기능 표면을 추가 review하고 validation, message ordering, frontend async append, generated output ignore 문제를 수정했습니다. |
 | `harness/owner/reports/2026-06-12-planning-development-readiness-audit.md` | reported | MVP 요구사항과 구현 증거, 다음 개발 slice, owner input 필요 항목을 분리했습니다. |

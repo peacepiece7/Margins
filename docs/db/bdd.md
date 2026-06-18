@@ -87,6 +87,29 @@ Then querying by `window_id` returns only that window's messages in order
 And querying by `session_id` can reconstruct the full session timeline
 And archived windows are excluded from direct window-message lookups
 
+### Scenario: AI response context is preserved with the message
+
+Given an assistant or persona response is stored
+When the message row is queried later
+Then `messages.context_snapshot` can expose the persisted context references used for that response
+And saved highlight ids and quote text can appear in that trace when available
+And the trace remains attached to the message even after the frontend reloads
+
+### Scenario: AI prompt policy metadata is preserved with the message
+
+Given an assistant or persona response is stored
+When the message row is queried later
+Then `messages.prompt_snapshot` exposes the prompt contract version and policy versions used for that response
+And the snapshot identifies whether the response was a book answer or persona debate response
+And user-authored messages can remain without a prompt snapshot
+
+### Scenario: AI token usage is preserved when available
+
+Given an assistant or persona response includes provider usage metadata
+When the message row is inserted
+Then `messages.token_usage` stores the provider usage JSON
+And missing provider usage does not block message persistence
+
 ### Scenario: Session timeline script reconstructs windows and messages
 
 Given seed data has a reading session with a question window and a debate window
@@ -107,7 +130,7 @@ And the persona definition can be joined for display or analysis
 
 Given a persona debate message is stored
 When `db/queries/003_persona_trace.sql` is run for the session
-Then the result includes persona id, name, display name, and system prompt
+Then the result includes persona id, name, display name, role key, and system prompt
 And the message remains linked to its session and window
 
 ## Feature: Metric-Ready Records
@@ -124,6 +147,20 @@ And they do not need to infer page progress from message content
 Given messages, questions, personas, books, and sessions exist
 When a metric job groups records by user and session
 Then it can calculate values without scraping UI state
+
+### Scenario: Generated personas can be scoped to a session
+
+Given a reading session creates generated personas
+When those personas are saved
+Then `personas.source_session_id` can point to that reading session
+And sessions without generated personas can still use global fallback personas where `source_session_id` is null
+
+### Scenario: Persona role keys support distinct debate casts
+
+Given a reading session saves generated or custom personas
+When the rows are inserted into `personas`
+Then `personas.role_key` stores the stable debate role
+And `idx_personas_session_role` supports checking duplicate roles within that session
 And metric output can be stored without mutating source messages
 And questions or messages attached to archived windows are excluded from source counts
 

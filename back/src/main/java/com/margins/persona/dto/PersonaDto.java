@@ -15,4 +15,5 @@ public class PersonaDto {
     private String displayName;
     private String description;
     private String tone;
+    private String roleKey;
 }

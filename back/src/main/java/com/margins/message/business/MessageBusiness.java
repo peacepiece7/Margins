@@ -55,6 +55,9 @@ public class MessageBusiness {
             .aiModel(record.getAiModel())
             .personaId(record.getPersonaId())
             .questionId(record.getQuestionId())
+            .promptSnapshot(record.getPromptSnapshot())
+            .contextSnapshot(record.getContextSnapshot())
+            .tokenUsage(record.getTokenUsage())
             .streamingStatus(record.getStreamingStatus())
             .build();
     }

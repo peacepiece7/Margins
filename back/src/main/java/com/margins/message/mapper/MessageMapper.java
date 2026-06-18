@@ -24,6 +24,9 @@ public interface MessageMapper {
           ai_model,
           persona_id,
           question_id,
+          prompt_snapshot,
+          context_snapshot,
+          token_usage,
           streaming_status,
           is_test_data
         )
@@ -38,6 +41,9 @@ public interface MessageMapper {
           #{aiModel},
           #{personaId},
           #{questionId},
+          #{promptSnapshot},
+          #{contextSnapshot},
+          #{tokenUsage},
           #{streamingStatus},
           #{testData}
         )
@@ -67,6 +73,9 @@ public interface MessageMapper {
           m.ai_model,
           m.persona_id,
           m.question_id,
+          m.prompt_snapshot,
+          m.context_snapshot,
+          m.token_usage,
           m.streaming_status,
           m.is_test_data
         FROM messages m
@@ -91,6 +100,9 @@ public interface MessageMapper {
           m.ai_model,
           m.persona_id,
           m.question_id,
+          m.prompt_snapshot,
+          m.context_snapshot,
+          m.token_usage,
           m.streaming_status,
           m.is_test_data
         FROM messages m

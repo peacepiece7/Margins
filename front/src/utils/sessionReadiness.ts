@@ -1,6 +1,13 @@
 import type { SessionFlowState, SessionReadinessSummary } from '../types/view-models/sessionFlow';
 
-export function buildSessionReadiness(state: SessionFlowState): SessionReadinessSummary {
+type Translate = (text: string, values?: Record<string, string | number>) => string;
+
+const identityTranslate: Translate = (text, values = {}) => Object.entries(values).reduce(
+  (result, [key, value]) => result.replaceAll(`{{${key}}}`, String(value)),
+  text,
+);
+
+export function buildSessionReadiness(state: SessionFlowState, t: Translate = identityTranslate): SessionReadinessSummary {
   const progressSet = state.currentPage !== undefined && state.targetPage !== undefined;
   const questionCount = state.stats?.questionCount || 0;
   const answeredQuestionCount = state.stats?.answeredQuestionCount || 0;
@@ -10,38 +17,38 @@ export function buildSessionReadiness(state: SessionFlowState): SessionReadiness
   const items = [
     {
       id: 'progress',
-      label: 'Progress',
-      value: progressSet ? `${state.progressPercent}%` : 'Not set',
+      label: t('Progress'),
+      value: progressSet ? `${state.progressPercent}%` : t('Not set'),
       complete: progressSet,
     },
     {
       id: 'questions',
-      label: 'Questions',
-      value: `${questionCount} prompts`,
+      label: t('Questions'),
+      value: t('{{count}} prompts', { count: questionCount }),
       complete: questionCount > 0,
     },
     {
       id: 'answers',
-      label: 'Answers',
+      label: t('Answers'),
       value: `${answeredQuestionCount}/${questionCount || 0}`,
       complete: answeredQuestionCount > 0,
     },
     {
       id: 'quotes',
-      label: 'Quotes',
+      label: t('Quotes'),
       value: `${state.highlights.length}`,
       complete: state.highlights.length > 0,
     },
     {
       id: 'personas',
-      label: 'Personas',
-      value: `${personaReplyCount} replies`,
+      label: t('Personas'),
+      value: t('{{count}} replies', { count: personaReplyCount }),
       complete: personaReplyCount > 0,
     },
     {
       id: 'closeout',
-      label: 'Closeout',
-      value: completed ? 'Completed' : 'Open',
+      label: t('Closeout'),
+      value: completed ? t('Completed') : t('Open'),
       complete: completed,
     },
   ];

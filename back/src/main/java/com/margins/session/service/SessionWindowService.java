@@ -64,6 +64,11 @@ public class SessionWindowService {
         return sessionWindowBusiness.generateQuestions(windowId, request);
     }
 
+    @Transactional(readOnly = true)
+    public QuestionListResponse suggestQuestions(Long windowId, GenerateQuestionsRequest request) {
+        return sessionWindowBusiness.suggestQuestions(windowId, request);
+    }
+
     @Transactional
     public QuestionDto deleteQuestion(Long questionId) {
         return sessionWindowBusiness.deleteQuestion(questionId);

@@ -16,5 +16,7 @@ public class PersonaRecord {
     private String description;
     private String systemPrompt;
     private String tone;
+    private String roleKey;
+    private Long sourceSessionId;
     private boolean active;
 }

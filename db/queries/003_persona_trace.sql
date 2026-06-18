@@ -7,6 +7,7 @@ SELECT
   p.id AS persona_id,
   p.name AS persona_name,
   p.display_name AS persona_display_name,
+  p.role_key AS persona_role_key,
   p.system_prompt
 FROM messages m
 JOIN personas p ON p.id = m.persona_id

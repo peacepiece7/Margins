@@ -51,8 +51,16 @@ And the message contains the domain reason
 
 Given the user provides a book query
 When `/api/books/search-candidates` is called
-Then the backend asks OpenAI for candidate books
+Then the backend searches configured public catalog providers first
+And falls back to OpenAI or placeholder AI candidates only when no catalog candidate is available
 And returns candidates with title, author, and candidate identifier
+
+### Scenario: Catalog candidate source is preserved on save
+
+Given a book candidate identifier starts with `open-library:`
+When `/api/books` saves that candidate
+Then the backend stores `source='open-library'`
+And keeps the original candidate identifier in `source_ref`
 
 ### Scenario: AI book candidates are safe to save
 
@@ -84,6 +92,16 @@ And a session has questions, messages, and a selected persona
 When an AI answer or debate response is requested
 Then the OpenAI provider sends the user input with persisted session context
 And persona debate includes the selected persona `system_prompt`
+And the provider includes the shared AI safety policy in the instruction payload
+
+### Scenario: OpenAI debate context includes book and reader records
+
+Given `OPENAI_API_KEY` is configured
+And a session has a book title, saved quotes, and reader insights
+When a persona debate response is requested
+Then the OpenAI request context includes the book metadata
+And includes saved quote/location/note records
+And includes saved reader summaries or insights
 
 ## Feature: Session Message Persistence
 
@@ -94,6 +112,13 @@ When `/api/session-windows/{id}/questions/generate` is called
 Then the backend asks the AI provider for reflection questions
 And stores each question in `questions`
 And returns persisted question ids
+
+### Scenario: Question drafts are generated without persistence
+
+Given a question window exists
+When `/api/session-windows/{id}/questions/suggest` is called
+Then the backend asks the AI provider for reflection questions
+And returns drafts without inserting `questions` rows
 
 ### Scenario: Reader question is created
 
@@ -511,12 +536,43 @@ When `/api/personas` is called
 Then the backend returns active personas in deterministic order
 And each persona includes a display name and tone for the UI
 
+### Scenario: Session-scoped personas are listed for a book session
+
+Given a reading session has generated personas
+When `/api/personas?sessionId={id}` is called
+Then the backend returns personas scoped to that session
+And global fallback personas are used only when the session has no scoped personas
+
 ### Scenario: Reader persona is created for debate
 
 Given the reader wants a custom debate voice
 When `/api/personas` is called with `POST` and non-blank display name and system prompt
 Then the backend stores an active persona in `personas`
+And assigns a normalized role key for debate quality
 And the returned active persona list includes the new persona
+
+### Scenario: Duplicate explicit persona role is rejected within a session
+
+Given a reading session already has an active persona with role key `skeptic`
+When `/api/personas` is called with the same `sessionId` and explicit `roleKey=skeptic`
+Then the backend returns `409`
+And no duplicate persona row is inserted
+
+### Scenario: Persona drafts are generated before saving
+
+Given the reader has selected a book and reading goal
+When `/api/personas/generate` is called
+Then the backend returns AI persona drafts with display name, tone, role key, description, instructions, and reason
+And draft role keys use distinct MVP role categories where possible
+And no `personas` row is inserted until the reader saves one draft through `/api/personas`
+
+### Scenario: Unsafe generated persona draft is replaced
+
+Given the AI provider returns a persona draft with obvious unsafe markers
+When `/api/personas/generate` normalizes the drafts
+Then the backend replaces that draft with a safe role-based fallback
+And the replacement keeps the normalized role key
+And no unsafe generated draft text is returned to the frontend
 
 ### Scenario: Reader persona create does not succeed when no row is inserted
 
@@ -607,7 +663,7 @@ And returns the generated assistant message id
 Given a debate window exists with active personas
 When `/api/session-windows/{id}/debate/all` is called with non-blank `content` and no client-selected `personaId`
 Then the backend stores one user debate message
-And stores one assistant response for each active persona
+And stores one assistant response for each active persona scoped to that session, or global fallback personas when the session has none
 And each assistant response keeps the persona id and the same parent user message id
 
 ## Feature: Test Reset
@@ -697,3 +753,78 @@ Given one reading session has multiple windows
 When messages are inserted into one window
 Then the next `message_order` is calculated for that `window_id`
 And messages in another window do not advance this window's order
+
+## Feature: AI Evidence Trace
+
+### Scenario: Assistant response stores referenced session context
+
+Given a reader answers a generated question
+When the backend stores the assistant response
+Then the response message stores a `context_snapshot`
+And the snapshot includes the selected question, saved quote context, and recent message context where available
+And the timeline response exposes the snapshot as `contextSnapshot`
+
+### Scenario: Persona response stores persona context
+
+Given a reader asks a persona to debate
+When the backend stores the persona response
+Then the response message stores a `context_snapshot`
+And the snapshot includes the persona identity and recent message context
+
+### Scenario: Generated responses store prompt policy metadata
+
+Given a reader receives a book answer or persona debate response
+When the backend stores the assistant response
+Then the response message stores a `prompt_snapshot`
+And the snapshot includes prompt contract, safety, grounding, and reading-boundary policy versions
+And the timeline response exposes the snapshot as `promptSnapshot`
+
+### Scenario: Generated responses store provider token usage when available
+
+Given the OpenAI provider returns usage metadata for an answer or debate response
+When the backend stores the assistant response
+Then the response message stores `token_usage`
+And the immediate AI response and later timeline expose it as `tokenUsage`
+And responses without provider usage remain valid without estimated token data
+
+## Feature: AI Spoiler Boundary
+
+### Scenario: OpenAI context includes current reading position
+
+Given a reading session has a current page
+When the backend builds OpenAI context for a message or persona response
+Then the prompt includes the current page boundary
+And instructs the model not to reveal content beyond that boundary unless the reader already provided it
+
+### Scenario: OpenAI context handles missing reading position
+
+Given a reading session has no current page
+When the backend builds OpenAI context
+Then the prompt says no current reading position is recorded
+And instructs the model to avoid claims beyond reader-provided context
+
+## Feature: AI Response Grounding
+
+### Scenario: OpenAI book answers use grounding instructions
+
+Given a reader asks the book a question through a session window
+When the OpenAI provider builds the request
+Then the developer prompt includes the shared response grounding contract
+And instructs the model to use provided session context, quote, note, message, or selected-question evidence
+And instructs the model to state uncertainty instead of inventing unavailable book details
+
+### Scenario: OpenAI persona debate uses grounding instructions
+
+Given a reader asks a persona to debate
+When the OpenAI provider builds the request
+Then the persona system prompt remains included
+And the shared response grounding contract remains included
+And the grounding contract tells the model to respect the recorded reading boundary
+
+### Scenario: OpenAI final responses include reviewable answer sections
+
+Given OpenAI returns an answer or persona debate response without explicit evidence or uncertainty sections
+When the provider builds the final AI message response
+Then the final content includes an `Evidence:` section
+And the final content includes an `Uncertainty:` section
+And streamed deltas can remain provider text while `message.done` uses the normalized final content

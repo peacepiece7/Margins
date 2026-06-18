@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { marginsRepository } from '../repository/marginsRepository';
 import type { SaveBookResponse } from '../types/models/book';
 import type {
@@ -12,6 +12,9 @@ vi.mock('../repository/marginsRepository', () => ({
   marginsRepository: {
     createSession: vi.fn(),
     createWindow: vi.fn(),
+    generateQuestions: vi.fn(),
+    generatePersonas: vi.fn(),
+    createPersona: vi.fn(),
     sessionTimeline: vi.fn(),
     sessions: vi.fn(),
     readingStats: vi.fn(),
@@ -19,6 +22,16 @@ vi.mock('../repository/marginsRepository', () => ({
 }));
 
 describe('createDefaultSessionPatch', () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+  });
+
+  function resetProvisioningMocks() {
+    vi.mocked(marginsRepository.generateQuestions).mockResolvedValue({ questions: [] });
+    vi.mocked(marginsRepository.generatePersonas).mockResolvedValue({ personas: [] });
+    vi.mocked(marginsRepository.createPersona).mockResolvedValue({ personas: [] });
+  }
+
   function timelineFor(sessionId = 11): ReadingSessionTimelineResponse {
     return {
       sessionId,
@@ -66,6 +79,7 @@ describe('createDefaultSessionPatch', () => {
   }
 
   it('loads the created session when a default window create fails', async () => {
+    resetProvisioningMocks();
     const book: SaveBookResponse = {
       bookId: 7,
       title: 'Dune',
@@ -104,6 +118,7 @@ describe('createDefaultSessionPatch', () => {
   });
 
   it('loads the created session when library refresh fails after creation', async () => {
+    resetProvisioningMocks();
     const book: SaveBookResponse = {
       bookId: 7,
       title: 'Dune',
@@ -143,5 +158,116 @@ describe('createDefaultSessionPatch', () => {
     expect(patch.window?.windowId).toBe(21);
     expect(patch.windows).toHaveLength(1);
     expect(patch.error).toBe('Session started, but library summaries could not be refreshed: Library unavailable');
+  });
+
+  it('prepares generated questions and personas for a new book session', async () => {
+    const book: SaveBookResponse = {
+      bookId: 7,
+      title: 'Dune',
+      author: 'Frank Herbert',
+    };
+    const session: CreateReadingSessionResponse = {
+      sessionId: 11,
+      bookId: 7,
+      title: 'Dune reflection',
+      status: 'active',
+    };
+    const questionWindow: CreateSessionWindowResponse = {
+      windowId: 21,
+      sessionId: 11,
+      windowType: 'question',
+      title: 'Reflection Window',
+      status: 'open',
+    };
+
+    vi.mocked(marginsRepository.createSession).mockResolvedValue(session);
+    vi.mocked(marginsRepository.createWindow)
+      .mockResolvedValueOnce(questionWindow)
+      .mockResolvedValueOnce({
+        windowId: 22,
+        sessionId: 11,
+        windowType: 'debate',
+        title: 'Persona Debate',
+        status: 'open',
+      });
+    vi.mocked(marginsRepository.generateQuestions).mockResolvedValue({ questions: [] });
+    vi.mocked(marginsRepository.generatePersonas).mockResolvedValue({
+      personas: [
+        { displayName: 'Historian', tone: 'critical', systemPrompt: 'Read historically.' },
+        { displayName: 'Stylist', tone: 'formal', systemPrompt: 'Read for style.' },
+        { displayName: 'Skeptic', tone: 'skeptical', systemPrompt: 'Challenge claims.' },
+      ],
+    });
+    vi.mocked(marginsRepository.createPersona)
+      .mockResolvedValueOnce({ personas: [{ personaId: 100, name: 'historian', displayName: 'Historian' }] })
+      .mockResolvedValueOnce({ personas: [{ personaId: 101, name: 'stylist', displayName: 'Stylist' }] })
+      .mockResolvedValueOnce({ personas: [{ personaId: 102, name: 'skeptic', displayName: 'Skeptic' }] });
+    vi.mocked(marginsRepository.sessionTimeline).mockResolvedValue(timelineFor());
+    vi.mocked(marginsRepository.sessions).mockResolvedValue({ sessions: [] });
+    vi.mocked(marginsRepository.readingStats).mockResolvedValue(readerStats());
+
+    const patch = await createDefaultSessionPatch(book, []);
+
+    expect(marginsRepository.generateQuestions).toHaveBeenCalledWith(21, 3, 'Dune');
+    expect(marginsRepository.generatePersonas).toHaveBeenCalledWith({
+      count: 3,
+      bookTitle: 'Dune',
+      context: 'Dune by Frank Herbert',
+    });
+    expect(marginsRepository.createPersona).toHaveBeenCalledTimes(3);
+    expect(marginsRepository.createPersona).toHaveBeenNthCalledWith(1, {
+      displayName: 'Historian',
+      description: undefined,
+      tone: 'critical',
+      systemPrompt: 'Read historically.',
+      sessionId: 11,
+    });
+    expect(patch.personas).toEqual([{ personaId: 102, name: 'skeptic', displayName: 'Skeptic' }]);
+    expect(patch.selectedPersonaId).toBe(102);
+    expect(patch.error).toBeUndefined();
+  });
+
+  it('opens the created session when AI preparation fails', async () => {
+    const book: SaveBookResponse = {
+      bookId: 7,
+      title: 'Dune',
+      author: 'Frank Herbert',
+    };
+    const session: CreateReadingSessionResponse = {
+      sessionId: 11,
+      bookId: 7,
+      title: 'Dune reflection',
+      status: 'active',
+    };
+    const questionWindow: CreateSessionWindowResponse = {
+      windowId: 21,
+      sessionId: 11,
+      windowType: 'question',
+      title: 'Reflection Window',
+      status: 'open',
+    };
+
+    vi.mocked(marginsRepository.createSession).mockResolvedValue(session);
+    vi.mocked(marginsRepository.createWindow)
+      .mockResolvedValueOnce(questionWindow)
+      .mockResolvedValueOnce({
+        windowId: 22,
+        sessionId: 11,
+        windowType: 'debate',
+        title: 'Persona Debate',
+        status: 'open',
+      });
+    vi.mocked(marginsRepository.generateQuestions).mockRejectedValue(new Error('OpenAI unavailable'));
+    vi.mocked(marginsRepository.generatePersonas).mockResolvedValue({ personas: [] });
+    vi.mocked(marginsRepository.createPersona).mockResolvedValue({ personas: [] });
+    vi.mocked(marginsRepository.sessionTimeline).mockResolvedValue(timelineFor());
+    vi.mocked(marginsRepository.sessions).mockResolvedValue({ sessions: [] });
+    vi.mocked(marginsRepository.readingStats).mockResolvedValue(readerStats());
+
+    const patch = await createDefaultSessionPatch(book, []);
+
+    expect(patch.session?.sessionId).toBe(11);
+    expect(patch.window?.windowId).toBe(21);
+    expect(patch.error).toBe('Session started, but AI prompts or personas could not all be prepared: OpenAI unavailable');
   });
 });

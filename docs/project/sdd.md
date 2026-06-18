@@ -95,3 +95,7 @@ Acceptance traceability is verified by `harness/scripts/audit-acceptance-traceab
 ## Development Readiness
 
 MVP planning-to-development readiness is tracked in `docs/project/development-readiness.md`. It maps each MVP requirement to implementation evidence, remaining gaps, owner-needed inputs, and the next development slice.
+
+## Competitive Gap Analysis
+
+Current market/product research is tracked in `docs/project/competitive-analysis.md`. It compares Goodreads, The StoryGraph, Fable, Bookly, Hardcover, Readwise, Rebind, Perlego, Kindle, and Audible patterns against Margins. The resulting backlog prioritizes a reading-room-first UI, AI evidence traceability, persona cast quality, and spoiler/progress boundaries.

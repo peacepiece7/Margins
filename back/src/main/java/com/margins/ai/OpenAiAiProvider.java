@@ -9,7 +9,11 @@ import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.message.mapper.MessageMapper;
 import com.margins.message.model.MessageRecord;
 import com.margins.persona.mapper.PersonaMapper;
+import com.margins.persona.dto.GeneratePersonasRequest;
+import com.margins.persona.dto.PersonaDraftDto;
+import com.margins.persona.dto.PersonaDraftListResponse;
 import com.margins.persona.model.PersonaRecord;
+import com.margins.persona.model.PersonaRoleCatalog;
 import com.margins.question.dto.GenerateQuestionsRequest;
 import com.margins.question.dto.QuestionDto;
 import com.margins.question.dto.QuestionListResponse;
@@ -19,6 +23,10 @@ import com.margins.session.dto.AiMessageResponse;
 import com.margins.session.dto.DebateMessageRequest;
 import com.margins.session.dto.SendMessageRequest;
 import com.margins.session.mapper.SessionWindowMapper;
+import com.margins.session.mapper.SessionHighlightMapper;
+import com.margins.session.mapper.SessionInsightMapper;
+import com.margins.session.model.SessionHighlightRecord;
+import com.margins.session.model.SessionInsightRecord;
 import com.margins.session.model.SessionWindowContext;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -49,7 +57,14 @@ public class OpenAiAiProvider implements AiProvider {
     private final MessageMapper messageMapper;
     private final QuestionMapper questionMapper;
     private final PersonaMapper personaMapper;
+    private final SessionHighlightMapper sessionHighlightMapper;
+    private final SessionInsightMapper sessionInsightMapper;
+    private final AiSafetyPolicy aiSafetyPolicy;
+    private final AiAnswerQualityPolicy aiAnswerQualityPolicy;
     private final PlaceholderAiProvider fallback = new PlaceholderAiProvider();
+
+    private record TextResult(String text, String tokenUsage) {
+    }
 
     @Override
     public BookCandidateSearchResponse suggestBooks(String query) {
@@ -59,7 +74,7 @@ public class OpenAiAiProvider implements AiProvider {
 
         try {
             String output = createText(
-                "Return exactly three likely book candidates as JSON array. Each item must have title, author, and reason.",
+                withSafety("Return exactly three likely book candidates as JSON array. Each item must have title, author, and reason."),
                 "Book search query: " + query
             );
             List<BookCandidateDto> candidates = parseBookCandidates(output);
@@ -77,6 +92,35 @@ public class OpenAiAiProvider implements AiProvider {
     }
 
     @Override
+    public PersonaDraftListResponse suggestPersonas(GeneratePersonasRequest request) {
+        if (!configured()) {
+            return fallback.suggestPersonas(request);
+        }
+
+        try {
+            String output = createText(
+                withSafety("Generate concise debate persona drafts for a reading-record app. Return a JSON array of objects with displayName, description, tone, roleKey, systemPrompt, and reason. Use distinct roleKey values from this fixed set when possible: "
+                    + String.join(", ", PersonaRoleCatalog.defaultOrder()) + "."),
+                "Book title: " + safe(request.getBookTitle())
+                    + "\nReading goal: " + safe(request.getReadingGoal())
+                    + "\nContext: " + safe(request.getContext())
+                    + "\nCount: " + (request.getCount() == null ? 3 : request.getCount())
+            );
+            List<PersonaDraftDto> personas = parsePersonaDrafts(output);
+            if (personas.isEmpty()) {
+                return fallback.suggestPersonas(request);
+            }
+
+            return PersonaDraftListResponse.builder()
+                .aiModel(properties.getModel())
+                .personas(personas)
+                .build();
+        } catch (RuntimeException exception) {
+            return fallback.suggestPersonas(request);
+        }
+    }
+
+    @Override
     public QuestionListResponse suggestQuestions(Long windowId, GenerateQuestionsRequest request) {
         if (!configured()) {
             return fallback.suggestQuestions(windowId, request);
@@ -85,7 +129,7 @@ public class OpenAiAiProvider implements AiProvider {
         try {
             String context = contextForWindow(windowId);
             String output = createText(
-                "Generate concise reading reflection questions. Return a JSON array of objects with questionText and questionType.",
+                withSafety("Generate concise reading reflection questions. Return a JSON array of objects with questionText and questionType."),
                 context + "\nFocus: " + safe(request.getFocus()) + "\nCount: " + (request.getCount() == null ? 3 : request.getCount())
             );
             List<QuestionDto> questions = parseQuestions(windowId, output);
@@ -106,17 +150,18 @@ public class OpenAiAiProvider implements AiProvider {
         }
 
         try {
-            String output = createText(
-                "Respond as a precise reading companion. Use the selected question and prior session context. Keep the answer under 140 words.",
+            TextResult result = createTextResult(
+                withGrounding("Respond as a precise reading companion. Use the selected question and prior session context. Keep the answer under 140 words."),
                 contextForWindow(windowId) + "\nSelected question id: " + request.getQuestionId() + "\nReader answer: " + request.getContent()
             );
 
             return AiMessageResponse.builder()
                 .windowId(windowId)
                 .role("assistant")
-                .content(output)
+                .content(aiAnswerQualityPolicy.ensureSections(result.text()))
                 .streamingReady(true)
                 .aiModel(properties.getModel())
+                .tokenUsage(result.tokenUsage())
                 .build();
         } catch (RuntimeException exception) {
             return fallback.answerWindowMessage(windowId, request);
@@ -131,8 +176,8 @@ public class OpenAiAiProvider implements AiProvider {
 
         AtomicBoolean emittedProviderDelta = new AtomicBoolean(false);
         try {
-            String output = createTextStream(
-                "Respond as a precise reading companion. Use the selected question and prior session context. Keep the answer under 140 words.",
+            TextResult result = createTextStream(
+                withGrounding("Respond as a precise reading companion. Use the selected question and prior session context. Keep the answer under 140 words."),
                 contextForWindow(windowId) + "\nSelected question id: " + request.getQuestionId() + "\nReader answer: " + request.getContent(),
                 (delta) -> {
                     emittedProviderDelta.set(true);
@@ -143,9 +188,10 @@ public class OpenAiAiProvider implements AiProvider {
             return AiMessageResponse.builder()
                 .windowId(windowId)
                 .role("assistant")
-                .content(output)
+                .content(aiAnswerQualityPolicy.ensureSections(result.text()))
                 .streamingReady(true)
                 .aiModel(properties.getModel())
+                .tokenUsage(result.tokenUsage())
                 .build();
         } catch (RuntimeException exception) {
             if (emittedProviderDelta.get()) {
@@ -164,8 +210,8 @@ public class OpenAiAiProvider implements AiProvider {
         try {
             PersonaRecord persona = personaMapper.findActiveById(request.getPersonaId());
             String personaPrompt = persona == null ? "Respond as a literary discussion participant." : persona.getSystemPrompt();
-            String output = createText(
-                personaPrompt + "\nChallenge or extend the reader's interpretation. Keep the answer under 140 words.",
+            TextResult result = createTextResult(
+                withGrounding(personaPrompt + "\nChallenge or extend the reader's interpretation. Keep the answer under 140 words."),
                 contextForWindow(windowId) + "\nReader debate message: " + request.getContent()
             );
 
@@ -173,9 +219,10 @@ public class OpenAiAiProvider implements AiProvider {
                 .windowId(windowId)
                 .role("assistant")
                 .personaId(request.getPersonaId())
-                .content(output)
+                .content(aiAnswerQualityPolicy.ensureSections(result.text()))
                 .streamingReady(true)
                 .aiModel(properties.getModel())
+                .tokenUsage(result.tokenUsage())
                 .build();
         } catch (RuntimeException exception) {
             return fallback.answerDebateMessage(windowId, request);
@@ -186,7 +233,25 @@ public class OpenAiAiProvider implements AiProvider {
         return properties.getApiKey() != null && !properties.getApiKey().isBlank();
     }
 
+    private String withSafety(String instructions) {
+        return instructions + "\n\n" + aiSafetyPolicy.instructions();
+    }
+
+    private String withGrounding(String instructions) {
+        return withSafety(instructions + "\n\n" + """
+            Response grounding contract:
+            - Ground the reply in the provided session context, reader quotes, notes, messages, or selected question.
+            - Name the supporting quote, note, message, or question when the context makes that possible.
+            - If the provided context is insufficient, say what is uncertain instead of inventing book details.
+            - Respect the reading boundary and avoid claims beyond the recorded or reader-provided context.
+            """ + "\n" + aiAnswerQualityPolicy.instructions());
+    }
+
     private String createText(String instructions, String input) {
+        return createTextResult(instructions, input).text();
+    }
+
+    private TextResult createTextResult(String instructions, String input) {
         try {
             ObjectNode root = objectMapper.createObjectNode();
             root.put("model", properties.getModel());
@@ -209,11 +274,12 @@ public class OpenAiAiProvider implements AiProvider {
                 throw new IllegalStateException("OpenAI request failed: " + response.statusCode());
             }
 
-            String text = extractOutputText(objectMapper.readTree(response.body()));
+            JsonNode responseRoot = objectMapper.readTree(response.body());
+            String text = extractOutputText(responseRoot);
             if (text.isBlank()) {
                 throw new IllegalStateException("OpenAI response did not include text output");
             }
-            return text.trim();
+            return new TextResult(text.trim(), extractUsageJson(responseRoot));
         } catch (IOException exception) {
             throw new IllegalStateException("OpenAI response could not be parsed", exception);
         } catch (InterruptedException exception) {
@@ -222,7 +288,7 @@ public class OpenAiAiProvider implements AiProvider {
         }
     }
 
-    private String createTextStream(String instructions, String input, Consumer<String> deltaConsumer) {
+    private TextResult createTextStream(String instructions, String input, Consumer<String> deltaConsumer) {
         try {
             ObjectNode root = objectMapper.createObjectNode();
             root.put("model", properties.getModel());
@@ -246,11 +312,11 @@ public class OpenAiAiProvider implements AiProvider {
                 throw new IllegalStateException("OpenAI stream request failed: " + response.statusCode());
             }
 
-            String output = readStreamedOutput(response.body(), deltaConsumer);
-            if (output.isBlank()) {
+            TextResult result = readStreamedOutput(response.body(), deltaConsumer);
+            if (result.text().isBlank()) {
                 throw new IllegalStateException("OpenAI stream did not include text output");
             }
-            return output.trim();
+            return new TextResult(result.text().trim(), result.tokenUsage());
         } catch (IOException exception) {
             throw new IllegalStateException("OpenAI stream could not be parsed", exception);
         } catch (InterruptedException exception) {
@@ -259,14 +325,15 @@ public class OpenAiAiProvider implements AiProvider {
         }
     }
 
-    private String readStreamedOutput(InputStream inputStream, Consumer<String> deltaConsumer) throws IOException {
+    private TextResult readStreamedOutput(InputStream inputStream, Consumer<String> deltaConsumer) throws IOException {
         StringBuilder output = new StringBuilder();
         StringBuilder eventData = new StringBuilder();
+        StringBuilder tokenUsage = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isBlank()) {
-                    appendStreamEvent(eventData.toString(), output, deltaConsumer);
+                    appendStreamEvent(eventData.toString(), output, tokenUsage, deltaConsumer);
                     eventData.setLength(0);
                 } else if (line.startsWith("data:")) {
                     if (!eventData.isEmpty()) {
@@ -276,11 +343,11 @@ public class OpenAiAiProvider implements AiProvider {
                 }
             }
         }
-        appendStreamEvent(eventData.toString(), output, deltaConsumer);
-        return output.toString();
+        appendStreamEvent(eventData.toString(), output, tokenUsage, deltaConsumer);
+        return new TextResult(output.toString(), tokenUsage.isEmpty() ? null : tokenUsage.toString());
     }
 
-    private void appendStreamEvent(String data, StringBuilder output, Consumer<String> deltaConsumer) throws IOException {
+    private void appendStreamEvent(String data, StringBuilder output, StringBuilder tokenUsage, Consumer<String> deltaConsumer) throws IOException {
         if (data.isBlank() || "[DONE]".equals(data)) {
             return;
         }
@@ -295,6 +362,10 @@ public class OpenAiAiProvider implements AiProvider {
         if (!delta.isEmpty()) {
             output.append(delta);
             deltaConsumer.accept(delta);
+        }
+        String usage = extractUsageJson(event);
+        if (usage != null && tokenUsage.isEmpty()) {
+            tokenUsage.append(usage);
         }
     }
 
@@ -335,6 +406,14 @@ public class OpenAiAiProvider implements AiProvider {
 
         StringBuilder builder = new StringBuilder();
         builder.append("Session id: ").append(context.getSessionId()).append('\n');
+        appendIfPresent(builder, "Book title", context.getBookTitle());
+        appendIfPresent(builder, "Book author", context.getBookAuthor());
+        appendIfPresent(builder, "Session title", context.getSessionTitle());
+        appendIfPresent(builder, "Reading goal", context.getReadingGoal());
+        appendProgressBoundary(builder, context);
+        appendIfPresent(builder, "Progress note", context.getProgressNote());
+        appendIfPresent(builder, "Session summary", context.getSummary());
+
         List<QuestionRecord> questions = questionMapper.findByWindowId(windowId);
         if (!questions.isEmpty()) {
             builder.append("Questions:\n");
@@ -356,7 +435,64 @@ public class OpenAiAiProvider implements AiProvider {
                 .append(message.getContent())
                 .append('\n'));
         }
+
+        List<SessionHighlightRecord> highlights = sessionHighlightMapper.findBySessionId(context.getSessionId());
+        if (!highlights.isEmpty()) {
+            builder.append("Reader quotes and notes:\n");
+            highlights.stream().limit(5).forEach((highlight) -> {
+                builder.append("- ");
+                if (highlight.getPageNumber() != null) {
+                    builder.append("p. ").append(highlight.getPageNumber()).append(": ");
+                }
+                if (highlight.getLocationLabel() != null && !highlight.getLocationLabel().isBlank()) {
+                    builder.append(highlight.getLocationLabel()).append(": ");
+                }
+                builder.append(highlight.getQuoteText());
+                if (highlight.getNote() != null && !highlight.getNote().isBlank()) {
+                    builder.append(" Note: ").append(highlight.getNote());
+                }
+                builder.append('\n');
+            });
+        }
+
+        List<SessionInsightRecord> insights = sessionInsightMapper.findBySessionId(context.getSessionId(), context.getUserId());
+        if (!insights.isEmpty()) {
+            builder.append("Reader summaries and insights:\n");
+            insights.stream().limit(5).forEach((insight) -> builder
+                .append("- ")
+                .append(insight.getInsightType())
+                .append(": ")
+                .append(insight.getTitle() == null || insight.getTitle().isBlank() ? "" : insight.getTitle() + " - ")
+                .append(insight.getContent())
+                .append(insight.getEvidence() == null || insight.getEvidence().isBlank() ? "" : " Evidence: " + insight.getEvidence())
+                .append('\n'));
+        }
         return builder.toString();
+    }
+
+    private void appendIfPresent(StringBuilder builder, String label, String value) {
+        if (value != null && !value.isBlank()) {
+            builder.append(label).append(": ").append(value).append('\n');
+        }
+    }
+
+    private void appendProgressBoundary(StringBuilder builder, SessionWindowContext context) {
+        if (context.getCurrentPage() == null && context.getTargetPage() == null && context.getStartPage() == null) {
+            builder.append("Reading boundary: no current reading position is recorded. Avoid plot events or claims beyond reader-provided context.\n");
+            return;
+        }
+
+        builder.append("Reading boundary: ");
+        if (context.getStartPage() != null) {
+            builder.append("start page ").append(context.getStartPage()).append("; ");
+        }
+        if (context.getCurrentPage() != null) {
+            builder.append("current page ").append(context.getCurrentPage()).append("; ");
+        }
+        if (context.getTargetPage() != null) {
+            builder.append("target page ").append(context.getTargetPage()).append("; ");
+        }
+        builder.append("do not reveal or assume content beyond the current page unless the reader already provided it in notes or messages.\n");
     }
 
     private List<BookCandidateDto> parseBookCandidates(String output) {
@@ -396,6 +532,27 @@ public class OpenAiAiProvider implements AiProvider {
         return questions;
     }
 
+    private List<PersonaDraftDto> parsePersonaDrafts(String output) {
+        List<PersonaDraftDto> personas = new ArrayList<>();
+        JsonNode root = parseJsonArray(output);
+        for (int index = 0; index < root.size(); index++) {
+            JsonNode item = root.get(index);
+            String displayName = item.path("displayName").asText("");
+            String systemPrompt = item.path("systemPrompt").asText("");
+            if (!displayName.isBlank() && !systemPrompt.isBlank()) {
+                personas.add(PersonaDraftDto.builder()
+                    .displayName(displayName)
+                    .description(item.path("description").asText(""))
+                    .tone(item.path("tone").asText(""))
+                    .roleKey(item.path("roleKey").asText(""))
+                    .systemPrompt(systemPrompt)
+                    .reason(item.path("reason").asText(""))
+                    .build());
+            }
+        }
+        return personas;
+    }
+
     private JsonNode parseJsonArray(String output) {
         try {
             String trimmed = output.trim();
@@ -431,6 +588,31 @@ public class OpenAiAiProvider implements AiProvider {
         if (node.isContainerNode()) {
             node.forEach((child) -> appendOutputText(child, builder));
         }
+    }
+
+    private String extractUsageJson(JsonNode root) {
+        JsonNode usage = findUsageNode(root);
+        if (usage == null || usage.isMissingNode() || usage.isNull()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(usage);
+        } catch (IOException exception) {
+            return null;
+        }
+    }
+
+    private JsonNode findUsageNode(JsonNode node) {
+        if (node == null || node.isMissingNode() || node.isNull()) {
+            return null;
+        }
+        if (node.hasNonNull("usage")) {
+            return node.path("usage");
+        }
+        if (node.hasNonNull("response") && node.path("response").hasNonNull("usage")) {
+            return node.path("response").path("usage");
+        }
+        return null;
     }
 
     private String safe(String value) {

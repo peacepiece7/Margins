@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { LanguageToggle, useI18n } from '../../i18n';
 import { marginsRepository } from '../../repository/marginsRepository';
 import type { LoginResponse } from '../../types/models/auth';
 import { testAttr } from '../../utils/testAttrs';
@@ -25,6 +26,7 @@ function readAuthSession() {
 }
 
 export function LoginGate() {
+  const { t } = useI18n();
   const [authSession, setAuthSession] = useState<LoginResponse | undefined>();
   const [username, setUsername] = useState('test-reader');
   const [password, setPassword] = useState('reader');
@@ -45,7 +47,7 @@ export function LoginGate() {
       window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
       setAuthSession(result);
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : 'Login failed');
+      setError(loginError instanceof Error ? loginError.message : t('Login failed'));
     } finally {
       setLoading(false);
     }
@@ -66,14 +68,17 @@ export function LoginGate() {
               <span className="font-medium">{authSession.displayName}</span>
               <span className="ml-2 text-stone-500">{authSession.authMode}</span>
             </div>
-            <button
-              className="rounded border border-stone-300 px-3 py-1.5 text-xs font-medium hover:border-stone-700"
-              onClick={logout}
-              type="button"
-              {...testAttr('logout-submit')}
-            >
-              Logout
-            </button>
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <button
+                className="rounded border border-stone-300 px-3 py-1.5 text-xs font-medium hover:border-stone-700"
+                onClick={logout}
+                type="button"
+                {...testAttr('logout-submit')}
+              >
+                {t('Logout')}
+              </button>
+            </div>
           </div>
         </div>
         <SessionWorkbench />
@@ -86,7 +91,10 @@ export function LoginGate() {
       <form className="grid gap-4 rounded border border-stone-300 bg-white p-5" onSubmit={submitLogin} {...testAttr('login-form')}>
         <div>
           <h1 className="text-2xl font-semibold">Margins</h1>
-          <p className="text-sm text-stone-600">Reading record workspace</p>
+          <p className="text-sm text-stone-600">{t('Reading record workspace')}</p>
+        </div>
+        <div className="flex justify-end">
+          <LanguageToggle />
         </div>
         {error && (
           <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800" {...testAttr('login-error')}>
@@ -96,14 +104,14 @@ export function LoginGate() {
         <input
           className="rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
           onChange={(event) => setUsername(event.target.value)}
-          placeholder="Username"
+          placeholder={t('Username')}
           value={username}
           {...testAttr('login-username-input')}
         />
         <input
           className="rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
           onChange={(event) => setPassword(event.target.value)}
-          placeholder="Password"
+          placeholder={t('Password')}
           type="password"
           value={password}
           {...testAttr('login-password-input')}
@@ -114,7 +122,7 @@ export function LoginGate() {
           type="submit"
           {...testAttr('login-submit')}
         >
-          Login
+          {t('Login')}
         </button>
       </form>
     </main>

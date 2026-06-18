@@ -9,6 +9,7 @@ import com.margins.book.dto.SaveBookRequest;
 import com.margins.book.dto.SaveBookResponse;
 import com.margins.book.mapper.BookMapper;
 import com.margins.book.model.BookRecord;
+import com.margins.book.provider.BookSearchProvider;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,9 +25,13 @@ public class BookBusiness {
 
     private final AiProvider aiProvider;
     private final BookMapper bookMapper;
+    private final List<BookSearchProvider> bookSearchProviders;
 
     public BookCandidateSearchResponse searchCandidates(BookCandidateSearchRequest request) {
-        BookCandidateSearchResponse response = aiProvider.suggestBooks(request.getQuery());
+        BookCandidateSearchResponse response = externalSearch(request.getQuery());
+        if (response.getCandidates() == null || response.getCandidates().isEmpty()) {
+            response = aiProvider.suggestBooks(request.getQuery());
+        }
         List<BookCandidateDto> candidates = response.getCandidates() == null
             ? List.of()
             : response.getCandidates().stream()
@@ -62,7 +67,7 @@ public class BookBusiness {
             .title(title)
             .author(author)
             .publishedYear(request.getPublishedYear())
-            .source("ai")
+            .source(sourceFromCandidateId(request.getCandidateId()))
             .sourceRef(request.getCandidateId())
             .testData(true)
             .build();
@@ -72,6 +77,24 @@ public class BookBusiness {
         }
 
         return toResponse(record);
+    }
+
+    private BookCandidateSearchResponse externalSearch(String query) {
+        for (BookSearchProvider provider : bookSearchProviders) {
+            BookCandidateSearchResponse response = provider.search(query);
+            if (response.getCandidates() != null && !response.getCandidates().isEmpty()) {
+                return response;
+            }
+        }
+
+        return BookCandidateSearchResponse.builder().candidates(List.of()).build();
+    }
+
+    private String sourceFromCandidateId(String candidateId) {
+        if (candidateId != null && candidateId.startsWith("open-library:")) {
+            return "open-library";
+        }
+        return "ai";
     }
 
     private SaveBookResponse toResponse(BookRecord record) {

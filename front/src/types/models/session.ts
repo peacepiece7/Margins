@@ -21,6 +21,9 @@ export interface AiMessageResponse {
   content: string;
   streamingReady: boolean;
   aiModel: string;
+  promptSnapshot?: string;
+  contextSnapshot?: string;
+  tokenUsage?: string;
 }
 
 export interface SessionWindowTimeline {
@@ -43,6 +46,9 @@ export interface SessionMessage {
   aiModel?: string;
   personaId?: number;
   questionId?: number;
+  promptSnapshot?: string;
+  contextSnapshot?: string;
+  tokenUsage?: string;
   streamingStatus: string;
 }
 

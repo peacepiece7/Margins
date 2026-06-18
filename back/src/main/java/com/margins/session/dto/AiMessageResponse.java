@@ -13,4 +13,7 @@ public class AiMessageResponse {
     String content;
     boolean streamingReady;
     String aiModel;
+    String promptSnapshot;
+    String contextSnapshot;
+    String tokenUsage;
 }

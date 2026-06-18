@@ -45,6 +45,11 @@ Implemented in `db/schema/001_create_mvp_schema.sql`.
 - Metric snapshot generation: `session_snapshot` rows are append-only session-scope metrics derived from non-deleted session source rows; `metric_value` stores progress percent when available and `metric_details` stores counts and page estimates.
 - Reading progress: `reading_sessions` stores `reading_goal`, `start_page`, `current_page`, `target_page`, and `progress_note` so timeline reads and future metric jobs can calculate progress without scraping message text.
 - Reader library statistics are derived from non-deleted `reading_sessions` summary joins over books, active windows, active-window questions, active-window messages, and highlights; the API does not persist derived stats into `metrics` during the MVP.
+- `personas.source_session_id` optionally scopes generated personas to the reading session that created them. Seed personas keep `source_session_id=NULL` and act as global fallback personas when a session has not generated its own personas yet.
+- `personas.role_key` stores the stable MVP debate role for a persona. Current allowed role keys are `evidence_analyst`, `skeptic`, `connector`, `empathy_reader`, and `style_reader`. `idx_personas_session_role` supports session-scoped duplicate-role checks and later debate-quality metrics.
+- `messages.context_snapshot` is actively used for AI evidence traceability. Assistant and persona messages store a versioned JSON snapshot of the selected question, persona, saved highlights, and recent messages used as response context so future audits and UI evidence chips do not depend on ephemeral frontend state.
+- `messages.prompt_snapshot` stores compact AI prompt policy metadata for generated assistant and persona messages. The MVP JSON uses `schemaVersion=1` and records `promptContractVersion`, `responseType`, `provider`, `aiModel`, `streaming`, `safetyPolicyVersion`, `groundingPolicyVersion`, and `readingBoundaryPolicyVersion`; raw prompt bodies are not stored in this slice.
+- `messages.token_usage` stores provider usage JSON for generated assistant and persona messages when OpenAI returns token metadata. The shape is intentionally provider-owned so later cost and quota reports can evolve without schema changes.
 - `db/queries/004_metric_sources.sql` exposes session metric source counts including `window_count`, `question_count`, `answered_question_count`, `highlight_count`, `message_count`, and `persona_count`; `answered_question_count` is derived from distinct non-deleted user messages with a `question_id` in non-deleted windows.
 
 ## Key Relationships
@@ -53,7 +58,7 @@ Implemented in `db/schema/001_create_mvp_schema.sql`.
 | --- | --- | --- |
 | `users` | `books`, `book_candidates`, `reading_sessions`, `session_windows`, `questions`, `messages`, `metrics` | Single-user MVP and later JWT users share the same owner model. |
 | `books` | `reading_sessions`, `metrics` | Book-level aggregation is supported. |
-| `reading_sessions` | `session_windows`, `questions`, `messages`, `metrics` | Session timeline can be reconstructed. |
+| `reading_sessions` | `session_windows`, `questions`, `messages`, `personas`, `metrics` | Session timeline and session-generated personas can be reconstructed. |
 | `session_windows` | `questions`, `messages`, `metrics` | Window-level Q/A and debate records are queryable. |
 | `personas` | `messages`, `metrics` | Persona debate identity is preserved. |
 | `questions` | `messages`, `metrics` | Prompt effectiveness can be measured later. |
@@ -72,6 +77,7 @@ Implemented in `db/schema/001_create_mvp_schema.sql`.
 - `persona_id`
 - `question_id`
 - `content`
+- `prompt_snapshot`
 - `context_snapshot`
 - `token_usage`
 - `created_at`
@@ -87,6 +93,9 @@ db/
   schema/004_add_session_pin.sql
   schema/005_create_session_tags.sql
   schema/006_create_session_insights.sql
+  schema/007_add_persona_source_session.sql
+  schema/008_add_persona_role_key.sql
+  schema/009_add_message_prompt_snapshot.sql
   seed/001_seed_mvp_data.sql
   queries/001_session_timeline.sql
   queries/002_window_messages.sql
@@ -94,6 +103,8 @@ db/
   queries/004_metric_sources.sql
   reset/001_reset_test_data.sql
 ```
+
+Incremental schema scripts must be safe to run after `001_create_mvp_schema.sql` has already created the latest table shape. Later ALTER scripts use `information_schema` checks before adding columns, indexes, or constraints so local MySQL bootstrap and full-stack E2E can be repeated without dropping the database or relying on `.env`.
 
 ## Seed And Reset
 
@@ -107,7 +118,7 @@ db/
   - one session highlight
   - session tags when created by application flows
   - one question window and one debate window
-  - two personas
+  - two global fallback personas with role keys
   - one reflection question
   - four messages including a persona response
   - one sample session metric

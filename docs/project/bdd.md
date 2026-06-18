@@ -63,3 +63,12 @@ And SDD and BDD files describe the cross-domain behavior
 When `harness/scripts/audit-acceptance-traceability.ps1` runs
 Then each MVP acceptance requirement has planning, design, BDD, implementation, and test evidence
 And weak or missing evidence fails before final acceptance can pass
+
+## Feature: Competitive Product Gap Review
+
+### Scenario: Product gaps are derived from comparable services
+
+Given comparable reading trackers, social reading apps, and AI reading assistants have been reviewed
+When Margins plans the next product slice
+Then the backlog should distinguish tracker/library features from the primary AI reading-room workflow
+And the next slice should map each problem to a testable harness task

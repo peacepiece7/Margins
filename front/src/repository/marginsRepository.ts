@@ -6,7 +6,7 @@ import type {
   BookCandidateSearchResponse,
   SaveBookResponse,
 } from '../types/models/book';
-import type { PersonaListResponse } from '../types/models/persona';
+import type { PersonaDraftListResponse, PersonaListResponse } from '../types/models/persona';
 import type {
   AiMessageResponse,
   CreateReadingSessionResponse,
@@ -307,8 +307,8 @@ export const marginsRepository = {
     return patchJson(`/api/reading-sessions/${sessionId}/highlights/${highlightId}`, highlight);
   },
 
-  personas(): Promise<PersonaListResponse> {
-    return getJson('/api/personas');
+  personas(sessionId?: number): Promise<PersonaListResponse> {
+    return getJson(sessionId ? `/api/personas?sessionId=${sessionId}` : '/api/personas');
   },
 
   createPersona(persona: {
@@ -316,8 +316,19 @@ export const marginsRepository = {
     description?: string;
     systemPrompt: string;
     tone?: string;
+    roleKey?: string;
+    sessionId?: number;
   }): Promise<PersonaListResponse> {
     return postJson('/api/personas', persona);
+  },
+
+  generatePersonas(request: {
+    count?: number;
+    bookTitle?: string;
+    readingGoal?: string;
+    context?: string;
+  }): Promise<PersonaDraftListResponse> {
+    return postJson('/api/personas/generate', request);
   },
 
   saveBook(candidate: BookCandidate): Promise<SaveBookResponse> {
@@ -357,6 +368,10 @@ export const marginsRepository = {
 
   generateQuestions(windowId: number, count = 3, focus?: string): Promise<QuestionListResponse> {
     return postJson(`/api/session-windows/${windowId}/questions/generate`, { count, focus });
+  },
+
+  suggestQuestions(windowId: number, count = 3, focus?: string): Promise<QuestionListResponse> {
+    return postJson(`/api/session-windows/${windowId}/questions/suggest`, { count, focus });
   },
 
   createQuestion(windowId: number, questionText: string): Promise<QuestionListResponse> {

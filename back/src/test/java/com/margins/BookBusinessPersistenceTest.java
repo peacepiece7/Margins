@@ -12,6 +12,9 @@ import com.margins.book.dto.SaveBookRequest;
 import com.margins.book.dto.SaveBookResponse;
 import com.margins.book.mapper.BookMapper;
 import com.margins.book.model.BookRecord;
+import com.margins.book.provider.BookSearchProvider;
+import com.margins.persona.dto.GeneratePersonasRequest;
+import com.margins.persona.dto.PersonaDraftListResponse;
 import com.margins.question.dto.GenerateQuestionsRequest;
 import com.margins.question.dto.QuestionListResponse;
 import com.margins.session.dto.AiMessageResponse;
@@ -27,7 +30,7 @@ class BookBusinessPersistenceTest {
     @Test
     void saveBookPersistsAndReturnsGeneratedId() {
         FakeBookMapper mapper = new FakeBookMapper();
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper);
+        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper, List.of());
 
         SaveBookResponse response = business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-1")
@@ -52,7 +55,7 @@ class BookBusinessPersistenceTest {
             .title("Dune")
             .author("AI Candidate")
             .build();
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper);
+        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper, List.of());
 
         SaveBookResponse response = business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-duplicate")
@@ -72,7 +75,7 @@ class BookBusinessPersistenceTest {
     void saveBookRejectsZeroRowInsert() {
         FakeBookMapper mapper = new FakeBookMapper();
         mapper.insertRows = 0;
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper);
+        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper, List.of());
 
         assertThatThrownBy(() -> business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-zero")
@@ -87,7 +90,7 @@ class BookBusinessPersistenceTest {
 
     @Test
     void findSavedBooksReturnsUserBooks() {
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), new FakeBookMapper());
+        BookBusiness business = new BookBusiness(new NoopAiProvider(), new FakeBookMapper(), List.of());
 
         assertThat(business.findSavedBooks().getBooks())
             .extracting(SaveBookResponse::getTitle)
@@ -117,7 +120,7 @@ class BookBusinessPersistenceTest {
                     .author("Author")
                     .build()
             ))
-            .build()), new FakeBookMapper());
+            .build()), new FakeBookMapper(), List.of());
 
         BookCandidateSearchResponse response = business.searchCandidates(BookCandidateSearchRequest.builder()
             .query("long candidate")
@@ -132,6 +135,36 @@ class BookBusinessPersistenceTest {
                 assertThat(candidate.getPublishedYear()).isEqualTo(2026);
                 assertThat(candidate.getReason()).isEqualTo("reader match");
             });
+    }
+
+    @Test
+    void searchCandidatesUsesExternalProviderBeforeAiFallback() {
+        CandidateAiProvider aiProvider = new CandidateAiProvider(BookCandidateSearchResponse.builder()
+            .aiModel("ai-model")
+            .candidates(List.of(BookCandidateDto.builder()
+                .candidateId("ai-1")
+                .title("AI Result")
+                .author("AI")
+                .build()))
+            .build());
+        BookSearchProvider externalProvider = (query) -> BookCandidateSearchResponse.builder()
+            .aiModel("open-library")
+            .candidates(List.of(BookCandidateDto.builder()
+                .candidateId("open-library:/works/OL1W")
+                .title("Catalog Result")
+                .author("Catalog Author")
+                .build()))
+            .build();
+        BookBusiness business = new BookBusiness(aiProvider, new FakeBookMapper(), List.of(externalProvider));
+
+        BookCandidateSearchResponse response = business.searchCandidates(BookCandidateSearchRequest.builder()
+            .query("catalog")
+            .build());
+
+        assertThat(response.getAiModel()).isEqualTo("open-library");
+        assertThat(response.getCandidates()).singleElement()
+            .extracting(BookCandidateDto::getTitle)
+            .isEqualTo("Catalog Result");
     }
 
     private static class FakeBookMapper implements BookMapper {
@@ -170,6 +203,11 @@ class BookBusinessPersistenceTest {
         @Override
         public BookCandidateSearchResponse suggestBooks(String query) {
             return BookCandidateSearchResponse.builder().build();
+        }
+
+        @Override
+        public PersonaDraftListResponse suggestPersonas(GeneratePersonasRequest request) {
+            return PersonaDraftListResponse.builder().build();
         }
 
         @Override

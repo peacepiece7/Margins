@@ -142,16 +142,20 @@ INSERT INTO personas (
   description,
   system_prompt,
   tone,
+  role_key,
+  source_session_id,
   is_active,
   is_test_data
 )
 VALUES
-  (1, 'careful-critic', 'Careful Critic', 'Challenges vague reflections with textual evidence.', 'Respond as a careful literary critic. Ask for evidence and clarify claims.', 'critical', TRUE, TRUE),
-  (2, 'empathetic-reader', 'Empathetic Reader', 'Explores emotional and personal reading responses.', 'Respond as an empathetic reader. Connect themes to lived experience.', 'warm', TRUE, TRUE)
+  (1, 'careful-critic', 'Careful Critic', 'Challenges vague reflections with textual evidence.', 'Respond as a careful literary critic. Ask for evidence and clarify claims.', 'critical', 'skeptic', NULL, TRUE, TRUE),
+  (2, 'empathetic-reader', 'Empathetic Reader', 'Explores emotional and personal reading responses.', 'Respond as an empathetic reader. Connect themes to lived experience.', 'warm', 'empathy_reader', NULL, TRUE, TRUE)
 ON DUPLICATE KEY UPDATE
   display_name = VALUES(display_name),
   description = VALUES(description),
   system_prompt = VALUES(system_prompt),
+  role_key = VALUES(role_key),
+  source_session_id = VALUES(source_session_id),
   is_active = VALUES(is_active),
   is_test_data = VALUES(is_test_data),
   deleted_at = NULL;

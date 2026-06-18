@@ -106,6 +106,14 @@ public class SessionWindowController {
         return ApiResponse.ok(sessionWindowService.generateQuestions(windowId, request));
     }
 
+    @PostMapping("/{id}/questions/suggest")
+    public ApiResponse<QuestionListResponse> suggestQuestions(
+        @PathVariable("id") Long windowId,
+        @Valid @RequestBody GenerateQuestionsRequest request
+    ) {
+        return ApiResponse.ok(sessionWindowService.suggestQuestions(windowId, request));
+    }
+
     @PostMapping("/{id}/debate")
     public ApiResponse<AiMessageResponse> debate(
         @PathVariable("id") Long windowId,

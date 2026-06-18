@@ -26,6 +26,20 @@ When the user logs out
 Then the UI clears the stored auth session and selected session id
 And returns to the login form
 
+### Scenario: User switches the UI language before login
+
+Given the user opens Margins without a stored auth session
+When the user chooses Korean from the language toggle
+Then the login form chrome changes to Korean
+And the selected locale is stored for the next page load
+
+### Scenario: User switches the UI language while reading
+
+Given the user has entered the workbench
+When the user chooses English or Korean from the authenticated session bar
+Then the fixed workbench controls, placeholders, and status labels use that language
+And the current auth session, selected reading session, and reader-authored content remain unchanged
+
 ### Scenario: User adds a book from AI candidates
 
 Given the user is signed in or using single-user mode
@@ -62,6 +76,22 @@ Given a book exists
 When the user starts a reading session
 Then the session page opens with at least one usable session window
 And the session is recoverable after refresh
+
+### Scenario: New book session is prepared automatically
+
+Given the user selects a book candidate or starts from a saved book
+When the frontend creates the reading session
+Then it creates reflection and debate windows
+And requests three generated reflection questions for the reflection window
+And requests three generated persona drafts for the selected book
+And saves those personas with the new session id so debate can start without manual setup
+
+### Scenario: AI preparation failure still opens the session
+
+Given the reading session and reflection window were created
+When generated questions or generated personas fail
+Then the frontend opens the created session timeline
+And shows a warning that AI prompts or personas could not all be prepared
 
 ### Scenario: Partial default-window creation still opens the created session
 
@@ -154,6 +184,14 @@ When the user generates questions
 Then the UI shows questions for that selected window
 And answers sent from that window are linked to those questions
 
+### Scenario: User previews question drafts before saving
+
+Given the reader selected a reflection window
+When the user requests draft questions
+Then the UI shows draft prompts separately from persisted questions
+And saving one draft creates it through the backend question API
+And unsaved drafts do not appear after a timeline reload
+
 ### Scenario: User adds a custom reflection question
 
 Given the reader selected a reflection window
@@ -180,6 +218,21 @@ And the edited title appears in the session header and session library
 Given the reader has saved active and completed sessions
 When the session library is visible
 Then the UI shows total sessions, completed sessions, active sessions, distinct books, saved quote count, answered question count, and average progress from the backend stats API
+
+### Scenario: Reader sees the main workflow before management panels
+
+Given the workbench renders
+When the reader scans the first viewport
+Then the UI shows Add book, Questions, Personas, and Capture workflow status
+And library/history management is available in a collapsible area instead of occupying the primary flow
+
+### Scenario: Reader sees the prepared reading room before window administration
+
+Given the reader has an active reading session
+When the workbench renders the session
+Then the UI shows a `reading-room-board` before window tabs and window management
+And the board groups generated questions, persona cast, capture status, and discussion status
+And board actions move focus to the matching existing work area without creating duplicate state
 
 ### Scenario: User filters saved reading sessions
 
@@ -381,6 +434,13 @@ Then the frontend selects the first available active persona
 And disables the single-persona Debate action if no active personas are available
 And does not send a single-persona debate request with a stale persona id
 
+### Scenario: Debate personas follow the selected session
+
+Given the reader switches between saved reading sessions
+When the frontend loads the target session timeline
+Then it requests personas for that session id
+And the debate selector does not show generated personas from unrelated sessions
+
 ### Scenario: Reader selects compact prompt rows
 
 Given generated questions are visible
@@ -396,6 +456,20 @@ When the user submits an answer
 Then the UI shows the user's message
 And the AI response appears as streamed assistant text in the same window
 And both messages remain after refresh
+
+### Scenario: Reader sees AI response evidence context
+
+Given an assistant or persona response has a context snapshot
+When the message list renders that response
+Then the UI shows evidence chips below the response
+And malformed or missing snapshots do not hide the message
+
+### Scenario: Reader sees a lightweight missing-position warning
+
+Given the reader has an active session without a current page
+When the reading room board renders
+Then the capture card shows a `reading-boundary-warning`
+And activating it moves focus to the progress area
 
 ### Scenario: Streamed answer reloads persisted timeline
 
@@ -431,19 +505,26 @@ And non-JSON failure bodies still fall back to the HTTP status
 
 Given the workbench has an active reading session
 When the lower action area renders
-Then message answering appears in a `message-composer` region
-And persona creation and debate controls appear in a `persona-composer` region
+Then book comprehension and reflection answering appears as `Ask book` in a `message-composer` region
+And persona creation and debate controls appear as `Debate personas` in a `persona-composer` region
 And all existing send, persona create, single-persona debate, and debate-all actions remain available
 
 ### Scenario: Reader switches lower composer mode on mobile
 
 Given the workbench has an active reading session on a narrow screen
 When the lower action area renders
-Then `composer-mode-tabs` let the reader switch between Message and Persona modes
+Then `composer-mode-tabs` let the reader switch between `Ask book` and `Debate personas` modes
 And only the selected composer is visible on the narrow screen
 And the selected tab exposes `aria-selected=true`
 And blank message or single-persona debate forms keep their submit buttons disabled
 And both composers remain visible together on wide screens
+
+### Scenario: Book answers are labeled separately from persona debate
+
+Given the message history includes a non-persona assistant response and a persona response
+When the selected window message list renders
+Then the non-persona assistant response is labeled `Book answer`
+And the persona response keeps the persona display name
 
 ### Scenario: Reader sees next actions after opening a session
 
@@ -593,7 +674,24 @@ And the request body contains the shared prompt content without a sentinel perso
 Given the debate form is visible
 When the user saves a custom persona with a display name and instructions
 Then the UI adds that persona to the selector
+And the selector can show the backend-provided persona role label
 And the next debate request can use the new persona id
+
+### Scenario: User previews persona drafts before saving
+
+Given the persona composer is visible for an active reading session
+When the user requests persona drafts
+Then the UI shows suggested persona names, role labels, tones, descriptions, and reasons
+And saving one draft creates it through the backend persona API
+And unsaved drafts do not become active debate personas
+And any unsafe generated draft has already been replaced by the backend before display
+
+### Scenario: Reading room shows persona cast roles
+
+Given an active reading room has generated personas with role keys
+When the reading room board is visible
+Then each persona cast item shows the persona display name
+And shows a readable role label through `persona-role-label`
 
 ### Scenario: User switches between reflection and debate windows
 

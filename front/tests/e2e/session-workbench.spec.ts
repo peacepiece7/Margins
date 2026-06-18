@@ -274,12 +274,14 @@ test('creates a session and shows question, message, and persona responses', asy
   await expect(page.getByTestId('session-summary')).toContainText('Window #');
   await expect(page.getByTestId('window-tabs')).toContainText('Reflection Window');
   await expect(page.getByTestId('window-tabs')).toContainText('Persona Debate');
-  await expect(page.getByTestId('review-readiness-score')).toContainText('0/6 ready');
+  await expect(page.getByTestId('review-readiness-score')).toContainText('1/6 ready');
   await expect(page.getByTestId('session-brief-headline')).toContainText('Active session brief');
   await expect(page.getByTestId('session-brief')).toContainText('Progress not set');
   await expect(page.getByTestId('session-brief')).toContainText('0 quotes');
-  await expect(page.getByTestId('message-composer')).toContainText('Window message');
-  await expect(page.getByTestId('persona-composer')).toContainText('Persona debate');
+  await expect(page.getByTestId('message-composer')).toContainText('Ask book');
+  await expect(page.getByTestId('message-composer')).toContainText('Answer the selected prompt');
+  await expect(page.getByTestId('persona-composer')).toContainText('Debate personas');
+  await expect(page.getByTestId('persona-composer')).toContainText('Challenge the current interpretation');
   await expect(page.getByTestId('session-jump-nav')).toContainText('Questions');
   await page.getByTestId('session-jump-item').filter({ hasText: 'Questions' }).click();
   await expect(page.getByTestId('question-panel')).toBeFocused();
@@ -305,7 +307,7 @@ test('creates a session and shows question, message, and persona responses', asy
   expect(mobileJumpBoxes[3].top).toBeGreaterThan(mobileJumpBoxes[0].top);
   expect(mobileJumpBoxes[0].width).toBeGreaterThan(70);
   await expect(page.getByTestId('composer-mode-tabs')).toBeVisible();
-  await expect(page.getByTestId('composer-mode-tab').filter({ hasText: 'Message' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('composer-mode-tab').filter({ hasText: 'Ask book' })).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('message-submit')).toBeDisabled();
   await expect(page.getByTestId('message-composer')).toBeVisible();
   await expect(page.getByTestId('persona-composer')).toBeHidden();
@@ -314,7 +316,7 @@ test('creates a session and shows question, message, and persona responses', asy
   await expect(page.getByTestId('persona-composer')).toBeVisible();
   await expect(page.getByTestId('message-composer')).toBeHidden();
   await expect(page.getByTestId('debate-submit')).toBeDisabled();
-  await page.getByTestId('composer-mode-tab').filter({ hasText: 'Message' }).click();
+  await page.getByTestId('composer-mode-tab').filter({ hasText: 'Ask book' }).click();
   await expect(page.getByTestId('message-composer')).toBeVisible();
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByTestId('composer-mode-tabs')).toBeHidden();

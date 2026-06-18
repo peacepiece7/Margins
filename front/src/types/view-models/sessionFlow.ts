@@ -26,6 +26,7 @@ export interface SessionDisplayMessage {
   personaDisplayName?: string;
   questionId?: number;
   persistedMessageId?: number;
+  contextSnapshot?: string;
 }
 
 export interface SessionReadinessItem {

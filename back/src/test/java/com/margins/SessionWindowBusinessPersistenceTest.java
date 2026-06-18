@@ -7,6 +7,8 @@ import com.margins.ai.AiProvider;
 import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.message.mapper.MessageMapper;
 import com.margins.message.model.MessageRecord;
+import com.margins.persona.dto.GeneratePersonasRequest;
+import com.margins.persona.dto.PersonaDraftListResponse;
 import com.margins.persona.mapper.PersonaMapper;
 import com.margins.persona.model.PersonaRecord;
 import com.margins.question.dto.CreateQuestionRequest;
@@ -23,7 +25,9 @@ import com.margins.session.dto.DebateAllMessageRequest;
 import com.margins.session.dto.DebateMessageRequest;
 import com.margins.session.dto.SendMessageRequest;
 import com.margins.session.dto.UpdateSessionWindowTitleRequest;
+import com.margins.session.mapper.SessionHighlightMapper;
 import com.margins.session.mapper.SessionWindowMapper;
+import com.margins.session.model.SessionHighlightRecord;
 import com.margins.session.model.SessionWindowContext;
 import com.margins.session.model.SessionWindowRecord;
 import java.util.ArrayList;
@@ -212,7 +216,38 @@ class SessionWindowBusinessPersistenceTest {
         assertThat(messageMapper.inserted.get(1).getRole()).isEqualTo("assistant");
         assertThat(messageMapper.inserted.get(1).getParentMessageId()).isEqualTo(100L);
         assertThat(messageMapper.inserted.get(1).getQuestionId()).isEqualTo(9L);
+        assertThat(messageMapper.inserted.get(1).getContextSnapshot()).contains("\"question\"", "What matters?");
+        assertThat(messageMapper.inserted.get(1).getPromptSnapshot())
+            .contains("\"schemaVersion\":1")
+            .contains("\"promptContractVersion\":\"mvp-answer-v2\"")
+            .contains("\"responseType\":\"book_answer\"")
+            .contains("\"provider\":\"placeholder\"")
+            .contains("\"groundingPolicyVersion\":\"mvp-grounding-v1\"");
+        assertThat(response.getPromptSnapshot()).isEqualTo(messageMapper.inserted.get(1).getPromptSnapshot());
+        assertThat(response.getContextSnapshot()).isEqualTo(messageMapper.inserted.get(1).getContextSnapshot());
+        assertThat(messageMapper.inserted.get(1).getTokenUsage()).contains("\"total_tokens\":7");
+        assertThat(response.getTokenUsage()).isEqualTo(messageMapper.inserted.get(1).getTokenUsage());
         assertThat(messageMapper.orderWindowIds).containsExactly(10L, 10L);
+    }
+
+    @Test
+    void sendMessageIncludesSavedHighlightsInContextSnapshot() {
+        FakeMessageMapper messageMapper = new FakeMessageMapper();
+        SessionWindowBusiness business = new SessionWindowBusiness(
+            new StubAiProvider(),
+            new FakeSessionWindowMapper(),
+            messageMapper,
+            new FakeQuestionMapper(),
+            new FakePersonaMapper(),
+            new FakeSessionHighlightMapper()
+        );
+
+        AiMessageResponse response = business.sendMessage(10L, SendMessageRequest.builder()
+            .content("Use my quote")
+            .build());
+
+        assertThat(messageMapper.inserted.get(1).getContextSnapshot()).contains("\"highlights\"", "Quote p. 42", "fear is the mind-killer");
+        assertThat(response.getContextSnapshot()).contains("fear is the mind-killer");
     }
 
     @Test
@@ -307,6 +342,14 @@ class SessionWindowBusinessPersistenceTest {
         assertThat(response.getMessageId()).isEqualTo(101L);
         assertThat(response.getPersonaId()).isEqualTo(4L);
         assertThat(messageMapper.inserted.get(1).getPersonaId()).isEqualTo(4L);
+        assertThat(messageMapper.inserted.get(1).getContextSnapshot()).contains("\"persona\"", "Historian");
+        assertThat(messageMapper.inserted.get(1).getPromptSnapshot())
+            .contains("\"responseType\":\"persona_debate\"")
+            .contains("\"safetyPolicyVersion\":\"mvp-safety-v1\"")
+            .contains("\"readingBoundaryPolicyVersion\":\"mvp-reading-boundary-v1\"");
+        assertThat(response.getPromptSnapshot()).isEqualTo(messageMapper.inserted.get(1).getPromptSnapshot());
+        assertThat(messageMapper.inserted.get(1).getTokenUsage()).contains("\"total_tokens\":9");
+        assertThat(response.getTokenUsage()).isEqualTo(messageMapper.inserted.get(1).getTokenUsage());
     }
 
     @Test
@@ -373,8 +416,14 @@ class SessionWindowBusinessPersistenceTest {
         assertThat(messageMapper.inserted.get(0).getRole()).isEqualTo("user");
         assertThat(messageMapper.inserted.get(1).getParentMessageId()).isEqualTo(100L);
         assertThat(messageMapper.inserted.get(1).getPersonaId()).isEqualTo(4L);
+        assertThat(messageMapper.inserted.get(1).getContextSnapshot()).contains("Historian");
+        assertThat(messageMapper.inserted.get(1).getPromptSnapshot()).contains("\"responseType\":\"persona_debate\"");
+        assertThat(messageMapper.inserted.get(1).getTokenUsage()).contains("\"total_tokens\":9");
         assertThat(messageMapper.inserted.get(2).getParentMessageId()).isEqualTo(100L);
         assertThat(messageMapper.inserted.get(2).getPersonaId()).isEqualTo(5L);
+        assertThat(messageMapper.inserted.get(2).getContextSnapshot()).contains("Formalist");
+        assertThat(messageMapper.inserted.get(2).getPromptSnapshot()).contains("\"responseType\":\"persona_debate\"");
+        assertThat(messageMapper.inserted.get(2).getTokenUsage()).contains("\"total_tokens\":9");
     }
 
     @Test
@@ -417,6 +466,28 @@ class SessionWindowBusinessPersistenceTest {
         assertThat(questionMapper.inserted.get(0).getSessionId()).isEqualTo(30L);
         assertThat(questionMapper.inserted.get(0).getWindowId()).isEqualTo(10L);
         assertThat(questionMapper.inserted.get(0).getQuestionText()).contains("chapter one");
+    }
+
+    @Test
+    void suggestQuestionsReturnsAiSuggestionsWithoutPersisting() {
+        FakeQuestionMapper questionMapper = new FakeQuestionMapper();
+        SessionWindowBusiness business = new SessionWindowBusiness(
+            new StubAiProvider(),
+            new FakeSessionWindowMapper(),
+            new FakeMessageMapper(),
+            questionMapper,
+            new FakePersonaMapper()
+        );
+
+        QuestionListResponse response = business.suggestQuestions(10L, GenerateQuestionsRequest.builder()
+            .count(2)
+            .focus("chapter one")
+            .build());
+
+        assertThat(response.getQuestions()).singleElement()
+            .extracting(QuestionDto::getQuestionText)
+            .isEqualTo("What matters in chapter one?");
+        assertThat(questionMapper.inserted).isEmpty();
     }
 
     @Test
@@ -710,11 +781,57 @@ class SessionWindowBusinessPersistenceTest {
         }
 
         @Override
+        public List<PersonaRecord> findActiveForSession(Long sessionId) {
+            return findActive();
+        }
+
+        @Override
         public PersonaRecord findActiveById(Long id) {
             return findActive().stream()
                 .filter((persona) -> persona.getId().equals(id))
                 .findFirst()
                 .orElse(null);
+        }
+
+        @Override
+        public int countActiveBySessionAndRoleKey(Long sessionId, String roleKey) {
+            return 0;
+        }
+    }
+
+    private static class FakeSessionHighlightMapper implements SessionHighlightMapper {
+        @Override
+        public int insert(SessionHighlightRecord record) {
+            return 1;
+        }
+
+        @Override
+        public int selectNextOrder(Long sessionId) {
+            return 1;
+        }
+
+        @Override
+        public List<SessionHighlightRecord> findBySessionId(Long sessionId) {
+            return List.of(SessionHighlightRecord.builder()
+                .id(12L)
+                .sessionId(sessionId)
+                .bookId(3L)
+                .userId(1L)
+                .pageNumber(42)
+                .quoteText("fear is the mind-killer")
+                .note("central quote")
+                .highlightOrder(1)
+                .build());
+        }
+
+        @Override
+        public int update(Long sessionId, Long highlightId, Long userId, Integer pageNumber, String locationLabel, String quoteText, String note) {
+            return 1;
+        }
+
+        @Override
+        public int softDelete(Long sessionId, Long highlightId, Long userId) {
+            return 1;
         }
     }
 
@@ -724,6 +841,11 @@ class SessionWindowBusinessPersistenceTest {
         @Override
         public BookCandidateSearchResponse suggestBooks(String query) {
             return BookCandidateSearchResponse.builder().build();
+        }
+
+        @Override
+        public PersonaDraftListResponse suggestPersonas(GeneratePersonasRequest request) {
+            return PersonaDraftListResponse.builder().build();
         }
 
         @Override
@@ -749,6 +871,7 @@ class SessionWindowBusinessPersistenceTest {
                 .content("Answer")
                 .streamingReady(true)
                 .aiModel("placeholder")
+                .tokenUsage("{\"input_tokens\":3,\"output_tokens\":4,\"total_tokens\":7}")
                 .build();
         }
 
@@ -762,6 +885,7 @@ class SessionWindowBusinessPersistenceTest {
                 .content("Debate")
                 .streamingReady(true)
                 .aiModel("placeholder")
+                .tokenUsage("{\"input_tokens\":4,\"output_tokens\":5,\"total_tokens\":9}")
                 .build();
         }
     }

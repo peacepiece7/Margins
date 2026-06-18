@@ -1,6 +1,8 @@
 package com.margins.ai;
 
 import com.margins.book.dto.BookCandidateSearchResponse;
+import com.margins.persona.dto.GeneratePersonasRequest;
+import com.margins.persona.dto.PersonaDraftListResponse;
 import com.margins.question.dto.GenerateQuestionsRequest;
 import com.margins.question.dto.QuestionListResponse;
 import com.margins.session.dto.AiMessageResponse;
@@ -10,6 +12,8 @@ import java.util.function.Consumer;
 
 public interface AiProvider {
     BookCandidateSearchResponse suggestBooks(String query);
+
+    PersonaDraftListResponse suggestPersonas(GeneratePersonasRequest request);
 
     QuestionListResponse suggestQuestions(Long windowId, GenerateQuestionsRequest request);
 

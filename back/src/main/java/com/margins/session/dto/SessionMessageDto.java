@@ -20,5 +20,8 @@ public class SessionMessageDto {
     private String aiModel;
     private Long personaId;
     private Long questionId;
+    private String promptSnapshot;
+    private String contextSnapshot;
+    private String tokenUsage;
     private String streamingStatus;
 }

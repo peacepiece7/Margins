@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { marginsRepository } from '../repository/marginsRepository';
 import type { BookCandidate, SaveBookResponse } from '../types/models/book';
-import type { Persona } from '../types/models/persona';
-import type { ReadingSessionTimelineResponse, SessionWindowTimeline } from '../types/models/session';
+import type { Persona, PersonaDraft } from '../types/models/persona';
+import type { CreateSessionWindowResponse, Question, ReadingSessionTimelineResponse, SessionWindowTimeline } from '../types/models/session';
 import type { SessionFlowState } from '../types/view-models/sessionFlow';
 import { selectAvailablePersonaId } from '../utils/personaSelection';
 
@@ -26,6 +26,8 @@ const initialState: SessionFlowState = {
 };
 
 const SELECTED_SESSION_STORAGE_KEY = 'margins.selectedSessionId';
+const DEFAULT_BOOTSTRAP_QUESTION_COUNT = 3;
+const DEFAULT_BOOTSTRAP_PERSONA_COUNT = 3;
 
 function readStoredSessionId() {
   if (typeof window === 'undefined') {
@@ -69,6 +71,11 @@ function defaultWindowWarning(error: unknown) {
 function libraryRefreshWarning(error: unknown) {
   const detail = error instanceof Error ? error.message : 'Unknown error';
   return `Session started, but library summaries could not be refreshed: ${detail}`;
+}
+
+function aiPreparationWarning(error: unknown) {
+  const detail = error instanceof Error ? error.message : 'Unknown error';
+  return `Session started, but AI prompts or personas could not all be prepared: ${detail}`;
 }
 
 function appendWarning(existing: string | undefined, next: string) {
@@ -211,6 +218,7 @@ function patchFromTimeline(
       personaDisplayName: message.personaId ? personaById.get(message.personaId) : undefined,
       questionId: message.questionId,
       persistedMessageId: message.messageId,
+      contextSnapshot: message.contextSnapshot,
     })),
     streamingMessage: undefined,
   };
@@ -248,12 +256,12 @@ export function useSessionFlowStore() {
     loadLatest() {
       return run(async () => {
         const storedSessionId = readStoredSessionId();
-        const [timeline, personaResult, sessionResult, statsResult] = await Promise.all([
+        const [timeline, sessionResult, statsResult] = await Promise.all([
           restoreStoredOrLatestTimeline(storedSessionId),
-          marginsRepository.personas(),
           marginsRepository.sessions(),
           marginsRepository.readingStats(),
         ]);
+        const personaResult = await marginsRepository.personas(timeline?.sessionId);
         const bookResult = await marginsRepository.books();
         const selectedPersonaId = selectAvailablePersonaId(personaResult.personas, state.selectedPersonaId);
 
@@ -269,15 +277,18 @@ export function useSessionFlowStore() {
     },
     loadSession(sessionId: number) {
       return run(async () => {
-        const [timeline, library] = await Promise.all([
+        const [timeline, library, personaResult] = await Promise.all([
           marginsRepository.sessionTimeline(sessionId),
           libraryPatch(),
+          marginsRepository.personas(sessionId),
         ]);
         writeStoredSessionId(sessionId);
 
         return {
-          ...patchFromTimeline(timeline, state.personas, undefined),
+          ...patchFromTimeline(timeline, personaResult.personas, undefined),
           ...library,
+          personas: personaResult.personas,
+          selectedPersonaId: selectAvailablePersonaId(personaResult.personas, state.selectedPersonaId),
         };
       });
     },
@@ -341,9 +352,13 @@ export function useSessionFlowStore() {
       description?: string;
       systemPrompt: string;
       tone?: string;
+      roleKey?: string;
     }) {
       return run(async () => {
-        const result = await marginsRepository.createPersona(persona);
+        const result = await marginsRepository.createPersona({
+          ...persona,
+          sessionId: state.session?.sessionId,
+        });
         const selectedPersonaId = selectAvailablePersonaId(result.personas, result.personas[result.personas.length - 1]?.personaId);
 
         return {
@@ -352,8 +367,49 @@ export function useSessionFlowStore() {
         };
       });
     },
+    generatePersonaDrafts(): Promise<PersonaDraft[]> {
+      setState((current) => ({ ...current, loading: true, error: undefined }));
+      return marginsRepository
+        .generatePersonas({
+          count: 3,
+          bookTitle: state.selectedBook?.title,
+          readingGoal: state.readingGoal,
+          context: state.sessionSummary,
+        })
+        .then((result) => {
+          setState((current) => ({ ...current, loading: false }));
+          return result.personas;
+        })
+        .catch((error) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }));
+          return [];
+        });
+    },
     selectQuestion(questionId: number) {
-      setState((current) => ({ ...current, selectedQuestionId: questionId }));
+      setState((current) => {
+        const selectedQuestion = current.questions.find((question) => question.questionId === questionId);
+        const selectedWindow = selectedQuestion?.windowId
+          ? current.windows.find((window) => window.windowId === selectedQuestion.windowId)
+          : undefined;
+
+        return {
+          ...current,
+          window: selectedWindow
+            ? {
+                windowId: selectedWindow.windowId,
+                sessionId: selectedWindow.sessionId,
+                windowType: selectedWindow.windowType,
+                title: selectedWindow.title,
+                status: selectedWindow.status,
+              }
+            : current.window,
+          selectedQuestionId: questionId,
+        };
+      });
     },
     search() {
       return run(async () => {
@@ -463,6 +519,30 @@ export function useSessionFlowStore() {
         };
       });
     },
+    suggestQuestions(): Promise<Question[]> {
+      const windowId = state.window?.windowType === 'question'
+        ? state.window.windowId
+        : messageWindowId(state.windows);
+      if (!windowId) {
+        return Promise.resolve([]);
+      }
+
+      setState((current) => ({ ...current, loading: true, error: undefined }));
+      return marginsRepository
+        .suggestQuestions(windowId, 3, questionFocus(state.selectedBook?.title, state.window?.title))
+        .then((result) => {
+          setState((current) => ({ ...current, loading: false }));
+          return result.questions;
+        })
+        .catch((error) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }));
+          return [];
+        });
+    },
     createQuestion(questionText: string) {
       const windowId = state.window?.windowType === 'question'
         ? state.window.windowId
@@ -506,7 +586,7 @@ export function useSessionFlowStore() {
         };
       });
     },
-    send(content: string) {
+    send(content: string, questionId = state.selectedQuestionId) {
       if (!state.window) {
         return Promise.resolve(false);
       }
@@ -527,7 +607,7 @@ export function useSessionFlowStore() {
         },
       }));
       return marginsRepository
-        .streamMessage(windowId, content, state.selectedQuestionId, (delta) => {
+        .streamMessage(windowId, content, questionId, (delta) => {
           setState((current) => {
             if (!current.streamingMessage || current.streamingMessage.windowId !== windowId) {
               return current;
@@ -549,8 +629,9 @@ export function useSessionFlowStore() {
           const library = await libraryPatch();
           setState((current) => ({
             ...current,
-            ...patchFromTimeline(timeline, current.personas, windowId, current.selectedQuestionId),
+            ...patchFromTimeline(timeline, current.personas, windowId, questionId || current.selectedQuestionId),
             ...library,
+            selectedQuestionId: questionId || current.selectedQuestionId,
             loading: false,
             streamingMessage: undefined,
           }));
@@ -866,14 +947,45 @@ export async function createDefaultSessionPatch(
 ): Promise<Partial<SessionFlowState>> {
   const session = await marginsRepository.createSession(selectedBook);
   let preferredWindowId: number | undefined;
+  let questionWindow: CreateSessionWindowResponse | undefined;
   let warning: string | undefined;
+  let latestPersonas = personas;
 
   try {
-    const questionWindow = await marginsRepository.createWindow(session, 'question', 'Reflection Window');
+    questionWindow = await marginsRepository.createWindow(session, 'question', 'Reflection Window');
     preferredWindowId = questionWindow.windowId;
     await marginsRepository.createWindow(session, 'debate', 'Persona Debate');
   } catch (error) {
     warning = defaultWindowWarning(error);
+  }
+
+  if (questionWindow) {
+    try {
+      await marginsRepository.generateQuestions(
+        questionWindow.windowId,
+        DEFAULT_BOOTSTRAP_QUESTION_COUNT,
+        questionFocus(selectedBook.title, questionWindow.title),
+      );
+
+      const personaDrafts = await marginsRepository.generatePersonas({
+        count: DEFAULT_BOOTSTRAP_PERSONA_COUNT,
+        bookTitle: selectedBook.title,
+        context: `${selectedBook.title}${selectedBook.author ? ` by ${selectedBook.author}` : ''}`,
+      });
+      for (const draft of personaDrafts.personas.slice(0, DEFAULT_BOOTSTRAP_PERSONA_COUNT)) {
+        const result = await marginsRepository.createPersona({
+          displayName: draft.displayName,
+          description: draft.description,
+          tone: draft.tone,
+          roleKey: draft.roleKey,
+          systemPrompt: draft.systemPrompt,
+          sessionId: session.sessionId,
+        });
+        latestPersonas = result.personas;
+      }
+    } catch (error) {
+      warning = appendWarning(warning, aiPreparationWarning(error));
+    }
   }
 
   const timeline = await marginsRepository.sessionTimeline(session.sessionId);
@@ -889,7 +1001,9 @@ export async function createDefaultSessionPatch(
     selectedBook,
     session,
     ...library,
-    ...patchFromTimeline(timeline, personas, preferredWindowId),
+    ...patchFromTimeline(timeline, latestPersonas, preferredWindowId),
+    personas: latestPersonas,
+    selectedPersonaId: selectAvailablePersonaId(latestPersonas, latestPersonas[latestPersonas.length - 1]?.personaId),
     error: warning,
   };
 }
