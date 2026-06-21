@@ -60,12 +60,24 @@ Given `MARGINS_BOOK_SEARCH_PROVIDER` is `kakao`
 And `KAKAO_REST_API_KEY` is configured
 When `/api/books/search-candidates` is called
 Then the backend calls Kakao Daum Book Search with `Authorization: KakaoAK ${KAKAO_REST_API_KEY}`
-And maps Kakao ISBN, title, authors, publisher, status, and publish date into save-compatible candidates
-And if Kakao returns no usable records, the backend continues to the remaining external providers before AI fallback
+And maps Kakao ISBN into both `candidateId` and the separate `isbn` candidate field
+And maps Kakao title, authors, publisher, status, and publish date into save-compatible candidates
+And if Kakao returns no usable records for the exact submitted query, the backend continues to the remaining external providers before AI fallback
+And the backend logs provider status, skipped configuration, candidate counts, and exception class without logging API keys
+
+### Scenario: External book search debugging can disable AI fallback
+
+Given `MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED` is `false`
+And every external book metadata provider returns no usable records
+When `/api/books/search-candidates` is called
+Then the backend does not ask the AI provider for generated book candidates
+And the response succeeds with an empty candidate list
+And backend logs still identify which external providers returned no candidates
 
 ### Scenario: Backend falls back to AI candidate books
 
-Given the external book metadata provider is disabled, unavailable, or returns no usable records
+Given `MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED` is `true`
+And the external book metadata provider is disabled, unavailable, or returns no usable records
 When `/api/books/search-candidates` is called
 Then the backend asks OpenAI for candidate books
 And returns candidates with title, author, and candidate identifier from the AI fallback
@@ -75,7 +87,7 @@ And returns candidates with title, author, and candidate identifier from the AI 
 Given the AI provider returns blank or overlong candidate fields
 When `/api/books/search-candidates` is called
 Then blank candidates are omitted
-And returned title, author, and candidate identifier fields fit the `/api/books` save contract
+And returned title, author, ISBN, and candidate identifier fields fit the `/api/books` save contract
 
 ### Scenario: Skeleton returns deterministic candidates without network
 
@@ -656,6 +668,22 @@ When `/api/session-windows/{id}/debate/all` is called with non-blank `content` a
 Then the backend stores one user debate message
 And stores one assistant response for each active persona
 And each assistant response keeps the persona id and the same parent user message id
+
+### Scenario: Selected personas respond to one debate prompt
+
+Given a debate window exists with active personas
+When `/api/session-windows/{id}/debate/all` is called with non-blank `content` and selected `personaIds`
+Then the backend stores one user debate message
+And stores assistant responses only for those selected active personas
+And the OpenAI provider can request those persona replies in one provider call
+
+### Scenario: Session summaries avoid tag N+1 reads
+
+Given the single-user reader has multiple saved sessions with tags
+When `/api/reading-sessions` is called
+Then the backend reads summary rows once
+And reads active tags for the returned session ids through one bulk tag lookup
+And each summary still includes its own `tags[]`
 
 ## Feature: Test Reset
 

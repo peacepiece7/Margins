@@ -9,6 +9,7 @@ import type {
 import type { PersonaListResponse } from '../types/models/persona';
 import type {
   AiMessageResponse,
+  AiMessageListResponse,
   CreateReadingSessionResponse,
   CreateSessionWindowResponse,
   Question,
@@ -323,6 +324,7 @@ export const marginsRepository = {
   saveBook(candidate: BookCandidate): Promise<SaveBookResponse> {
     return postJson('/api/books', {
       candidateId: candidate.candidateId,
+      isbn: candidate.isbn,
       title: candidate.title,
       author: candidate.author,
       publishedYear: candidate.publishedYear,
@@ -421,9 +423,10 @@ export const marginsRepository = {
     });
   },
 
-  debateAll(windowId: number, content: string): Promise<{ messages: AiMessageResponse[] }> {
+  debateAll(windowId: number, content: string, personaIds?: number[]): Promise<AiMessageListResponse> {
     return postJson(`/api/session-windows/${windowId}/debate/all`, {
       content,
+      personaIds,
     });
   },
 };

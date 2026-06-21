@@ -14,16 +14,19 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @Order(10)
 @RequiredArgsConstructor
+@Slf4j
 public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
 
     private final ExternalBookSearchProperties properties;
     private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
     @Override
     public String providerName() {
@@ -32,7 +35,16 @@ public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
 
     @Override
     public List<BookCandidateDto> search(String query) {
-        if (!properties.isEnabled() || query == null || query.isBlank() || properties.getKakaoRestApiKey().isBlank()) {
+        if (!properties.isEnabled()) {
+            log.info("Kakao book search skipped because external book search is disabled");
+            return List.of();
+        }
+        if (query == null || query.isBlank()) {
+            log.info("Kakao book search skipped because query is blank");
+            return List.of();
+        }
+        if (properties.getKakaoRestApiKey().isBlank()) {
+            log.warn("Kakao book search skipped because KAKAO_REST_API_KEY is missing");
             return List.of();
         }
 
@@ -44,21 +56,40 @@ public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
                 .header("Authorization", "KakaoAK " + properties.getKakaoRestApiKey())
                 .GET()
                 .build();
-            HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
-                .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Kakao book search failed. status={}, queryLength={}, keyLength={}, keyHasWhitespace={}, keyStartsWithKakaoAK={}, errorCode={}, errorMessage={}",
+                    response.statusCode(),
+                    query.trim().length(),
+                    properties.getKakaoRestApiKey().length(),
+                    containsWhitespace(properties.getKakaoRestApiKey()),
+                    properties.getKakaoRestApiKey().startsWith("KakaoAK"),
+                    kakaoErrorCode(response.body()),
+                    kakaoErrorMessage(response.body()));
                 return List.of();
             }
 
-            return parseCandidates(response.body());
+            List<BookCandidateDto> candidates = parseCandidates(response.body());
+            log.info("Kakao book search completed. status={}, candidateCount={}, queryLength={}, queryPreview={}, requestQuery={}",
+                response.statusCode(),
+                candidates.size(),
+                query.trim().length(),
+                queryPreview(query),
+                request.uri().getRawQuery());
+            return candidates;
         } catch (IOException exception) {
+            log.warn("Kakao book search failed with I/O error. queryLength={}, error={}",
+                query.trim().length(),
+                exception.getClass().getSimpleName());
             return List.of();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            log.warn("Kakao book search interrupted. queryLength={}", query.trim().length());
             return List.of();
         } catch (RuntimeException exception) {
+            log.warn("Kakao book search failed with runtime error. queryLength={}, error={}",
+                query.trim().length(),
+                exception.getClass().getSimpleName());
             return List.of();
         }
     }
@@ -74,28 +105,46 @@ public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
     }
 
     private List<BookCandidateDto> parseCandidates(String body) throws IOException {
-        JsonNode documents = objectMapper.readTree(body).path("documents");
+        JsonNode root = objectMapper.readTree(body);
+        JsonNode documents = root.path("documents");
         if (!documents.isArray()) {
+            log.warn("Kakao book search response did not contain documents array");
             return List.of();
         }
 
         List<BookCandidateDto> candidates = new ArrayList<>();
+        int documentCount = documents.size();
         for (JsonNode item : documents) {
             String title = stripHtml(item.path("title").asText(""));
             String author = authors(item.path("authors"));
+            String isbn = preferredIsbn(item);
             String candidateId = candidateId(item);
             if (candidateId.isBlank() || title.isBlank() || author.isBlank()) {
+                log.info("Kakao book search ignored unusable document. hasCandidateId={}, hasTitle={}, hasAuthor={}, hasIsbn={}, hasUrl={}, authorCount={}",
+                    !candidateId.isBlank(),
+                    !title.isBlank(),
+                    !author.isBlank(),
+                    !isbn.isBlank(),
+                    !item.path("url").asText("").isBlank(),
+                    item.path("authors").isArray() ? item.path("authors").size() : 0);
                 continue;
             }
 
             candidates.add(BookCandidateDto.builder()
                 .candidateId("kakao:" + candidateId)
+                .isbn(isbn)
                 .title(title)
                 .author(author)
                 .publishedYear(publishedYear(item.path("datetime").asText("")))
                 .reason(reason(item))
                 .build());
         }
+        log.info("Kakao book search parsed response. documentCount={}, candidateCount={}, totalCount={}, pageableCount={}, isEnd={}",
+            documentCount,
+            candidates.size(),
+            root.path("meta").path("total_count").asInt(-1),
+            root.path("meta").path("pageable_count").asInt(-1),
+            root.path("meta").path("is_end").asBoolean(false));
         return candidates;
     }
 
@@ -115,6 +164,15 @@ public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
     }
 
     private String candidateId(JsonNode item) {
+        String isbn = preferredIsbn(item);
+        if (!isbn.isBlank()) {
+            return isbn;
+        }
+
+        return item.path("url").asText("").trim();
+    }
+
+    private String preferredIsbn(JsonNode item) {
         String isbn = item.path("isbn").asText("").trim();
         if (!isbn.isBlank()) {
             String[] parts = isbn.split("\\s+");
@@ -126,7 +184,7 @@ public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
             return parts[0];
         }
 
-        return item.path("url").asText("").trim();
+        return "";
     }
 
     private Integer publishedYear(String datetime) {
@@ -157,5 +215,38 @@ public class KakaoBookSearchProvider implements ExternalBookSearchProvider {
 
     private String stripHtml(String text) {
         return text == null ? "" : text.replaceAll("<[^>]*>", "").trim();
+    }
+
+    private boolean containsWhitespace(String value) {
+        return value != null && value.chars().anyMatch(Character::isWhitespace);
+    }
+
+    private String kakaoErrorCode(String body) {
+        try {
+            JsonNode code = objectMapper.readTree(body).path("code");
+            return code.isMissingNode() ? "" : code.asText("");
+        } catch (IOException | RuntimeException exception) {
+            return "";
+        }
+    }
+
+    private String kakaoErrorMessage(String body) {
+        try {
+            String message = objectMapper.readTree(body).path("msg").asText("");
+            if (message.length() <= 160) {
+                return message;
+            }
+            return message.substring(0, 160);
+        } catch (IOException | RuntimeException exception) {
+            return "";
+        }
+    }
+
+    private String queryPreview(String query) {
+        String trimmed = query == null ? "" : query.trim();
+        if (trimmed.length() <= 40) {
+            return trimmed;
+        }
+        return trimmed.substring(0, 40) + "...";
     }
 }

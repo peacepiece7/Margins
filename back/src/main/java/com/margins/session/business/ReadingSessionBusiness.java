@@ -41,7 +41,10 @@ import com.margins.session.model.SessionSearchResultRecord;
 import com.margins.session.model.SessionTagRecord;
 import com.margins.session.model.SessionWindowRecord;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -96,10 +99,13 @@ public class ReadingSessionBusiness {
     }
 
     public ReadingSessionListResponse findSummaries() {
+        List<ReadingSessionRecord> records = readingSessionMapper.findSummariesByUserId(DEFAULT_USER_ID);
+        Map<Long, List<SessionTagDto>> tagsBySessionId = tagsBySessionId(records);
+
         return ReadingSessionListResponse.builder()
-            .sessions(readingSessionMapper.findSummariesByUserId(DEFAULT_USER_ID)
+            .sessions(records
                 .stream()
-                .map(this::toSummaryDto)
+                .map((record) -> toSummaryDto(record, tagsBySessionId.getOrDefault(record.getId(), List.of())))
                 .toList())
             .build();
     }
@@ -107,7 +113,7 @@ public class ReadingSessionBusiness {
     public ReadingLibraryStatsResponse findLibraryStats() {
         List<ReadingSessionSummaryDto> summaries = readingSessionMapper.findSummariesByUserId(DEFAULT_USER_ID)
             .stream()
-            .map(this::toSummaryDto)
+            .map(this::toSummaryStatsDto)
             .toList();
         int sessionCount = summaries.size();
         int completedCount = (int) summaries.stream()
@@ -495,7 +501,7 @@ public class ReadingSessionBusiness {
             .build();
     }
 
-    private ReadingSessionSummaryDto toSummaryDto(ReadingSessionRecord record) {
+    private ReadingSessionSummaryDto toSummaryDto(ReadingSessionRecord record, List<SessionTagDto> tags) {
         return ReadingSessionSummaryDto.builder()
             .sessionId(record.getId())
             .bookId(record.getBookId())
@@ -515,8 +521,42 @@ public class ReadingSessionBusiness {
             .answeredQuestionCount(record.getAnsweredQuestionCount())
             .highlightCount(record.getHighlightCount())
             .messageCount(record.getMessageCount())
-            .tags(sessionTagMapper.findBySessionId(record.getId(), DEFAULT_USER_ID).stream().map(this::toTagDto).toList())
+            .tags(tags)
             .build();
+    }
+
+    private ReadingSessionSummaryDto toSummaryStatsDto(ReadingSessionRecord record) {
+        return ReadingSessionSummaryDto.builder()
+            .sessionId(record.getId())
+            .bookId(record.getBookId())
+            .status(record.getStatus())
+            .currentPage(record.getCurrentPage())
+            .targetPage(record.getTargetPage())
+            .progressPercent(toProgressPercent(record.getCurrentPage(), record.getTargetPage()))
+            .answeredQuestionCount(record.getAnsweredQuestionCount())
+            .highlightCount(record.getHighlightCount())
+            .messageCount(record.getMessageCount())
+            .build();
+    }
+
+    private Map<Long, List<SessionTagDto>> tagsBySessionId(List<ReadingSessionRecord> records) {
+        if (records.isEmpty()) {
+            return Map.of();
+        }
+
+        List<Long> sessionIds = records.stream()
+            .map(ReadingSessionRecord::getId)
+            .toList();
+        Set<Long> sessionIdSet = Set.copyOf(sessionIds);
+        return sessionTagMapper.findBySessionIds(sessionIds, DEFAULT_USER_ID)
+            .stream()
+            .filter((tag) -> sessionIdSet.contains(tag.getSessionId()))
+            .map(this::toTagDto)
+            .collect(Collectors.groupingBy(
+                SessionTagDto::getSessionId,
+                java.util.LinkedHashMap::new,
+                Collectors.toList()
+            ));
     }
 
     private Integer toProgressPercent(Integer currentPage, Integer targetPage) {

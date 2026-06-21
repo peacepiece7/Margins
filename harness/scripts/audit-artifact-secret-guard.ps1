@@ -33,6 +33,8 @@ function New-MinimalRelease {
     "MARGINS_AUTH_JWT_SECRET=change-me"
     "OPENAI_API_KEY="
     "OPENAI_MODEL=gpt-5.5"
+    "MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=true"
+    "MARGINS_BOOK_SEARCH_PROVIDER=kakao"
     "SPRING_PROFILES_ACTIVE=prod"
   ) | Set-Content -LiteralPath (Join-Path $Root "runtime\env.example") -Encoding ASCII
   @(
@@ -179,6 +181,8 @@ try {
     "MARGINS_AUTH_JWT_SECRET=change-me"
     "OPENAI_API_KEY=sk-test-secret"
     "OPENAI_MODEL=gpt-5.5"
+    "MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=true"
+    "MARGINS_BOOK_SEARCH_PROVIDER=kakao"
     "SPRING_PROFILES_ACTIVE=prod"
   ) | Set-Content -LiteralPath (Join-Path $openAiKeyRoot "runtime\env.example") -Encoding ASCII
   Update-Checksums -Root $openAiKeyRoot

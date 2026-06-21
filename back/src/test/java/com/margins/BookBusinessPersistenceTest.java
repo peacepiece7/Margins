@@ -36,12 +36,14 @@ class BookBusinessPersistenceTest {
             .candidateId("candidate-1")
             .title("  Persisted Book  ")
             .author("  Reader  ")
+            .isbn("  9788996991342  ")
             .publishedYear(2026)
             .build());
 
         assertThat(response.getBookId()).isEqualTo(42L);
         assertThat(response.getTitle()).isEqualTo("Persisted Book");
         assertThat(mapper.inserted.getUserId()).isEqualTo(1L);
+        assertThat(mapper.inserted.getIsbn()).isEqualTo("9788996991342");
         assertThat(mapper.inserted.getSource()).isEqualTo("ai");
         assertThat(mapper.inserted.getSourceRef()).isEqualTo("candidate-1");
     }
@@ -160,6 +162,7 @@ class BookBusinessPersistenceTest {
             .candidates(List.of(
                 BookCandidateDto.builder()
                     .candidateId("  " + "c".repeat(300) + "  ")
+                    .isbn("  " + "9".repeat(40) + "  ")
                     .title("  " + "t".repeat(300) + "  ")
                     .author("  " + "a".repeat(300) + "  ")
                     .publishedYear(2026)
@@ -186,6 +189,7 @@ class BookBusinessPersistenceTest {
         assertThat(response.getCandidates()).singleElement()
             .satisfies((candidate) -> {
                 assertThat(candidate.getCandidateId()).hasSize(255).doesNotStartWith(" ");
+                assertThat(candidate.getIsbn()).hasSize(32).doesNotStartWith(" ");
                 assertThat(candidate.getTitle()).hasSize(255).doesNotStartWith(" ");
                 assertThat(candidate.getAuthor()).hasSize(255).doesNotStartWith(" ");
                 assertThat(candidate.getPublishedYear()).isEqualTo(2026);
@@ -272,12 +276,43 @@ class BookBusinessPersistenceTest {
             });
     }
 
+    @Test
+    void searchCandidatesReturnsEmptyWhenExternalProvidersReturnEmptyAndAiFallbackIsDisabled() {
+        ExternalBookSearchProperties properties = new ExternalBookSearchProperties();
+        properties.setProvider("kakao");
+        properties.setAiFallbackEnabled(false);
+        BookBusiness business = new BookBusiness(
+            new CandidateAiProvider(BookCandidateSearchResponse.builder()
+                .aiModel("should-not-be-used")
+                .candidates(List.of(BookCandidateDto.builder()
+                    .candidateId("ai-1")
+                    .title("AI Result")
+                    .author("AI Author")
+                    .build()))
+                .build()),
+            List.of(
+                new NamedExternalBookSearchProvider("kakao", List.of()),
+                new NamedExternalBookSearchProvider("openlibrary", List.of())
+            ),
+            properties,
+            new FakeBookMapper()
+        );
+
+        BookCandidateSearchResponse response = business.searchCandidates(BookCandidateSearchRequest.builder()
+            .query("light and matter")
+            .build());
+
+        assertThat(response.getAiModel()).isEqualTo("external-none");
+        assertThat(response.getCandidates()).isEmpty();
+    }
+
     private BookBusiness business(AiProvider aiProvider, ExternalBookSearchProvider externalBookSearchProvider, BookMapper bookMapper) {
         return business(aiProvider, List.of(externalBookSearchProvider), bookMapper);
     }
 
     private BookBusiness business(AiProvider aiProvider, List<ExternalBookSearchProvider> externalBookSearchProviders, BookMapper bookMapper) {
         ExternalBookSearchProperties properties = new ExternalBookSearchProperties();
+        properties.setAiFallbackEnabled(true);
         properties.setProvider("openlibrary");
         return new BookBusiness(aiProvider, externalBookSearchProviders, properties, bookMapper);
     }

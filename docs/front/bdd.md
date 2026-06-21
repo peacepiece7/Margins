@@ -44,7 +44,7 @@ And returns to the login form
 
 Given the user is signed in or using single-user mode
 When the user searches for a book title or description
-Then the UI shows external or AI-fallback candidates with title, author, and stable candidate identifier
+Then the UI shows external or AI-fallback candidates with title, author, stable candidate identifier, and ISBN when present
 And selecting one candidate creates a saved book without requiring a reading session to be created immediately
 
 ### Scenario: User sees progress while an API search is running
@@ -65,7 +65,7 @@ And existing content is not replaced by skeletons for short edit, delete, or arc
 
 Given the backend returns external book candidates
 When the search results render
-Then each candidate card shows the book title, author, and candidate identifier
+Then each candidate card shows the book title, author, candidate identifier, and ISBN when present
 And the publication year is shown when the backend provides it
 
 ### Scenario: User manually registers a book when search is missing
@@ -276,7 +276,7 @@ And the edited title appears in the session header and session library
 
 Given the reader has saved active and completed sessions
 When the session library is visible
-Then the UI shows total sessions, completed sessions, active sessions, distinct books, saved quote count, answered question count, and average progress from the backend stats API
+Then the UI shows total sessions, completed sessions, active sessions, distinct books, saved quote count, answered question count, and average progress derived from loaded session summaries
 
 ### Scenario: User filters saved reading sessions
 
@@ -713,9 +713,9 @@ And the persona identity remains visible in the message history
 
 Given a debate window exists with multiple selected personas
 When the user sends one debate prompt to the selected personas
-Then the UI reloads persisted timeline data
+Then the UI sends one `/api/session-windows/{id}/debate/all` request with selected `personaIds`
+And reloads persisted timeline data
 And shows a response from each selected persona in the debate window
-And each request body contains that persona id and the shared prompt content
 
 ### Scenario: User requests the next debate answer
 

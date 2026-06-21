@@ -88,8 +88,8 @@ Implemented helper:
 ## Owner Replan Page Flow
 
 - After login, `ReadingPortal` is the default shell. `SessionWorkbench` remains in source as the dense legacy workbench, but the user-facing flow is split into the owner-approved pages: `book-search`, `book-list`, `book-detail`, `review`, and `debate`.
-- `book-search` uses `POST /api/books/search-candidates` for external-book candidates with `candidateId`, title, author, and optional publication year; candidate ids may come from Kakao (`kakao:`), Open Library (`openlibrary:`), or AI fallback. The backend falls back to AI-generated candidates when external search is unavailable. The page can also call `POST /api/books` with a generated `manual-*` candidate id when the user manually enters a book title and author.
-- Candidate cards display the backend candidate id as the user-visible book 고유번호, plus publication year when present.
+- `book-search` uses `POST /api/books/search-candidates` for external-book candidates with `candidateId`, title, author, optional ISBN, and optional publication year; candidate ids may come from Kakao (`kakao:`), Open Library (`openlibrary:`), or AI fallback. The page can also call `POST /api/books` with a generated `manual-*` candidate id when the user manually enters a book title and author.
+- Candidate cards display the backend candidate id as the user-visible book 고유번호, plus ISBN and publication year when present. Saving a candidate sends the optional ISBN back to `POST /api/books`.
 - Candidate registration in `ReadingPortal` saves the book without creating a reading session. Session creation starts from the detail, review, or debate flow so book registration and reading work remain separate user steps.
 - `book-list` renders `GET /api/books` results as clickable rows. Rows navigate to `book-detail` and expose delete controls.
 - `book-detail` edits saved book metadata through `PATCH /api/books/{id}`, removes active saved books through `DELETE /api/books/{id}`, starts the reflection workspace, displays the AI question list, and requires a debate topic before entering `debate`.
@@ -116,7 +116,7 @@ Implemented helper:
 - The page shell calls `PATCH /api/books/{id}` when a reader edits saved book title or author, then refreshes saved books from backend state.
 - The page shell calls `DELETE /api/books/{id}` when a reader removes a saved book from the active list, then clears local selection if that book was active.
 - The UI calls `GET /api/reading-sessions` to render the reading session library.
-- The UI calls `GET /api/reading-sessions/stats` to render backend-derived reader statistics: total sessions, completed/active sessions, distinct books, saved quotes, answered questions, messages, and average progress.
+- The UI derives reader statistics from the loaded `GET /api/reading-sessions` summaries during normal shell hydration, so it does not need a separate `/api/reading-sessions/stats` request for the same dashboard values.
 - The UI calls `GET /api/reading-sessions/search?query={text}` from the Reading memory panel to find persisted session titles, tags, highlights, insights, and messages; selecting a result loads that result's session timeline.
 - The reading session library can be filtered client-side by book/title/tag text and by all, active, or completed status from the loaded session summaries.
 - The UI calls `DELETE /api/reading-sessions/{id}` when a reader archives an accidental session; the returned summaries refresh the library and dashboard.
@@ -136,7 +136,7 @@ Implemented helper:
 - Readers can create a custom debate persona through `POST /api/personas`; the returned active persona list refreshes the debate selector and selects the new persona for immediate use.
 - The UI can call `POST /api/session-windows/{id}/questions/generate` from the question panel; returned questions are recovered through the timeline.
 - Message/debate responses are displayed from persisted timeline data, including generated message ids and persona ids.
-- `ReadingPortal` sends debate prompts through `POST /api/session-windows/{id}/debate` for each selected persona, so a room can include only the chosen participants. The legacy `SessionWorkbench` can still call `POST /api/session-windows/{id}/debate/all` with only the shared `content` for all-active-persona comparison and does not send a sentinel persona id for that all-persona route.
+- `ReadingPortal` sends one selected-persona debate prompt through `POST /api/session-windows/{id}/debate/all` with `content` and `personaIds`, so a room can include only the chosen participants without issuing one API request per persona. The legacy `SessionWorkbench` can still call the same route with only shared `content` for all-active-persona comparison and does not send a sentinel persona id.
 - Window message sends use `POST /api/session-windows/{id}/messages/stream` when available. The stream starts with `message.start`, appends `message.delta` chunks into a transient assistant message, treats `message.error` as a send failure, and reloads the backend timeline after `message.done` so persisted state remains authoritative.
 - The SSE parser accepts both LF and CRLF event block delimiters, so browser streams remain readable if the runtime or proxy normalizes line endings while preserving the backend event contract.
 - Failed message streams and failed saves for highlights, custom questions, session tags, and personas keep the reader's draft input values visible for retry while showing the backend `ApiResponse.message`.

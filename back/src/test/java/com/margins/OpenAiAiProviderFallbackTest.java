@@ -23,6 +23,7 @@ import com.margins.session.model.SessionWindowContext;
 import com.margins.session.model.SessionWindowRecord;
 import com.sun.net.httpserver.HttpServer;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,8 @@ class OpenAiAiProviderFallbackTest {
             new FakeSessionWindowMapper(),
             new FakeMessageMapper(),
             new FakeQuestionMapper(),
-            new FakePersonaMapper()
+            new FakePersonaMapper(),
+            HttpClient.newHttpClient()
         );
 
         BookCandidateSearchResponse candidates = provider.suggestBooks("Dune");
@@ -87,7 +89,8 @@ class OpenAiAiProviderFallbackTest {
                 new FakeSessionWindowMapper(),
                 new FakeMessageMapper(),
                 new FakeQuestionMapper(),
-                new FakePersonaMapper()
+                new FakePersonaMapper(),
+                HttpClient.newHttpClient()
             );
 
             QuestionListResponse response = provider.suggestQuestions(10L, GenerateQuestionsRequest.builder()
@@ -133,7 +136,8 @@ class OpenAiAiProviderFallbackTest {
                 new FakeSessionWindowMapper(),
                 new FakeMessageMapper(),
                 new FakeQuestionMapper(),
-                new FakePersonaMapper()
+                new FakePersonaMapper(),
+                HttpClient.newHttpClient()
             );
 
             List<String> deltas = new ArrayList<>();
@@ -173,7 +177,8 @@ class OpenAiAiProviderFallbackTest {
                 new FakeSessionWindowMapper(),
                 new FakeMessageMapper(),
                 new FakeQuestionMapper(),
-                new FakePersonaMapper()
+                new FakePersonaMapper(),
+                HttpClient.newHttpClient()
             );
 
             List<String> deltas = new ArrayList<>();

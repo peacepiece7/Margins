@@ -15,9 +15,10 @@ And the same record can be reloaded later
 
 ### Scenario: User registers a book from external metadata
 
-Given the external book search provider returns a candidate with identifier, title, and author
+Given the external book search provider returns a candidate with identifier, title, author, and ISBN
 When the user selects that search result
 Then the saved book keeps the provider candidate identifier as the source reference
+And the saved book stores the candidate ISBN when one was supplied
 And the registered book can be opened from the book list
 
 ### Scenario: User follows owner-approved page structure

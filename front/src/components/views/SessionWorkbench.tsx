@@ -1002,6 +1002,7 @@ export function SessionWorkbench() {
               >
                 <div className="font-medium">{candidate.title}</div>
                 <div className="text-sm text-stone-600">{candidate.author}</div>
+                {candidate.isbn && <div className="mt-1 text-xs text-stone-500">ISBN {candidate.isbn}</div>}
                 {candidate.reason && <div className="mt-2 text-xs text-stone-500">{candidate.reason}</div>}
               </button>
             ))}

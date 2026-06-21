@@ -51,6 +51,7 @@ public class OpenAiAiProvider implements AiProvider {
     private final MessageMapper messageMapper;
     private final QuestionMapper questionMapper;
     private final PersonaMapper personaMapper;
+    private final HttpClient httpClient;
     private final PlaceholderAiProvider fallback = new PlaceholderAiProvider();
 
     @Override
@@ -189,6 +190,35 @@ public class OpenAiAiProvider implements AiProvider {
         }
     }
 
+    @Override
+    public List<AiMessageResponse> answerDebateMessages(Long windowId, List<DebateMessageRequest> requests) {
+        if (!configured()) {
+            return AiProvider.super.answerDebateMessages(windowId, requests);
+        }
+        if (requests == null || requests.isEmpty()) {
+            return List.of();
+        }
+
+        try {
+            String output = createText(
+                "Return a JSON array of persona debate replies. Each object must include personaId and content. Match exactly the requested personaId values. Keep each content under 140 words.",
+                contextForWindow(windowId)
+                    + "\nReader debate message: "
+                    + safe(requests.get(0).getContent())
+                    + "\nPersonas:\n"
+                    + personaBatchPrompt(requests)
+            );
+            List<AiMessageResponse> responses = parseDebateResponses(windowId, requests, output);
+            if (responses.isEmpty()) {
+                return AiProvider.super.answerDebateMessages(windowId, requests);
+            }
+            return responses;
+        } catch (RuntimeException exception) {
+            logOpenAiFallback("debate batch answer", exception);
+            return AiProvider.super.answerDebateMessages(windowId, requests);
+        }
+    }
+
     private boolean configured() {
         return properties.getApiKey() != null && !properties.getApiKey().isBlank();
     }
@@ -208,10 +238,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(root)))
                 .build();
-            HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
-                .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 throw new IllegalStateException("OpenAI request failed: "
                     + response.statusCode()
@@ -248,10 +275,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(root)))
                 .build();
-            HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
-                .build();
-            HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 String body = new String(response.body().readAllBytes(), StandardCharsets.UTF_8);
                 throw new IllegalStateException("OpenAI stream request failed: "
@@ -408,6 +432,51 @@ public class OpenAiAiProvider implements AiProvider {
             }
         }
         return questions;
+    }
+
+    private String personaBatchPrompt(List<DebateMessageRequest> requests) {
+        StringBuilder builder = new StringBuilder();
+        for (DebateMessageRequest request : requests) {
+            PersonaRecord persona = personaMapper.findActiveById(request.getPersonaId());
+            String personaPrompt = persona == null ? "Respond as a literary discussion participant." : persona.getSystemPrompt();
+            builder.append("- personaId: ")
+                .append(request.getPersonaId())
+                .append("\n  prompt: ")
+                .append(personaPrompt)
+                .append('\n');
+        }
+        return builder.toString();
+    }
+
+    private List<AiMessageResponse> parseDebateResponses(Long windowId, List<DebateMessageRequest> requests, String output) {
+        java.util.Map<Long, DebateMessageRequest> requestByPersonaId = requests.stream()
+            .collect(java.util.stream.Collectors.toMap(
+                DebateMessageRequest::getPersonaId,
+                (request) -> request,
+                (left, right) -> left,
+                java.util.LinkedHashMap::new
+            ));
+        java.util.Map<Long, String> contentByPersonaId = new java.util.LinkedHashMap<>();
+        JsonNode root = parseJsonArray(output);
+        for (JsonNode item : root) {
+            Long personaId = item.path("personaId").canConvertToLong() ? item.path("personaId").asLong() : null;
+            String content = item.path("content").asText("");
+            if (personaId != null && requestByPersonaId.containsKey(personaId) && !content.isBlank()) {
+                contentByPersonaId.put(personaId, content.trim());
+            }
+        }
+
+        return requests.stream()
+            .filter((request) -> contentByPersonaId.containsKey(request.getPersonaId()))
+            .map((request) -> AiMessageResponse.builder()
+                .windowId(windowId)
+                .role("assistant")
+                .personaId(request.getPersonaId())
+                .content(contentByPersonaId.get(request.getPersonaId()))
+                .streamingReady(true)
+                .aiModel(properties.getModel())
+                .build())
+            .toList();
     }
 
     private JsonNode parseJsonArray(String output) {

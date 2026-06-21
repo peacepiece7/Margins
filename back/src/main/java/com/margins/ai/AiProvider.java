@@ -6,6 +6,7 @@ import com.margins.question.dto.QuestionListResponse;
 import com.margins.session.dto.AiMessageResponse;
 import com.margins.session.dto.DebateMessageRequest;
 import com.margins.session.dto.SendMessageRequest;
+import java.util.List;
 import java.util.function.Consumer;
 
 public interface AiProvider {
@@ -22,6 +23,12 @@ public interface AiProvider {
     }
 
     AiMessageResponse answerDebateMessage(Long windowId, DebateMessageRequest request);
+
+    default List<AiMessageResponse> answerDebateMessages(Long windowId, List<DebateMessageRequest> requests) {
+        return requests.stream()
+            .map((request) -> answerDebateMessage(windowId, request))
+            .toList();
+    }
 
     private Iterable<String> chunks(String content) {
         String safeContent = content == null ? "" : content;

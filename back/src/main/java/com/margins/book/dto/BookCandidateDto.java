@@ -7,6 +7,7 @@ import lombok.Value;
 @Builder
 public class BookCandidateDto {
     String candidateId;
+    String isbn;
     String title;
     String author;
     Integer publishedYear;

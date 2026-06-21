@@ -10,6 +10,7 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,7 +60,7 @@ class KakaoBookSearchProviderTest {
         });
         server.start();
 
-        KakaoBookSearchProvider provider = new KakaoBookSearchProvider(properties("test-key"), new ObjectMapper());
+        KakaoBookSearchProvider provider = new KakaoBookSearchProvider(properties("test-key"), new ObjectMapper(), HttpClient.newHttpClient());
 
         List<BookCandidateDto> candidates = provider.search("미움받을 용기");
 
@@ -69,6 +70,7 @@ class KakaoBookSearchProviderTest {
         assertThat(candidates).singleElement()
             .satisfies((candidate) -> {
                 assertThat(candidate.getCandidateId()).isEqualTo("kakao:9788996991342");
+                assertThat(candidate.getIsbn()).isEqualTo("9788996991342");
                 assertThat(candidate.getTitle()).isEqualTo("미움받을 용기");
                 assertThat(candidate.getAuthor()).isEqualTo("기시미 이치로, 고가 후미타케");
                 assertThat(candidate.getPublishedYear()).isEqualTo(2014);
@@ -80,7 +82,7 @@ class KakaoBookSearchProviderTest {
     void searchReturnsEmptyWithoutApiKey() throws IOException {
         server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.start();
-        KakaoBookSearchProvider provider = new KakaoBookSearchProvider(properties(""), new ObjectMapper());
+        KakaoBookSearchProvider provider = new KakaoBookSearchProvider(properties(""), new ObjectMapper(), HttpClient.newHttpClient());
 
         assertThat(provider.search("미움받을 용기")).isEmpty();
     }

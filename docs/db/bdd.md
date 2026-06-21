@@ -16,6 +16,13 @@ When the save-book flow receives the same title and author with different casing
 Then the existing `books.id` is reused
 And no duplicate book row is inserted
 
+### Scenario: Provider ISBN is stored with a saved book
+
+Given a Kakao book candidate includes an ISBN
+When the user saves that candidate as a book
+Then `books.isbn` stores the candidate ISBN
+And `books.source_ref` keeps the provider candidate identifier
+
 ### Scenario: Archived reading sessions are excluded from user-facing reads
 
 Given a reading session has `deleted_at` set
@@ -57,6 +64,13 @@ Given a reading session has active `session_tags`
 When session timeline or summary queries run
 Then tag rows are returned with `tagId`, `sessionId`, and label
 And deleted tags are excluded from user-facing results
+
+### Scenario: Session summary tags are queryable in bulk
+
+Given multiple reading sessions have active `session_tags`
+When the library summary needs tags for those sessions
+Then tags can be loaded by the returned session id list
+And the application does not need one tag query per session row
 
 ### Scenario: Session tag soft delete preserves audit context
 

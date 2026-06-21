@@ -153,7 +153,7 @@ describe('marginsRepository.debateAll', () => {
     vi.restoreAllMocks();
   });
 
-  it('sends only the shared debate content because persona ids are selected by the backend', async () => {
+  it('can send selected persona ids with the shared debate content', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(apiResponse(200, {
@@ -164,11 +164,11 @@ describe('marginsRepository.debateAll', () => {
       })),
     );
 
-    await marginsRepository.debateAll(8, 'Compare every voice');
+    await marginsRepository.debateAll(8, 'Compare every voice', [4, 5]);
 
     expect(fetch).toHaveBeenCalledWith('/api/session-windows/8/debate/all', expect.objectContaining({
       method: 'POST',
-      body: JSON.stringify({ content: 'Compare every voice' }),
+      body: JSON.stringify({ content: 'Compare every voice', personaIds: [4, 5] }),
     }));
   });
 });

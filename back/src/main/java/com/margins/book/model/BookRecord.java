@@ -14,6 +14,7 @@ public class BookRecord {
     private Long userId;
     private String title;
     private String author;
+    private String isbn;
     private Integer publishedYear;
     private String source;
     private String sourceRef;

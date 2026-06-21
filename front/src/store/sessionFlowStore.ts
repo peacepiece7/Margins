@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { marginsRepository } from '../repository/marginsRepository';
 import type { BookCandidate, SaveBookResponse } from '../types/models/book';
 import type { Persona } from '../types/models/persona';
-import type { CreateReadingSessionResponse, ReadingSessionTimelineResponse, SessionWindowTimeline } from '../types/models/session';
+import type {
+  CreateReadingSessionResponse,
+  ReadingLibraryStatsResponse,
+  ReadingSessionSummary,
+  ReadingSessionTimelineResponse,
+  SessionWindowTimeline,
+} from '../types/models/session';
 import type { SessionFlowState } from '../types/view-models/sessionFlow';
 import { fitTextWithSuffix, inputLimits } from '../utils/inputLimits';
 import { selectAvailablePersonaId } from '../utils/personaSelection';
@@ -51,14 +57,30 @@ function clearStoredSessionId() {
 }
 
 async function libraryPatch(): Promise<Partial<SessionFlowState>> {
-  const [sessionResult, statsResult] = await Promise.all([
-    marginsRepository.sessions(),
-    marginsRepository.readingStats(),
-  ]);
+  const sessionResult = await marginsRepository.sessions();
 
   return {
     sessionSummaries: sessionResult.sessions,
-    readerStats: statsResult,
+    readerStats: statsFromSummaries(sessionResult.sessions),
+  };
+}
+
+function statsFromSummaries(summaries: ReadingSessionSummary[]): ReadingLibraryStatsResponse {
+  const completedCount = summaries.filter((summary) => summary.status === 'completed').length;
+  const progressValues = summaries
+    .map((summary) => summary.progressPercent)
+    .filter((value): value is number => value !== undefined && value !== null);
+  const progressSum = progressValues.reduce((total, value) => total + value, 0);
+
+  return {
+    sessionCount: summaries.length,
+    activeSessionCount: summaries.length - completedCount,
+    completedSessionCount: completedCount,
+    distinctBookCount: new Set(summaries.map((summary) => summary.bookId)).size,
+    answeredQuestionCount: summaries.reduce((total, summary) => total + (summary.answeredQuestionCount || 0), 0),
+    highlightCount: summaries.reduce((total, summary) => total + (summary.highlightCount || 0), 0),
+    messageCount: summaries.reduce((total, summary) => total + (summary.messageCount || 0), 0),
+    averageProgressPercent: progressValues.length ? Math.round(progressSum / progressValues.length) : undefined,
   };
 }
 
@@ -257,11 +279,10 @@ export function useSessionFlowStore() {
     loadLatest() {
       return run(async () => {
         const storedSessionId = readStoredSessionId();
-        const [timeline, personaResult, sessionResult, statsResult] = await Promise.all([
+        const [timeline, personaResult, sessionResult] = await Promise.all([
           restoreStoredOrLatestTimeline(storedSessionId),
           marginsRepository.personas(),
           marginsRepository.sessions(),
-          marginsRepository.readingStats(),
         ]);
         const bookResult = await marginsRepository.books();
         const selectedPersonaId = selectAvailablePersonaId(personaResult.personas, state.selectedPersonaId);
@@ -269,7 +290,7 @@ export function useSessionFlowStore() {
         return {
           ...patchFromTimeline(timeline, personaResult.personas, state.window?.windowId, state.selectedQuestionId),
           sessionSummaries: sessionResult.sessions,
-          readerStats: statsResult,
+          readerStats: statsFromSummaries(sessionResult.sessions),
           savedBooks: bookResult.books,
           personas: personaResult.personas,
           selectedPersonaId,
@@ -293,9 +314,9 @@ export function useSessionFlowStore() {
     archiveSession(sessionId: number) {
       return run(async () => {
         const sessionResult = await marginsRepository.archiveSession(sessionId);
-        const statsResult = await marginsRepository.readingStats();
+        const readerStats = statsFromSummaries(sessionResult.sessions);
         if (state.session?.sessionId !== sessionId) {
-          return { sessionSummaries: sessionResult.sessions, readerStats: statsResult };
+          return { sessionSummaries: sessionResult.sessions, readerStats };
         }
 
         clearStoredSessionId();
@@ -308,7 +329,7 @@ export function useSessionFlowStore() {
         return {
           ...nextPatch,
           sessionSummaries: sessionResult.sessions,
-          readerStats: statsResult,
+          readerStats,
         };
       });
     },
@@ -772,6 +793,38 @@ export function useSessionFlowStore() {
       setState((current) => ({ ...current, loading: true, error: undefined }));
       return marginsRepository
         .debateAll(windowId, content)
+        .then(async () => {
+          const timeline = state.session
+            ? await marginsRepository.sessionTimeline(state.session.sessionId)
+            : await marginsRepository.latestTimeline();
+          const library = await libraryPatch();
+          setState((current) => ({
+            ...current,
+            ...patchFromTimeline(timeline, current.personas, windowId, current.selectedQuestionId),
+            ...library,
+            loading: false,
+          }));
+          return true;
+        })
+        .catch((error) => {
+          setState((current) => ({
+            ...current,
+            loading: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          }));
+          return false;
+        });
+    },
+    debateWithPersonas(personaIds: number[], content: string) {
+      if (!state.window || !personaIds.length) {
+        return Promise.resolve(false);
+      }
+      const windowId = state.window.windowType === 'debate'
+        ? state.window.windowId
+        : debateWindowId(state.windows) || state.window.windowId;
+      setState((current) => ({ ...current, loading: true, error: undefined }));
+      return marginsRepository
+        .debateAll(windowId, content, personaIds)
         .then(async () => {
           const timeline = state.session
             ? await marginsRepository.sessionTimeline(state.session.sessionId)

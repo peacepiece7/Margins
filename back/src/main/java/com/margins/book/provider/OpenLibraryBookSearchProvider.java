@@ -14,16 +14,19 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
 @Order(20)
 @RequiredArgsConstructor
+@Slf4j
 public class OpenLibraryBookSearchProvider implements ExternalBookSearchProvider {
 
     private final ExternalBookSearchProperties properties;
     private final ObjectMapper objectMapper;
+    private final HttpClient httpClient;
 
     @Override
     public String providerName() {
@@ -32,7 +35,12 @@ public class OpenLibraryBookSearchProvider implements ExternalBookSearchProvider
 
     @Override
     public List<BookCandidateDto> search(String query) {
-        if (!properties.isEnabled() || query == null || query.isBlank()) {
+        if (!properties.isEnabled()) {
+            log.info("Open Library book search skipped because external book search is disabled");
+            return List.of();
+        }
+        if (query == null || query.isBlank()) {
+            log.info("Open Library book search skipped because query is blank");
             return List.of();
         }
 
@@ -43,21 +51,31 @@ public class OpenLibraryBookSearchProvider implements ExternalBookSearchProvider
                 .header("Accept", "application/json")
                 .GET()
                 .build();
-            HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
-                .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                log.warn("Open Library book search failed. status={}, queryLength={}", response.statusCode(), query.trim().length());
                 return List.of();
             }
 
-            return parseCandidates(response.body());
+            List<BookCandidateDto> candidates = parseCandidates(response.body());
+            log.info("Open Library book search completed. status={}, candidateCount={}, queryLength={}",
+                response.statusCode(),
+                candidates.size(),
+                query.trim().length());
+            return candidates;
         } catch (IOException exception) {
+            log.warn("Open Library book search failed with I/O error. queryLength={}, error={}",
+                query.trim().length(),
+                exception.getClass().getSimpleName());
             return List.of();
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
+            log.warn("Open Library book search interrupted. queryLength={}", query.trim().length());
             return List.of();
         } catch (RuntimeException exception) {
+            log.warn("Open Library book search failed with runtime error. queryLength={}, error={}",
+                query.trim().length(),
+                exception.getClass().getSimpleName());
             return List.of();
         }
     }
@@ -76,6 +94,7 @@ public class OpenLibraryBookSearchProvider implements ExternalBookSearchProvider
     private List<BookCandidateDto> parseCandidates(String body) throws IOException {
         JsonNode docs = objectMapper.readTree(body).path("docs");
         if (!docs.isArray()) {
+            log.warn("Open Library book search response did not contain docs array");
             return List.of();
         }
 
@@ -85,6 +104,10 @@ public class OpenLibraryBookSearchProvider implements ExternalBookSearchProvider
             String title = item.path("title").asText("");
             String author = firstAuthor(item.path("author_name"));
             if (key.isBlank() || title.isBlank() || author.isBlank()) {
+                log.info("Open Library book search ignored unusable document. hasKey={}, hasTitle={}, hasAuthor={}",
+                    !key.isBlank(),
+                    !title.isBlank(),
+                    !author.isBlank());
                 continue;
             }
 

@@ -22,6 +22,7 @@ import com.margins.session.dto.UpdateSessionWindowTitleRequest;
 import com.margins.session.mapper.SessionWindowMapper;
 import com.margins.session.model.SessionWindowContext;
 import com.margins.session.model.SessionWindowRecord;
+import java.util.List;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -235,6 +236,7 @@ public class SessionWindowBusiness {
 
     public AiMessageListResponse debateAll(Long windowId, DebateAllMessageRequest request) {
         SessionWindowContext context = requireWindowContext(windowId);
+        List<PersonaRecord> personas = selectedDebatePersonas(request.getPersonaIds());
         Long userId = resolveUserId(request.getUserId(), context);
         MessageRecord userMessage = insertMessage(MessageRecord.builder()
             .sessionId(context.getSessionId())
@@ -246,9 +248,18 @@ public class SessionWindowBusiness {
             .testData(true)
             .build());
 
+        List<DebateMessageRequest> personaRequests = personas.stream()
+            .map((persona) -> DebateMessageRequest.builder()
+                .personaId(persona.getId())
+                .content(userMessage.getContent())
+                .clientCorrelationId(request.getClientCorrelationId())
+                .build())
+            .toList();
+        List<AiMessageResponse> aiResponses = aiProvider.answerDebateMessages(windowId, personaRequests);
+
         return AiMessageListResponse.builder()
-            .messages(personaMapper.findActive().stream()
-                .map((persona) -> insertPersonaDebateResponse(windowId, context, userId, userMessage, persona))
+            .messages(aiResponses.stream()
+                .map((aiResponse) -> insertPersonaDebateResponse(windowId, context, userId, userMessage, aiResponse))
                 .toList())
             .build();
     }
@@ -289,6 +300,17 @@ public class SessionWindowBusiness {
         return persona;
     }
 
+    private List<PersonaRecord> selectedDebatePersonas(List<Long> personaIds) {
+        if (personaIds == null || personaIds.isEmpty()) {
+            return personaMapper.findActive();
+        }
+
+        return personaIds.stream()
+            .distinct()
+            .map(this::requireActivePersona)
+            .toList();
+    }
+
     private MessageRecord insertMessage(MessageRecord record) {
         record.setMessageOrder(messageMapper.selectNextOrder(record.getSessionId(), record.getWindowId()));
         requireInserted(messageMapper.insert(record), "Message could not be saved");
@@ -312,13 +334,8 @@ public class SessionWindowBusiness {
         SessionWindowContext context,
         Long userId,
         MessageRecord userMessage,
-        PersonaRecord persona
+        AiMessageResponse aiResponse
     ) {
-        DebateMessageRequest personaRequest = DebateMessageRequest.builder()
-            .personaId(persona.getId())
-            .content(userMessage.getContent())
-            .build();
-        AiMessageResponse aiResponse = aiProvider.answerDebateMessage(windowId, personaRequest);
         MessageRecord aiMessage = insertMessage(MessageRecord.builder()
             .sessionId(context.getSessionId())
             .windowId(windowId)
@@ -327,7 +344,7 @@ public class SessionWindowBusiness {
             .role(aiResponse.getRole())
             .content(aiResponse.getContent())
             .aiModel(aiResponse.getAiModel())
-            .personaId(persona.getId())
+            .personaId(aiResponse.getPersonaId())
             .streamingStatus(COMPLETE_STREAMING_STATUS)
             .testData(true)
             .build());

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "margins.book-search")
 public class ExternalBookSearchProperties {
     private boolean enabled = true;
+    private boolean aiFallbackEnabled = false;
     private String provider = "openlibrary";
     private String baseUrl = "https://openlibrary.org";
     private String kakaoBaseUrl = "https://dapi.kakao.com";

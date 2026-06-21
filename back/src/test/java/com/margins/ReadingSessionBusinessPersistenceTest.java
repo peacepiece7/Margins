@@ -953,6 +953,13 @@ class ReadingSessionBusinessPersistenceTest {
         }
 
         @Override
+        public List<SessionTagRecord> findBySessionIds(List<Long> sessionIds, Long userId) {
+            return sessionIds.stream()
+                .flatMap((sessionId) -> findBySessionId(sessionId, userId).stream())
+                .toList();
+        }
+
+        @Override
         public int softDelete(Long sessionId, Long tagId, Long userId) {
             this.deletedSessionId = sessionId;
             this.deletedTagId = tagId;

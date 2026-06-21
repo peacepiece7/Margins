@@ -1,5 +1,6 @@
 export interface BookCandidate {
   candidateId: string;
+  isbn?: string;
   title: string;
   author: string;
   publishedYear?: number;

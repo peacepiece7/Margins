@@ -23,6 +23,10 @@ export interface AiMessageResponse {
   aiModel: string;
 }
 
+export interface AiMessageListResponse {
+  messages: AiMessageResponse[];
+}
+
 export interface SessionWindowTimeline {
   windowId: number;
   sessionId: number;

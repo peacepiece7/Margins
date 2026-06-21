@@ -103,7 +103,7 @@ try {
   }
 
   $envText = Get-Content -LiteralPath (Join-Path $verifyRoot "runtime\env.example") -Raw -Encoding UTF8
-  foreach ($needle in @("MARGINS_DB_URL=", "MARGINS_MYSQL_USER=", "MARGINS_MYSQL_PASSWORD=", "MARGINS_AUTH_JWT_SECRET=", "OPENAI_API_KEY=", "OPENAI_MODEL=", "SPRING_PROFILES_ACTIVE=prod")) {
+  foreach ($needle in @("MARGINS_DB_URL=", "MARGINS_MYSQL_USER=", "MARGINS_MYSQL_PASSWORD=", "MARGINS_AUTH_JWT_SECRET=", "OPENAI_API_KEY=", "OPENAI_MODEL=", "MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=", "MARGINS_BOOK_SEARCH_PROVIDER=", "SPRING_PROFILES_ACTIVE=prod")) {
     if (-not $envText.Contains($needle)) {
       throw "Runtime env example is missing required variable: $needle"
     }

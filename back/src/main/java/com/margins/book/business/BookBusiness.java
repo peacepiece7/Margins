@@ -15,16 +15,19 @@ import com.margins.book.provider.ExternalBookSearchProperties;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class BookBusiness {
 
     private static final long DEFAULT_USER_ID = 1L;
     private static final int SAVE_TEXT_LIMIT = 255;
+    private static final int ISBN_TEXT_LIMIT = 32;
 
     private final AiProvider aiProvider;
     private final List<ExternalBookSearchProvider> externalBookSearchProviders;
@@ -32,8 +35,18 @@ public class BookBusiness {
     private final BookMapper bookMapper;
 
     public BookCandidateSearchResponse searchCandidates(BookCandidateSearchRequest request) {
-        for (ExternalBookSearchProvider provider : orderedExternalProviders()) {
+        List<ExternalBookSearchProvider> providers = orderedExternalProviders();
+        log.info("Book search started. preferredProvider={}, aiFallbackEnabled={}, availableProviders={}, queryPreview={}",
+            preferredProviderName(),
+            externalBookSearchProperties.isAiFallbackEnabled(),
+            providerNames(providers),
+            queryPreview(request.getQuery()));
+
+        for (ExternalBookSearchProvider provider : providers) {
             List<BookCandidateDto> externalCandidates = sanitizeCandidates(provider.search(request.getQuery()));
+            log.info("Book search provider result. provider={}, candidateCount={}",
+                provider.providerName(),
+                externalCandidates.size());
             if (externalCandidates.isEmpty()) {
                 continue;
             }
@@ -44,6 +57,15 @@ public class BookBusiness {
                 .build();
         }
 
+        if (!externalBookSearchProperties.isAiFallbackEnabled()) {
+            log.warn("Book search AI fallback disabled and external providers returned no candidates");
+            return BookCandidateSearchResponse.builder()
+                .candidates(List.of())
+                .aiModel("external-none")
+                .build();
+        }
+
+        log.info("Book search external providers returned no candidates; using AI fallback");
         BookCandidateSearchResponse response = aiProvider.suggestBooks(request.getQuery());
         List<BookCandidateDto> candidates = sanitizeCandidates(response.getCandidates());
         return BookCandidateSearchResponse.builder()
@@ -73,6 +95,7 @@ public class BookBusiness {
             .userId(DEFAULT_USER_ID)
             .title(title)
             .author(author)
+            .isbn(trimIsbn(request.getIsbn()))
             .publishedYear(request.getPublishedYear())
             .source(sourceFromCandidateId(request.getCandidateId()))
             .sourceRef(request.getCandidateId())
@@ -139,6 +162,7 @@ public class BookBusiness {
         }
 
         String candidateId = trimToLimit(candidate.getCandidateId());
+        String isbn = trimIsbn(candidate.getIsbn());
         String title = trimToLimit(candidate.getTitle());
         String author = trimToLimit(candidate.getAuthor());
         if (candidateId.isBlank() || title.isBlank() || author.isBlank()) {
@@ -147,6 +171,7 @@ public class BookBusiness {
 
         return BookCandidateDto.builder()
             .candidateId(candidateId)
+            .isbn(isbn)
             .title(title)
             .author(author)
             .publishedYear(candidate.getPublishedYear())
@@ -176,6 +201,20 @@ public class BookBusiness {
         return trimmed.substring(0, SAVE_TEXT_LIMIT);
     }
 
+    private String trimIsbn(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.isBlank()) {
+            return null;
+        }
+        if (trimmed.length() <= ISBN_TEXT_LIMIT) {
+            return trimmed;
+        }
+        return trimmed.substring(0, ISBN_TEXT_LIMIT);
+    }
+
     private String sourceFromCandidateId(String candidateId) {
         if (candidateId == null || !candidateId.contains(":")) {
             return "ai";
@@ -187,9 +226,7 @@ public class BookBusiness {
 
     private List<ExternalBookSearchProvider> orderedExternalProviders() {
         List<ExternalBookSearchProvider> providers = new ArrayList<>(externalBookSearchProviders);
-        String preferredProvider = externalBookSearchProperties.getProvider() == null
-            ? ""
-            : externalBookSearchProperties.getProvider().trim().toLowerCase();
+        String preferredProvider = preferredProviderName();
         if (preferredProvider.isBlank()) {
             return providers;
         }
@@ -203,5 +240,28 @@ public class BookBusiness {
             return leftPreferred ? -1 : 1;
         });
         return providers;
+    }
+
+    private String preferredProviderName() {
+        return externalBookSearchProperties.getProvider() == null
+            ? ""
+            : externalBookSearchProperties.getProvider().trim().toLowerCase();
+    }
+
+    private List<String> providerNames(List<ExternalBookSearchProvider> providers) {
+        return providers.stream()
+            .map(ExternalBookSearchProvider::providerName)
+            .toList();
+    }
+
+    private String queryPreview(String query) {
+        if (query == null) {
+            return "";
+        }
+        String trimmed = query.trim();
+        if (trimmed.length() <= 40) {
+            return trimmed;
+        }
+        return trimmed.substring(0, 40) + "...";
     }
 }

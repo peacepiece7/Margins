@@ -378,6 +378,27 @@ class SessionWindowBusinessPersistenceTest {
     }
 
     @Test
+    void debateAllPersistsOnlySelectedPersonaResponses() {
+        FakeMessageMapper messageMapper = new FakeMessageMapper();
+        SessionWindowBusiness business = new SessionWindowBusiness(
+            new StubAiProvider(),
+            new FakeSessionWindowMapper(),
+            messageMapper,
+            new FakeQuestionMapper(),
+            new FakePersonaMapper()
+        );
+
+        assertThat(business.debateAll(10L, DebateAllMessageRequest.builder()
+            .content("Compare this interpretation")
+            .personaIds(List.of(5L))
+            .build()).getMessages()).hasSize(1);
+
+        assertThat(messageMapper.inserted).hasSize(2);
+        assertThat(messageMapper.inserted.get(0).getRole()).isEqualTo("user");
+        assertThat(messageMapper.inserted.get(1).getPersonaId()).isEqualTo(5L);
+    }
+
+    @Test
     void debateAllIgnoresClientSuppliedUserId() {
         FakeMessageMapper messageMapper = new FakeMessageMapper();
         SessionWindowBusiness business = new SessionWindowBusiness(

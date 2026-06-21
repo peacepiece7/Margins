@@ -332,19 +332,11 @@ export function ReadingPortal() {
     }
 
     const prompt = debateDraft.trim();
-    void (async () => {
-      let allSaved = true;
-      for (const personaId of selectedDebatePersonaIds) {
-        const saved = await flow.debateWithPersona(personaId, prompt);
-        allSaved = allSaved && saved;
-        if (!saved) {
-          break;
-        }
-      }
-      if (allSaved) {
+    void flow.debateWithPersonas(selectedDebatePersonaIds, prompt).then((saved) => {
+      if (saved) {
         setDebateDraft('');
       }
-    })();
+    });
   }
 
   function toggleDebatePersona(personaId: number) {
@@ -475,6 +467,7 @@ export function ReadingPortal() {
                         고유번호 {candidate.candidateId}
                         {candidate.publishedYear ? ` · ${candidate.publishedYear}` : ''}
                       </div>
+                      {candidate.isbn && <div className="mt-1 text-xs font-medium text-stone-500">ISBN {candidate.isbn}</div>}
                       {candidate.reason && <p className="mt-2 text-sm leading-6 text-stone-600">{candidate.reason}</p>}
                     </div>
                     <button

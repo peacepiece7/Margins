@@ -60,6 +60,8 @@ The owner-approved user-facing page structure is:
 
 Book registration is independent from reading-session creation. A saved book can be edited or removed from the active saved-book list. Book search uses an external metadata provider first so the UI can show a book 고유번호, title, and author; AI-generated candidates remain as fallback when the external provider returns no usable results. Reflection and debate actions may create or reuse a reading session and keep all records persisted in the existing session/window/message/insight model. Debate topics do not share one generic room: each topic creates a `session_windows` record with `window_type='debate'`, and messages are isolated by `window_id`.
 
+Kakao book candidates carry the preferred ISBN in both `candidateId` (`kakao:<isbn>`) and the separate optional `isbn` field. When the reader saves that candidate, the backend persists the value to `books.isbn` so the registered book keeps provider metadata without requiring the UI to parse `candidateId`.
+
 ## Implementation Status: 2026-06-21
 
 Recent owner-requested slices are implemented across the existing MVP domains:
@@ -67,7 +69,9 @@ Recent owner-requested slices are implemented across the existing MVP domains:
 - Debate sessions are topic-specific rooms. The frontend creates or selects a `debate` window per topic, filters messages by `windowId`, and lets the reader choose participating personas before entering the room.
 - Seed personas use Korean fantasy-role identities for debate: warrior, wizard, cleric, and rogue style profiles. Persona identity remains visible in debate room controls and message bubbles.
 - OpenAI integration is wired behind `AiProvider`. Runtime failures such as quota exhaustion fall back to deterministic local responses, and backend tests use mock/local HTTP servers instead of calling the real OpenAI API.
-- External book search uses the configured provider chain. Kakao Daum Book Search can be selected with `MARGINS_BOOK_SEARCH_PROVIDER=kakao` and `KAKAO_REST_API_KEY`; Open Library and AI fallback remain available when Kakao is unavailable or returns no usable candidate.
+- Multi-persona debate uses one frontend `/api/session-windows/{id}/debate/all` request with selected `personaIds`; OpenAI-backed batch debate uses one provider request for selected personas instead of one provider request per persona.
+- Reading session library reads avoid avoidable duplicate work: frontend dashboard stats are derived from loaded session summaries, and backend summary tags are loaded in bulk instead of one tag query per session.
+- External book search uses the configured provider chain. Kakao Daum Book Search can be selected with `MARGINS_BOOK_SEARCH_PROVIDER=kakao` and `KAKAO_REST_API_KEY`; Open Library remains the secondary metadata provider, while AI fallback is controlled by `MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED`.
 - Registered-book flow separates search/add from reading-session creation. Saved books can be listed, opened, edited, and soft-deleted. Reflection, question generation, and debate entry create or reuse the selected book's reading session only when needed.
 - Destructive UI actions share a confirmation boundary through `confirmDelete()` before delete/archive APIs are called.
 - Selected-question answering shows persisted answer history for that exact `windowId` and `questionId`, so previously submitted answers are visible after timeline reload or returning from the question list.

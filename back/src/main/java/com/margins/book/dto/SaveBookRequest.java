@@ -19,5 +19,7 @@ public class SaveBookRequest {
     @NotBlank
     @Size(max = 255)
     String author;
+    @Size(max = 32)
+    String isbn;
     Integer publishedYear;
 }
