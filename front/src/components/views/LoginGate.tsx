@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { marginsRepository } from '../../repository/marginsRepository';
 import type { LoginResponse } from '../../types/models/auth';
 import { testAttr } from '../../utils/testAttrs';
-import { SessionWorkbench } from './SessionWorkbench';
+import { ReadingPortal } from './ReadingPortal';
 
 const AUTH_STORAGE_KEY = 'margins.auth';
 
@@ -76,7 +76,7 @@ export function LoginGate() {
             </button>
           </div>
         </div>
-        <SessionWorkbench />
+        <ReadingPortal />
       </>
     );
   }
@@ -86,7 +86,7 @@ export function LoginGate() {
       <form className="grid gap-4 rounded border border-stone-300 bg-white p-5" onSubmit={submitLogin} {...testAttr('login-form')}>
         <div>
           <h1 className="text-2xl font-semibold">Margins</h1>
-          <p className="text-sm text-stone-600">Reading record workspace</p>
+          <p className="text-sm text-stone-600">읽고 쓰는 독서기록</p>
         </div>
         {error && (
           <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800" {...testAttr('login-error')}>

@@ -48,7 +48,7 @@ async function setupCompletedReview(page, request) {
   await selectComposerMode(page, 'Persona');
   await page.getByTestId('debate-input').fill('Challenge this reading');
   await page.getByTestId('debate-submit').click();
-  await page.getByTestId('message-list').getByText('Placeholder persona response').waitFor();
+  await page.getByTestId('message-list').getByText('임시 토론 응답').waitFor();
   await page.getByTestId('session-summary-input').fill('Dune closeout: institutions and prophecy feel unresolved.');
   await page.getByTestId('session-complete-submit').click();
   await page.getByTestId('session-review').waitFor({ state: 'visible' });

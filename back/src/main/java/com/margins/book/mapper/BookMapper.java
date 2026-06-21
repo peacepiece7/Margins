@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 @Mapper
 public interface BookMapper {
@@ -80,4 +81,46 @@ public interface BookMapper {
         ORDER BY updated_at DESC, id DESC
         """)
     List<BookRecord> findByUserId(Long userId);
+
+    @Select("""
+        SELECT
+          id,
+          user_id,
+          title,
+          author,
+          published_year,
+          source,
+          source_ref,
+          is_test_data
+        FROM books
+        WHERE id = #{bookId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+        LIMIT 1
+        """)
+    BookRecord findByIdForUser(@Param("bookId") Long bookId, @Param("userId") Long userId);
+
+    @Update("""
+        UPDATE books
+        SET
+          title = #{title},
+          author = #{author},
+          published_year = #{publishedYear},
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+        """)
+    int update(BookRecord record);
+
+    @Update("""
+        UPDATE books
+        SET
+          deleted_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{bookId}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+        """)
+    int softDelete(@Param("bookId") Long bookId, @Param("userId") Long userId);
 }

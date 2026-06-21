@@ -103,6 +103,14 @@ When the message is queried later
 Then the row exposes the persona id or equivalent relationship
 And the persona definition can be joined for display or analysis
 
+### Scenario: Seed personas support selectable fantasy debate roles
+
+Given seed data is restored
+When the application opens a debate session
+Then four active test personas are available
+And their display names are `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`
+And each persona description includes name, age, role, and personality context for debate
+
 ### Scenario: Persona trace query returns persona prompt context
 
 Given a persona debate message is stored

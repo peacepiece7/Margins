@@ -51,10 +51,58 @@ class OpenAiAiProviderFallbackTest {
 
         assertThat(candidates.getAiModel()).isEqualTo("placeholder");
         assertThat(questions.getQuestions()).hasSize(2);
+        assertThat(questions.getQuestions())
+            .extracting((question) -> question.getQuestionText())
+            .allMatch((questionText) -> questionText.matches(".*[가-힣].*"));
         assertThat(answer.getAiModel()).isEqualTo("placeholder");
         assertThat(streamed.getAiModel()).isEqualTo("placeholder");
         assertThat(String.join("", streamedDeltas)).isEqualTo(streamed.getContent());
         assertThat(debate.getPersonaId()).isEqualTo(2L);
+    }
+
+    @Test
+    void requestsKoreanQuestionGenerationWhenConfigured() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        server.createContext("/responses", (exchange) -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] response = ("{\"output_text\":\""
+                + "[{\\\"questionText\\\":\\\"이 장면에서 가장 크게 흔들린 해석은 무엇인가요?\\\","
+                + "\\\"questionType\\\":\\\"reflection\\\"}]"
+                + "\"}").getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            OpenAiProperties properties = new OpenAiProperties();
+            properties.setApiKey("test-key");
+            properties.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+            OpenAiAiProvider provider = new OpenAiAiProvider(
+                properties,
+                new ObjectMapper(),
+                new FakeSessionWindowMapper(),
+                new FakeMessageMapper(),
+                new FakeQuestionMapper(),
+                new FakePersonaMapper()
+            );
+
+            QuestionListResponse response = provider.suggestQuestions(10L, GenerateQuestionsRequest.builder()
+                .count(1)
+                .focus("Dune")
+                .build());
+
+            assertThat(response.getQuestions()).singleElement()
+                .extracting((question) -> question.getQuestionText())
+                .isEqualTo("이 장면에서 가장 크게 흔들린 해석은 무엇인가요?");
+            assertThat(requestBody.get()).contains("Generate concise reading reflection questions in Korean.");
+            assertThat(requestBody.get()).contains("Every questionText must be natural Korean");
+        } finally {
+            server.stop(0);
+        }
     }
 
     @Test

@@ -30,3 +30,6 @@ harness/artifacts/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local design source images; optimized app icons live under front/public/
+/favicon*.png

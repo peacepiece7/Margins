@@ -29,3 +29,11 @@ margins:
       base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
       model: ${OPENAI_MODEL:gpt-5.5}
       timeout-seconds: ${OPENAI_TIMEOUT_SECONDS:30}
+  book-search:
+    enabled: ${MARGINS_BOOK_SEARCH_ENABLED:true}
+    provider: ${MARGINS_BOOK_SEARCH_PROVIDER:openlibrary}
+    base-url: ${MARGINS_BOOK_SEARCH_BASE_URL:https://openlibrary.org}
+    kakao-base-url: ${KAKAO_BOOK_SEARCH_BASE_URL:https://dapi.kakao.com}
+    kakao-rest-api-key: ${KAKAO_REST_API_KEY:}
+    timeout-seconds: ${MARGINS_BOOK_SEARCH_TIMEOUT_SECONDS:5}
+    limit: ${MARGINS_BOOK_SEARCH_LIMIT:5}

@@ -35,11 +35,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 @ConditionalOnProperty(name = "margins.ai.provider", havingValue = "openai")
 public class OpenAiAiProvider implements AiProvider {
 
@@ -72,6 +74,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .candidates(candidates)
                 .build();
         } catch (RuntimeException exception) {
+            logOpenAiFallback("book candidates", exception);
             return fallback.suggestBooks(query);
         }
     }
@@ -85,7 +88,7 @@ public class OpenAiAiProvider implements AiProvider {
         try {
             String context = contextForWindow(windowId);
             String output = createText(
-                "Generate concise reading reflection questions. Return a JSON array of objects with questionText and questionType.",
+                "Generate concise reading reflection questions in Korean. Every questionText must be natural Korean, even when the focus contains English titles or names. Return a JSON array of objects with questionText and questionType.",
                 context + "\nFocus: " + safe(request.getFocus()) + "\nCount: " + (request.getCount() == null ? 3 : request.getCount())
             );
             List<QuestionDto> questions = parseQuestions(windowId, output);
@@ -95,6 +98,7 @@ public class OpenAiAiProvider implements AiProvider {
 
             return QuestionListResponse.builder().questions(questions).build();
         } catch (RuntimeException exception) {
+            logOpenAiFallback("question generation", exception);
             return fallback.suggestQuestions(windowId, request);
         }
     }
@@ -119,6 +123,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .aiModel(properties.getModel())
                 .build();
         } catch (RuntimeException exception) {
+            logOpenAiFallback("window answer", exception);
             return fallback.answerWindowMessage(windowId, request);
         }
     }
@@ -151,6 +156,7 @@ public class OpenAiAiProvider implements AiProvider {
             if (emittedProviderDelta.get()) {
                 throw exception;
             }
+            logOpenAiFallback("window stream", exception);
             return AiProvider.super.streamWindowMessage(windowId, request, deltaConsumer);
         }
     }
@@ -178,6 +184,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .aiModel(properties.getModel())
                 .build();
         } catch (RuntimeException exception) {
+            logOpenAiFallback("debate answer", exception);
             return fallback.answerDebateMessage(windowId, request);
         }
     }
@@ -206,7 +213,10 @@ public class OpenAiAiProvider implements AiProvider {
                 .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("OpenAI request failed: " + response.statusCode());
+                throw new IllegalStateException("OpenAI request failed: "
+                    + response.statusCode()
+                    + " body="
+                    + summarizeForLog(response.body()));
             }
 
             String text = extractOutputText(objectMapper.readTree(response.body()));
@@ -243,7 +253,11 @@ public class OpenAiAiProvider implements AiProvider {
                 .build();
             HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("OpenAI stream request failed: " + response.statusCode());
+                String body = new String(response.body().readAllBytes(), StandardCharsets.UTF_8);
+                throw new IllegalStateException("OpenAI stream request failed: "
+                    + response.statusCode()
+                    + " body="
+                    + summarizeForLog(body));
             }
 
             String output = readStreamedOutput(response.body(), deltaConsumer);
@@ -435,5 +449,23 @@ public class OpenAiAiProvider implements AiProvider {
 
     private String safe(String value) {
         return value == null ? "" : value;
+    }
+
+    private void logOpenAiFallback(String operation, RuntimeException exception) {
+        log.warn(
+            "OpenAI {} failed; using local fallback. model={}, baseUrl={}, reason={}",
+            operation,
+            properties.getModel(),
+            properties.getBaseUrl(),
+            exception.getMessage()
+        );
+    }
+
+    private String summarizeForLog(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        String compact = value.replaceAll("\\s+", " ").trim();
+        return compact.length() <= 500 ? compact : compact.substring(0, 500) + "...";
     }
 }

@@ -121,7 +121,7 @@ if (Test-Path -LiteralPath $DocsRoot) {
 $projectMvpPath = Join-Path $DocsRoot "project/mvp.md"
 if (Test-Path -LiteralPath $projectMvpPath) {
   $projectMvp = Get-Content -LiteralPath $projectMvpPath -Raw -Encoding UTF8
-  foreach ($requiredText in @("Book search and add", "DB persistence for every meaningful conversation", "AI-proposed candidates", "Raspberry Pi is the deployment target")) {
+  foreach ($requiredText in @("Book search and add", "DB persistence for every meaningful conversation", "external or AI-fallback candidates", "Raspberry Pi is the deployment target")) {
     if (-not $projectMvp.Contains($requiredText)) {
       $failures.Add("Project MVP document is stale or unreadable; missing '$requiredText'.") | Out-Null
     }

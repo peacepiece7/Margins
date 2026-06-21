@@ -1,12 +1,43 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
+import { LoadingSpinner } from '../atoms/LoadingSpinner';
+import { Skeleton } from '../atoms/Skeleton';
 import { useSessionFlow } from '../../hooks/useSessionFlow';
 import type { ComposerMode } from '../../types/view-models/sessionFlow';
+import { confirmDelete } from '../../utils/deleteConfirmation';
 import { markdownFilename } from '../../utils/exportFilename';
 import { inputLimits, isNonBlankWithinMaxLength, isWithinMaxLength } from '../../utils/inputLimits';
 import { isOptionalPageNumberDraft, parseOptionalPageNumber } from '../../utils/pageNumber';
 import { buildSessionBrief } from '../../utils/sessionBrief';
 import { buildSessionReadiness } from '../../utils/sessionReadiness';
 import { testAttr } from '../../utils/testAttrs';
+
+function SidebarResultSkeleton({ testId }: { testId: string }) {
+  return (
+    <div className="rounded border border-stone-200 bg-stone-50 p-2" {...testAttr(testId)}>
+      <div className="grid gap-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+    </div>
+  );
+}
+
+function MessageListSkeleton() {
+  return (
+    <div className="grid gap-3 py-2" {...testAttr('message-list-skeleton')}>
+      {[0, 1, 2].map((item) => (
+        <div className="rounded border border-stone-200 bg-stone-50 p-3" key={item}>
+          <div className="grid gap-2">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function SessionWorkbench() {
   const flow = useSessionFlow();
@@ -44,6 +75,8 @@ export function SessionWorkbench() {
   const [libraryQuery, setLibraryQuery] = useState('');
   const [libraryStatus, setLibraryStatus] = useState('all');
   const [memorySearchQuery, setMemorySearchQuery] = useState('');
+  const [bookSearchPending, setBookSearchPending] = useState(false);
+  const [memorySearchPending, setMemorySearchPending] = useState(false);
   const [savedBookQuery, setSavedBookQuery] = useState('');
   const [sessionSearchQuery, setSessionSearchQuery] = useState('');
   const [questionFilter, setQuestionFilter] = useState('all');
@@ -196,7 +229,12 @@ export function SessionWorkbench() {
 
   function submitSearch(event: FormEvent) {
     event.preventDefault();
-    void flow.search();
+    if (!flow.state.query.trim()) {
+      return;
+    }
+
+    setBookSearchPending(true);
+    void flow.search().finally(() => setBookSearchPending(false));
   }
 
   function submitMemorySearch(event: FormEvent) {
@@ -206,7 +244,8 @@ export function SessionWorkbench() {
       return;
     }
 
-    void flow.searchReadingMemory(memorySearchQuery.trim());
+    setMemorySearchPending(true);
+    void flow.searchReadingMemory(memorySearchQuery.trim()).finally(() => setMemorySearchPending(false));
   }
 
   function submitMessage(event: FormEvent) {
@@ -666,12 +705,13 @@ export function SessionWorkbench() {
               {...testAttr('book-search-input')}
             />
             <button
-              className="rounded bg-stone-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
-              disabled={flow.state.loading || !flow.state.query.trim()}
+              className="inline-flex items-center justify-center gap-2 rounded bg-stone-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+              disabled={bookSearchPending || flow.state.loading || !flow.state.query.trim()}
               type="submit"
               {...testAttr('book-search-submit')}
             >
-              Search
+              {bookSearchPending && <LoadingSpinner />}
+              {bookSearchPending ? 'Searching' : 'Search'}
             </button>
           </form>
 
@@ -742,14 +782,20 @@ export function SessionWorkbench() {
                   {...testAttr('memory-search-input')}
                 />
                 <button
-                  className="rounded border border-stone-900 px-3 py-2 text-xs font-medium disabled:opacity-50"
-                  disabled={flow.state.loading || !memorySearchQuery.trim()}
+                  className="inline-flex items-center justify-center gap-2 rounded border border-stone-900 px-3 py-2 text-xs font-medium disabled:opacity-50"
+                  disabled={memorySearchPending || flow.state.loading || !memorySearchQuery.trim()}
                   type="submit"
                   {...testAttr('memory-search-submit')}
                 >
-                  Find
+                  {memorySearchPending && <LoadingSpinner />}
+                  {memorySearchPending ? 'Finding' : 'Find'}
                 </button>
               </form>
+              {memorySearchPending && (
+                <div className="flex flex-col gap-2" {...testAttr('memory-search-skeleton-list')}>
+                  {[0, 1].map((item) => <SidebarResultSkeleton key={item} testId="memory-search-skeleton" />)}
+                </div>
+              )}
               {flow.state.memorySearchResults.length > 0 && (
                 <div className="flex flex-col gap-2" {...testAttr('memory-search-results')}>
                   {flow.state.memorySearchResults.map((result) => (
@@ -920,7 +966,11 @@ export function SessionWorkbench() {
                                 : 'border-stone-300 bg-white text-stone-600'
                             }`}
                             disabled={flow.state.loading}
-                            onClick={() => void flow.archiveSession(summary.sessionId)}
+                            onClick={() => {
+                              if (confirmDelete()) {
+                                void flow.archiveSession(summary.sessionId);
+                              }
+                            }}
                             type="button"
                             {...testAttr('session-archive-submit')}
                           >
@@ -941,6 +991,7 @@ export function SessionWorkbench() {
           )}
 
           <div className="flex flex-col gap-2" {...testAttr('candidate-list')}>
+            {bookSearchPending && [0, 1, 2].map((item) => <SidebarResultSkeleton key={item} testId="candidate-skeleton" />)}
             {flow.state.candidates.map((candidate) => (
               <button
                 className="rounded border border-stone-300 bg-white p-3 text-left hover:border-stone-800"
@@ -1054,7 +1105,11 @@ export function SessionWorkbench() {
                           <button
                             className={`rounded border px-2 py-1 text-xs font-medium disabled:opacity-50 ${active ? 'border-white bg-stone-800 text-white' : 'border-stone-300 bg-white text-stone-600'}`}
                             disabled={flow.state.loading}
-                            onClick={() => void flow.deleteQuestion(question.questionId)}
+                            onClick={() => {
+                              if (confirmDelete()) {
+                                void flow.deleteQuestion(question.questionId);
+                              }
+                            }}
                             type="button"
                             {...testAttr('question-delete-submit')}
                           >
@@ -1141,7 +1196,11 @@ export function SessionWorkbench() {
                           <button
                             className="font-semibold text-stone-500 disabled:opacity-50"
                             disabled={flow.state.loading}
-                            onClick={() => void flow.deleteSessionTag(tag.tagId)}
+                            onClick={() => {
+                              if (confirmDelete()) {
+                                void flow.deleteSessionTag(tag.tagId);
+                              }
+                            }}
                             type="button"
                             {...testAttr('session-tag-delete')}
                           >
@@ -1254,7 +1313,11 @@ export function SessionWorkbench() {
                             <button
                               className="rounded border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-600 disabled:opacity-50"
                               disabled={flow.state.loading || flow.state.windows.length <= 1}
-                              onClick={() => void flow.archiveWindow()}
+                              onClick={() => {
+                                if (confirmDelete()) {
+                                  void flow.archiveWindow();
+                                }
+                              }}
                               type="button"
                               {...testAttr('window-archive-submit')}
                             >
@@ -1669,7 +1732,11 @@ export function SessionWorkbench() {
                               <button
                                 className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
                                 disabled={flow.state.loading}
-                                onClick={() => void flow.deleteHighlight(highlight.highlightId)}
+                                onClick={() => {
+                                  if (confirmDelete()) {
+                                    void flow.deleteHighlight(highlight.highlightId);
+                                  }
+                                }}
                                 type="button"
                                 {...testAttr('highlight-delete-submit')}
                               >
@@ -1850,7 +1917,11 @@ export function SessionWorkbench() {
                           <button
                             className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
                             disabled={flow.state.loading}
-                            onClick={() => void flow.deleteSessionInsight(insight.insightId)}
+                            onClick={() => {
+                              if (confirmDelete()) {
+                                void flow.deleteSessionInsight(insight.insightId);
+                              }
+                            }}
                             type="button"
                             {...testAttr('review-insight-delete')}
                           >
@@ -1928,7 +1999,7 @@ export function SessionWorkbench() {
 
           <div className="flex-1 space-y-3 overflow-auto px-4 py-4" {...testAttr('message-list')}>
             {flow.state.loading && !flow.state.hydrated && (
-              <div className="py-16 text-center text-sm text-stone-500">Loading saved reading session...</div>
+              <MessageListSkeleton />
             )}
             {!flow.state.loading && activeMessagesWithStream.length === 0 && (
               <div className="py-16 text-center text-sm text-stone-500">Create a session from a candidate, then write inside the window.</div>
@@ -1990,7 +2061,11 @@ export function SessionWorkbench() {
                           <button
                             className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
                             disabled={flow.state.loading}
-                            onClick={() => void flow.deleteMessage(item.persistedMessageId as number)}
+                            onClick={() => {
+                              if (confirmDelete()) {
+                                void flow.deleteMessage(item.persistedMessageId as number);
+                              }
+                            }}
                             type="button"
                             {...testAttr('message-delete-submit')}
                           >

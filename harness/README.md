@@ -60,6 +60,19 @@ Each stage produces a task packet using `harness/templates/task-packet.md`. The 
 - Requirements brief template: `harness/templates/requirements-brief.md`
 - Packet helper scripts: `harness/scripts/`
 
+## Current Capabilities
+
+- Role prompts: product planning, design, frontend, backend, DB, QA, revision, commit, context curation, work coordination, and environment readiness.
+- Durable task state: `harness/work/<task-id>/` keeps task packet, work status, handoff log, discussion log, owner decisions, requirements brief, and verification report.
+- Owner records: `harness/owner/dashboard.md` is the owner-facing index; `requests/` stores decisions needed before irreversible work, `decisions/` stores binding choices, and `reports/` stores PR-like completion summaries.
+- Context recovery: `harness/scripts/refresh-context.ps1` lists the core files an agent should reload after context reset.
+- Work-state validation: `harness/scripts/validate-work-task.ps1` checks required durable task files and unresolved owner decisions.
+- Acceptance traceability: `harness/scripts/audit-acceptance-traceability.ps1` connects MVP requirements to planning, SDD/BDD, implementation, and verification evidence.
+- Local full-stack verification: `harness/scripts/run-fullstack-e2e.ps1` starts isolated MySQL/backend/frontend services, runs Playwright, and stops only the app processes it started.
+- Local quality gate: `harness/scripts/verify-local-quality.ps1` composes audits, backend tests, frontend tests, production build, optional full-stack E2E, optional screenshot capture, and optional deployment preflight checks.
+- Runtime readiness: `harness/scripts/assess-runtime.ps1` reports reversible local blockers such as Java, git, Docker, MySQL, and backend test readiness.
+- Secret guardrails: artifact and MCP notes document that API keys, JWT secrets, DB passwords, SSH keys, and production URLs must stay out of versioned harness records.
+
 ## Durable Work State
 
 Use `harness/work/` for multi-agent work that must survive context clear:

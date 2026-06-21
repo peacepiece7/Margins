@@ -19,6 +19,20 @@ When the user submits the login form
 Then the UI stores the returned auth session
 And opens the reading workbench
 
+### Scenario: User sees the product tagline
+
+Given the user opens the login or portal entry surface
+When the brand header is visible
+Then the UI shows `Margins`
+And the tagline is `읽고 쓰는 독서기록`
+
+### Scenario: Browser receives Margins icon assets
+
+Given the frontend app is served
+When the browser loads `index.html`
+Then the document links the compressed PNG favicon
+And exposes Apple touch and web app manifest icons generated from the Margins book image
+
 ### Scenario: User logs out
 
 Given the user has an active frontend auth session
@@ -30,8 +44,36 @@ And returns to the login form
 
 Given the user is signed in or using single-user mode
 When the user searches for a book title or description
-Then the UI shows AI-proposed candidates with title, author, and stable candidate identifier
-And selecting one candidate creates a saved book
+Then the UI shows external or AI-fallback candidates with title, author, and stable candidate identifier
+And selecting one candidate creates a saved book without requiring a reading session to be created immediately
+
+### Scenario: User sees progress while an API search is running
+
+Given the user enters a query for an API-backed search
+When the user submits the search
+Then the search submit button is disabled
+And the button shows a small loading spinner with a pending label until the API response finishes
+
+### Scenario: User sees skeleton placeholders while API results load
+
+Given the user submits a book search, reading memory search, question generation request, or debate reply request
+When the target result area is waiting for the backend response
+Then the UI renders skeleton cards, rows, or chat bubbles in the same area where the final content will appear
+And existing content is not replaced by skeletons for short edit, delete, or archive mutations
+
+### Scenario: User sees external book identifiers in search results
+
+Given the backend returns external book candidates
+When the search results render
+Then each candidate card shows the book title, author, and candidate identifier
+And the publication year is shown when the backend provides it
+
+### Scenario: User manually registers a book when search is missing
+
+Given the user cannot find the intended book from AI candidates
+When the user enters a book title and author in the manual registration form
+Then the frontend saves the book through the backend book API
+And the saved book appears in the registered book list
 
 ### Scenario: User starts another session from a saved book
 
@@ -46,6 +88,61 @@ Given the user has multiple saved books in the sidebar
 When the user filters saved books by title or author
 Then the UI shows only matching saved books
 And shows an empty state when no saved book matches
+
+### Scenario: User opens a saved book detail page
+
+Given the user has a registered book
+When the user selects it from the registered book list
+Then the frontend opens the book detail page
+And shows edit, delete, reflection, question, and debate entry controls for that book
+
+### Scenario: User edits or deletes a registered book
+
+Given the user opened a registered book detail page
+When the user edits the title or author
+Then the frontend calls `PATCH /api/books/{id}` and refreshes the saved book list
+When the user deletes that book
+Then the frontend calls `DELETE /api/books/{id}`
+And returns to the registered book list without the deleted book selected
+
+### Scenario: User records a personal reflection from a book detail
+
+Given the user opened a registered book detail page
+When the user starts the reflection page and writes a personal note
+Then the frontend creates or uses a reading session for that book
+And stores the note as a persisted session insight
+
+### Scenario: User generates questions from a book detail
+
+Given the user opened a registered book detail page
+When the user requests question generation
+Then the frontend creates or uses a reading session for that book
+And asks the backend to generate questions with focus text containing book id, title, and author
+And selecting a question opens the reflection page for answering
+
+### Scenario: User enters debate only after choosing a topic
+
+Given the user opened a registered book detail page
+When the user enters a debate topic and activates debate entry
+Then the frontend creates or uses a reading session for that book
+And creates a new `debate` session window titled with that topic
+And opens the debate page with that debate room selected
+And keeps the topic ready as the first message draft for all personas
+
+### Scenario: User chooses debate participants before entering a room
+
+Given active personas are loaded on the registered book detail page
+When the user toggles persona buttons before entering debate
+Then the debate entry button is enabled only when at least one persona is selected
+And the created debate room uses that selected participant list for reply actions
+
+### Scenario: Debate room feels like a messenger chat
+
+Given the user opened a topic-specific debate room
+When persisted user and persona messages are visible
+Then user messages appear as right-aligned bubbles labeled `나`
+And persona responses appear as left-aligned bubbles with visible speaker identity
+And the speaker icon row can request one selected persona's answer
 
 ### Scenario: Skeleton creates a session from a candidate
 
@@ -571,6 +668,38 @@ When the page is refreshed
 Then the UI reloads the persisted backend timeline
 And both user messages and AI responses remain visible
 
+### Scenario: User deletes an unanswered generated question from the book detail list
+
+Given the user has a saved book with a reading session
+And generated questions are visible in `book-question-panel`
+When the user clicks `book-question-delete` on an unanswered question
+Then the browser asks `삭제하시겠습니까?`
+And accepting the dialog lets the frontend call `DELETE /api/questions/{id}`
+And the deleted question row disappears after the refreshed timeline loads
+And answered questions show a completed state instead of a delete action
+
+### Scenario: User cancels an accidental destructive action
+
+Given a delete or archive control is visible
+When the user clicks it
+Then the browser asks `삭제하시겠습니까?`
+And canceling the dialog prevents the delete or archive API request
+
+### Scenario: User returns from selected-question answer area to the question list
+
+Given the user selected a generated question from the book detail page
+And the selected-question answer form is visible
+When the user clicks `question-answer-back`
+Then the UI returns to `book-detail-page`
+And the question list remains visible without changing the selected session timeline
+
+### Scenario: User sees saved answers for a selected question
+
+Given the user selected a generated question
+When the user submits an answer from `question-answer-form`
+Then the persisted user answer appears in `question-answer-history` as `내 답변`
+And returning to the question list and opening the same question shows the saved answer again
+
 ## Feature: Persona Debate
 
 ### Scenario: User debates with a persona
@@ -580,13 +709,20 @@ When the user sends a debate message to a persona
 Then the response is labeled with that persona
 And the persona identity remains visible in the message history
 
-### Scenario: User asks all personas to debate one prompt
+### Scenario: User asks selected personas to debate one prompt
 
-Given a debate window exists with multiple active personas
-When the user sends one debate prompt to all personas
+Given a debate window exists with multiple selected personas
+When the user sends one debate prompt to the selected personas
 Then the UI reloads persisted timeline data
-And shows a response from each active persona in the debate window
-And the request body contains the shared prompt content without a sentinel persona id
+And shows a response from each selected persona in the debate window
+And each request body contains that persona id and the shared prompt content
+
+### Scenario: User requests the next debate answer
+
+Given the debate room has a draft or topic and selected personas
+When the user activates `다음 대답 받기`
+Then the frontend requests a response from the selected persona with the fewest visible replies in that room
+And the refreshed chat keeps messages from other rooms hidden
 
 ### Scenario: User creates a custom debate persona
 
@@ -595,12 +731,12 @@ When the user saves a custom persona with a display name and instructions
 Then the UI adds that persona to the selector
 And the next debate request can use the new persona id
 
-### Scenario: User switches between reflection and debate windows
+### Scenario: User switches between topic-specific debate rooms
 
-Given a reading session has a question window and a debate window
-When the user selects a window tab
-Then the UI shows messages for that window
-And keeps messages from other windows out of the active message list
+Given a reading session has two debate windows with different topic titles
+When the user selects a debate room
+Then the UI shows messages for that debate window
+And keeps messages from other debate windows out of the active message list
 
 ### Scenario: User selects the debate persona
 

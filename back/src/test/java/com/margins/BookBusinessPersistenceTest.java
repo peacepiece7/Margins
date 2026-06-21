@@ -6,12 +6,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.margins.ai.AiProvider;
 import com.margins.book.business.BookBusiness;
 import com.margins.book.dto.BookCandidateDto;
-import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.book.dto.BookCandidateSearchRequest;
+import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.book.dto.SaveBookRequest;
 import com.margins.book.dto.SaveBookResponse;
+import com.margins.book.dto.UpdateBookRequest;
 import com.margins.book.mapper.BookMapper;
 import com.margins.book.model.BookRecord;
+import com.margins.book.provider.ExternalBookSearchProvider;
+import com.margins.book.provider.ExternalBookSearchProperties;
 import com.margins.question.dto.GenerateQuestionsRequest;
 import com.margins.question.dto.QuestionListResponse;
 import com.margins.session.dto.AiMessageResponse;
@@ -27,7 +30,7 @@ class BookBusinessPersistenceTest {
     @Test
     void saveBookPersistsAndReturnsGeneratedId() {
         FakeBookMapper mapper = new FakeBookMapper();
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper);
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
 
         SaveBookResponse response = business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-1")
@@ -44,6 +47,22 @@ class BookBusinessPersistenceTest {
     }
 
     @Test
+    void saveBookPersistsProviderSourceFromCandidateIdPrefix() {
+        FakeBookMapper mapper = new FakeBookMapper();
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
+
+        business.saveBook(SaveBookRequest.builder()
+            .candidateId("kakao:9788996991342")
+            .title("미움받을 용기")
+            .author("기시미 이치로, 고가 후미타케")
+            .publishedYear(2014)
+            .build());
+
+        assertThat(mapper.inserted.getSource()).isEqualTo("kakao");
+        assertThat(mapper.inserted.getSourceRef()).isEqualTo("kakao:9788996991342");
+    }
+
+    @Test
     void saveBookReusesExistingBookWithSameTitleAndAuthor() {
         FakeBookMapper mapper = new FakeBookMapper();
         mapper.duplicate = BookRecord.builder()
@@ -52,7 +71,7 @@ class BookBusinessPersistenceTest {
             .title("Dune")
             .author("AI Candidate")
             .build();
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper);
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
 
         SaveBookResponse response = business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-duplicate")
@@ -72,7 +91,7 @@ class BookBusinessPersistenceTest {
     void saveBookRejectsZeroRowInsert() {
         FakeBookMapper mapper = new FakeBookMapper();
         mapper.insertRows = 0;
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), mapper);
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
 
         assertThatThrownBy(() -> business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-zero")
@@ -87,7 +106,7 @@ class BookBusinessPersistenceTest {
 
     @Test
     void findSavedBooksReturnsUserBooks() {
-        BookBusiness business = new BookBusiness(new NoopAiProvider(), new FakeBookMapper());
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), new FakeBookMapper());
 
         assertThat(business.findSavedBooks().getBooks())
             .extracting(SaveBookResponse::getTitle)
@@ -95,8 +114,48 @@ class BookBusinessPersistenceTest {
     }
 
     @Test
+    void updateBookTrimsAndPersistsEditableMetadata() {
+        FakeBookMapper mapper = new FakeBookMapper();
+        mapper.bookById = BookRecord.builder()
+            .id(43L)
+            .userId(1L)
+            .title("Before")
+            .author("Old")
+            .build();
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
+
+        SaveBookResponse response = business.updateBook(43L, UpdateBookRequest.builder()
+            .title("  Updated Book  ")
+            .author("  Updated Author  ")
+            .publishedYear(2026)
+            .build());
+
+        assertThat(response.getTitle()).isEqualTo("Updated Book");
+        assertThat(mapper.updated.getTitle()).isEqualTo("Updated Book");
+        assertThat(mapper.updated.getAuthor()).isEqualTo("Updated Author");
+        assertThat(mapper.updated.getPublishedYear()).isEqualTo(2026);
+    }
+
+    @Test
+    void deleteBookSoftDeletesAndReturnsRemainingList() {
+        FakeBookMapper mapper = new FakeBookMapper();
+        mapper.bookById = BookRecord.builder()
+            .id(43L)
+            .userId(1L)
+            .title("Saved Book")
+            .author("Saved Author")
+            .build();
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
+
+        assertThat(business.deleteBook(43L).getBooks()).extracting(SaveBookResponse::getTitle)
+            .containsExactly("Saved Book");
+
+        assertThat(mapper.deletedBookId).isEqualTo(43L);
+    }
+
+    @Test
     void searchCandidatesReturnsOnlySaveCompatibleCandidates() {
-        BookBusiness business = new BookBusiness(new CandidateAiProvider(BookCandidateSearchResponse.builder()
+        BookBusiness business = business(new CandidateAiProvider(BookCandidateSearchResponse.builder()
             .aiModel("test-model")
             .candidates(List.of(
                 BookCandidateDto.builder()
@@ -117,7 +176,7 @@ class BookBusinessPersistenceTest {
                     .author("Author")
                     .build()
             ))
-            .build()), new FakeBookMapper());
+            .build()), new EmptyExternalBookSearchProvider(), new FakeBookMapper());
 
         BookCandidateSearchResponse response = business.searchCandidates(BookCandidateSearchRequest.builder()
             .query("long candidate")
@@ -134,9 +193,101 @@ class BookBusinessPersistenceTest {
             });
     }
 
+    @Test
+    void searchCandidatesPrefersExternalBookApiResults() {
+        BookBusiness business = business(
+            new CandidateAiProvider(BookCandidateSearchResponse.builder()
+                .aiModel("should-not-be-used")
+                .candidates(List.of(BookCandidateDto.builder()
+                    .candidateId("ai-1")
+                    .title("AI Result")
+                    .author("AI Author")
+                    .build()))
+                .build()),
+            new FixedExternalBookSearchProvider(List.of(BookCandidateDto.builder()
+                .candidateId("openlibrary:/works/OL27448W")
+                .title("Dune")
+                .author("Frank Herbert")
+                .publishedYear(1965)
+                .reason("Open Library search result")
+                .build())),
+            new FakeBookMapper()
+        );
+
+        BookCandidateSearchResponse response = business.searchCandidates(BookCandidateSearchRequest.builder()
+            .query("Dune")
+            .build());
+
+        assertThat(response.getAiModel()).isEqualTo("openlibrary");
+        assertThat(response.getCandidates()).singleElement()
+            .satisfies((candidate) -> {
+                assertThat(candidate.getCandidateId()).isEqualTo("openlibrary:/works/OL27448W");
+                assertThat(candidate.getTitle()).isEqualTo("Dune");
+                assertThat(candidate.getAuthor()).isEqualTo("Frank Herbert");
+                assertThat(candidate.getPublishedYear()).isEqualTo(1965);
+            });
+    }
+
+    @Test
+    void searchCandidatesUsesConfiguredProviderBeforeFallbackProviders() {
+        ExternalBookSearchProperties properties = new ExternalBookSearchProperties();
+        properties.setProvider("kakao");
+        BookBusiness business = new BookBusiness(
+            new CandidateAiProvider(BookCandidateSearchResponse.builder()
+                .aiModel("should-not-be-used")
+                .candidates(List.of(BookCandidateDto.builder()
+                    .candidateId("ai-1")
+                    .title("AI Result")
+                    .author("AI Author")
+                    .build()))
+                .build()),
+            List.of(
+                new NamedExternalBookSearchProvider("openlibrary", List.of(BookCandidateDto.builder()
+                    .candidateId("openlibrary:/works/OL27448W")
+                    .title("Dune")
+                    .author("Frank Herbert")
+                    .publishedYear(1965)
+                    .build())),
+                new NamedExternalBookSearchProvider("kakao", List.of(BookCandidateDto.builder()
+                    .candidateId("kakao:9788996991342")
+                    .title("미움받을 용기")
+                    .author("기시미 이치로, 고가 후미타케")
+                    .publishedYear(2014)
+                    .build()))
+            ),
+            properties,
+            new FakeBookMapper()
+        );
+
+        BookCandidateSearchResponse response = business.searchCandidates(BookCandidateSearchRequest.builder()
+            .query("미움받을 용기")
+            .build());
+
+        assertThat(response.getAiModel()).isEqualTo("kakao");
+        assertThat(response.getCandidates()).singleElement()
+            .satisfies((candidate) -> {
+                assertThat(candidate.getCandidateId()).isEqualTo("kakao:9788996991342");
+                assertThat(candidate.getTitle()).isEqualTo("미움받을 용기");
+                assertThat(candidate.getAuthor()).isEqualTo("기시미 이치로, 고가 후미타케");
+            });
+    }
+
+    private BookBusiness business(AiProvider aiProvider, ExternalBookSearchProvider externalBookSearchProvider, BookMapper bookMapper) {
+        return business(aiProvider, List.of(externalBookSearchProvider), bookMapper);
+    }
+
+    private BookBusiness business(AiProvider aiProvider, List<ExternalBookSearchProvider> externalBookSearchProviders, BookMapper bookMapper) {
+        ExternalBookSearchProperties properties = new ExternalBookSearchProperties();
+        properties.setProvider("openlibrary");
+        return new BookBusiness(aiProvider, externalBookSearchProviders, properties, bookMapper);
+    }
+
     private static class FakeBookMapper implements BookMapper {
         private BookRecord inserted;
+        private BookRecord updated;
         private BookRecord duplicate;
+        private BookRecord bookById;
+        private Long deletedBookId;
         private String duplicateLookupTitle;
         private String duplicateLookupAuthor;
         private int insertRows = 1;
@@ -163,6 +314,24 @@ class BookBusinessPersistenceTest {
                 .title("Saved Book")
                 .author("Saved Author")
                 .build());
+        }
+
+        @Override
+        public BookRecord findByIdForUser(Long bookId, Long userId) {
+            return bookById;
+        }
+
+        @Override
+        public int update(BookRecord record) {
+            this.updated = record;
+            this.bookById = record;
+            return 1;
+        }
+
+        @Override
+        public int softDelete(Long bookId, Long userId) {
+            this.deletedBookId = bookId;
+            return 1;
         }
     }
 
@@ -198,6 +367,51 @@ class BookBusinessPersistenceTest {
         @Override
         public BookCandidateSearchResponse suggestBooks(String query) {
             return response;
+        }
+    }
+
+    private static class EmptyExternalBookSearchProvider implements ExternalBookSearchProvider {
+        @Override
+        public List<BookCandidateDto> search(String query) {
+            return List.of();
+        }
+    }
+
+    private static class FixedExternalBookSearchProvider implements ExternalBookSearchProvider {
+        private final List<BookCandidateDto> candidates;
+
+        private FixedExternalBookSearchProvider(List<BookCandidateDto> candidates) {
+            this.candidates = candidates;
+        }
+
+        @Override
+        public String providerName() {
+            return "openlibrary";
+        }
+
+        @Override
+        public List<BookCandidateDto> search(String query) {
+            return candidates;
+        }
+    }
+
+    private static class NamedExternalBookSearchProvider implements ExternalBookSearchProvider {
+        private final String providerName;
+        private final List<BookCandidateDto> candidates;
+
+        private NamedExternalBookSearchProvider(String providerName, List<BookCandidateDto> candidates) {
+            this.providerName = providerName;
+            this.candidates = candidates;
+        }
+
+        @Override
+        public String providerName() {
+            return providerName;
+        }
+
+        @Override
+        public List<BookCandidateDto> search(String query) {
+            return candidates;
         }
     }
 }

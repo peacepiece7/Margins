@@ -2,6 +2,7 @@ export interface BookCandidate {
   candidateId: string;
   title: string;
   author: string;
+  publishedYear?: number;
   reason?: string;
 }
 

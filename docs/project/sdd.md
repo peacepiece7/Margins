@@ -30,8 +30,9 @@ Project-level SDD records cross-domain contracts and decisions that affect front
 
 ```text
 User
-  -> searches AI book candidates
+  -> searches external book candidates with AI fallback
   -> saves Book
+  -> reviews registered Book list/detail
   -> creates ReadingSession
   -> creates SessionWindow
   -> writes Message
@@ -44,8 +45,34 @@ User
 
 - RAG
 - Social login
-- Required external book API integration
 - Full front/back/db Docker Compose
+
+## Owner Replan Decision: 2026-06-18
+
+The owner-approved user-facing page structure is:
+
+- Login page.
+- Book search and registration page.
+- Registered book list page.
+- Registered book detail page.
+- Reflection page for personal notes, good points, and question answers.
+- Debate session page where the user chooses a topic, creates a topic-specific conversation room, selects fantasy AI personas such as 전사, 마법사, 성직자, and 도적, and discusses that room's topic with the selected personas.
+
+Book registration is independent from reading-session creation. A saved book can be edited or removed from the active saved-book list. Book search uses an external metadata provider first so the UI can show a book 고유번호, title, and author; AI-generated candidates remain as fallback when the external provider returns no usable results. Reflection and debate actions may create or reuse a reading session and keep all records persisted in the existing session/window/message/insight model. Debate topics do not share one generic room: each topic creates a `session_windows` record with `window_type='debate'`, and messages are isolated by `window_id`.
+
+## Implementation Status: 2026-06-21
+
+Recent owner-requested slices are implemented across the existing MVP domains:
+
+- Debate sessions are topic-specific rooms. The frontend creates or selects a `debate` window per topic, filters messages by `windowId`, and lets the reader choose participating personas before entering the room.
+- Seed personas use Korean fantasy-role identities for debate: warrior, wizard, cleric, and rogue style profiles. Persona identity remains visible in debate room controls and message bubbles.
+- OpenAI integration is wired behind `AiProvider`. Runtime failures such as quota exhaustion fall back to deterministic local responses, and backend tests use mock/local HTTP servers instead of calling the real OpenAI API.
+- External book search uses the configured provider chain. Kakao Daum Book Search can be selected with `MARGINS_BOOK_SEARCH_PROVIDER=kakao` and `KAKAO_REST_API_KEY`; Open Library and AI fallback remain available when Kakao is unavailable or returns no usable candidate.
+- Registered-book flow separates search/add from reading-session creation. Saved books can be listed, opened, edited, and soft-deleted. Reflection, question generation, and debate entry create or reuse the selected book's reading session only when needed.
+- Destructive UI actions share a confirmation boundary through `confirmDelete()` before delete/archive APIs are called.
+- Selected-question answering shows persisted answer history for that exact `windowId` and `questionId`, so previously submitted answers are visible after timeline reload or returning from the question list.
+- API-backed search and AI-response waits show progress UI: submit buttons use spinners, while result regions use skeleton cards, rows, and chat bubbles.
+- Full-stack verification remains local and repeatable through `harness/scripts/run-fullstack-e2e.ps1`, which starts isolated MySQL/backend/frontend services and then runs Playwright.
 
 ## Delivery Harness
 

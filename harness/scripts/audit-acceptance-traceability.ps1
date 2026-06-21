@@ -40,11 +40,11 @@ $traces = @(
     Id = "book-search-add"
     Requirement = "Book search and add"
     Evidence = @(
-      Evidence "docs/project/mvp.md" @("Book search and add", "A user can add a book from AI-proposed candidates")
-      Evidence "docs/project/bdd.md" @("User completes the first useful reading record", "searches for a book", "selects one AI-proposed candidate")
-      Evidence "docs/back/sdd.md" @("/api/books/search-candidates", "/api/books")
-      Evidence "docs/front/sdd.md" @("GET /api/books", "New book selection")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-search-input", "candidate-select")
+      Evidence "docs/project/mvp.md" @("Book search and add", "A user can add a book from external or AI-fallback candidates")
+      Evidence "docs/project/bdd.md" @("User completes the first useful reading record", "searches for a book", "selects one external or AI-fallback candidate")
+      Evidence "docs/back/sdd.md" @("/api/books/search-candidates", "OpenLibraryBookSearchProvider", "/api/books")
+      Evidence "docs/front/sdd.md" @("GET /api/books", "book-search")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-search-input", "book-candidate-save")
       Evidence "back/src/test/java/com/margins/BookBusinessPersistenceTest.java" @("SaveBookRequest", "saveBook")
     )
   },
@@ -55,9 +55,9 @@ $traces = @(
       Evidence "docs/project/mvp.md" @('Book-based `ReadingSession` creation', "A user can start a reading session for a saved book")
       Evidence "docs/project/bdd.md" @("starts a reading session for that book", "book, session, window")
       Evidence "docs/back/sdd.md" @("/api/reading-sessions", "Create session for a book")
-      Evidence "docs/front/sdd.md" @("reading session", "SessionWorkbench")
+      Evidence "docs/front/sdd.md" @("reading session", "ReadingPortal")
       Evidence "back/src/test/java/com/margins/ReadingSessionBusinessPersistenceTest.java" @("CreateReadingSessionRequest", "ReadingSession")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("session-summary", "Window #")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-start-review", "api/reading-sessions")
     )
   },
   @{
@@ -68,7 +68,7 @@ $traces = @(
       Evidence "docs/back/sdd.md" @("/api/session-windows", "Create session window")
       Evidence "docs/front/bdd.md" @("session window", "reflection window")
       Evidence "back/src/test/java/com/margins/SessionWindowBusinessPersistenceTest.java" @("CreateSessionWindowRequest", "SessionWindow")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("window-create-submit", "window-archive-submit")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-start-review", "debate-enter-submit")
     )
   },
   @{
@@ -80,7 +80,7 @@ $traces = @(
       Evidence "docs/back/sdd.md" @("/api/session-windows/{id}/questions/generate", "/api/session-windows/{id}/messages/stream")
       Evidence "docs/front/sdd.md" @("message.delta", "message.done")
       Evidence "back/src/test/java/com/margins/SessionControllerValidationTest.java" @("messages/stream", "message.delta")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("generate-questions", "question-answer-status")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-generate-questions", "question-answer-form")
     )
   },
   @{
@@ -92,7 +92,7 @@ $traces = @(
       Evidence "docs/back/sdd.md" @("/api/session-windows/{id}/debate", "/api/personas")
       Evidence "docs/front/bdd.md" @("persona", "debate")
       Evidence "back/src/test/java/com/margins/PersonaBusinessTest.java" @("persona", "Persona")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("persona-create-submit", "debate-all-submit")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("debate-session-submit", "debate-message-list")
     )
   },
   @{

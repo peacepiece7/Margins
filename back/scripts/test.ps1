@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $backRoot = Resolve-Path (Join-Path $scriptRoot "..")
 $repoRoot = Resolve-Path (Join-Path $backRoot "..")
+$loadEnv = Join-Path $repoRoot "infra\scripts\load-env.ps1"
 $toolsDir = Join-Path $repoRoot ".tools"
 $distributionName = "gradle-$GradleVersion"
 $distributionUrl = "https://services.gradle.org/distributions/$distributionName-bin.zip"
@@ -16,6 +17,10 @@ $gradleRoot = Join-Path $toolsDir $distributionName
 $gradleBat = Join-Path $gradleRoot "bin\gradle.bat"
 
 New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
+
+if (Test-Path -LiteralPath $loadEnv) {
+  & $loadEnv -EnvPath (Join-Path $repoRoot ".env")
+}
 
 if (-not (Test-Path -LiteralPath $gradleBat)) {
   if (-not (Test-Path -LiteralPath $zipPath)) {

@@ -210,6 +210,14 @@ And launches `back/margins-back.jar` from the expanded artifact
 And polls the configured local `/api/health` endpoint until it passes
 And stops the launched backend process without printing secrets
 
+### Scenario: Local MySQL bootstrap preserves UTF-8 seed data
+
+Given the seed file contains Korean persona names and prompts
+When `infra/scripts/mysql-up.ps1 -ApplySchema` applies schema and seed data
+Then each SQL file is copied into the MySQL container before execution
+And MySQL reads it with `--default-character-set=utf8mb4`
+And the bootstrap does not corrupt Korean text through a PowerShell text pipeline
+
 ### Scenario: Release artifact frontend renders locally
 
 Given a verified release artifact exists

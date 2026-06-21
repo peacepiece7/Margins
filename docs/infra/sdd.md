@@ -53,6 +53,8 @@ Infra owns local service execution, Raspberry Pi deployment flow, Docker boundar
 
 These defaults are local-development values only. Raspberry Pi deployment should provide explicit environment variables instead of relying on defaults.
 
+`infra/scripts/mysql-up.ps1 -ApplySchema` applies schema and seed SQL by copying each file into the MySQL container under `/tmp/margins-sql/` and running `mysql --default-character-set=utf8mb4` inside the container. The script must not pipe SQL through Windows PowerShell text streams because UTF-8 seed data, including Korean persona prompts, must remain byte-stable for local E2E bootstrap.
+
 ## Raspberry Pi Deployment Variables
 
 | Variable | Required | Notes |

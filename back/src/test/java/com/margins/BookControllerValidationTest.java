@@ -1,6 +1,7 @@
 package com.margins;
 
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +58,16 @@ class BookControllerValidationTest {
                 .content("""
                     {"candidateId":"c1","title":"%s","author":"Author"}
                     """.formatted(title)))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(bookService);
+    }
+
+    @Test
+    void updateRejectsBlankAuthorBeforeBusinessLogic() throws Exception {
+        mockMvc.perform(patch("/api/books/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Book\",\"author\":\"   \"}"))
             .andExpect(status().isBadRequest());
 
         verifyNoInteractions(bookService);

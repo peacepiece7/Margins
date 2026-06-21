@@ -27,9 +27,11 @@ All JSON API success and failure bodies use `ApiResponse<T>` with `success`, `da
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `POST` | `/api/auth/login` | Single-user login response with HMAC-signed bearer JWT |
-| `POST` | `/api/books/search-candidates` | Ask AI for book candidates |
+| `POST` | `/api/books/search-candidates` | Search external book metadata first, then fall back to AI book candidates |
 | `GET` | `/api/books` | Return saved non-deleted books for the single-user reader |
 | `POST` | `/api/books` | Save selected book |
+| `PATCH` | `/api/books/{id}` | Edit saved book title, author, and optional publication year |
+| `DELETE` | `/api/books/{id}` | Soft-delete a saved book from the active book list |
 | `GET` | `/api/reading-sessions` | Return single-user reading session summaries |
 | `GET` | `/api/reading-sessions/stats` | Return reader library statistics derived from persisted summaries |
 | `GET` | `/api/reading-sessions/search` | Search persisted session memory across sessions, tags, highlights, insights, and messages |
@@ -69,7 +71,9 @@ Implemented skeleton controllers:
 
 - `HealthController`: `GET /api/health`
 - `AuthController`: `POST /api/auth/login`
-- `BookController`: `POST /api/books/search-candidates`, `GET /api/books`, `POST /api/books`
+- `BookController`: `POST /api/books/search-candidates`, `GET /api/books`, `POST /api/books`, `PATCH /api/books/{id}`, `DELETE /api/books/{id}`
+- `KakaoBookSearchProvider`: calls Kakao Daum Book Search with the server-side REST API key and maps `isbn`, `title`, `authors`, `datetime`, `publisher`, and `status` into save-compatible candidates.
+- `OpenLibraryBookSearchProvider`: calls Open Library Search API for external `key`, `title`, `author_name`, and `first_publish_year` metadata as fallback external metadata before AI fallback.
 - `ReadingSessionController`: `GET /api/reading-sessions`, `GET /api/reading-sessions/stats`, `GET /api/reading-sessions/search`, `POST /api/reading-sessions`, `DELETE /api/reading-sessions/{id}`, `GET /api/reading-sessions/latest`, `GET /api/reading-sessions/{id}`, `PATCH /api/reading-sessions/{id}/title`, `PATCH /api/reading-sessions/{id}/progress`, `POST /api/reading-sessions/{id}/highlights`, `PATCH /api/reading-sessions/{id}/highlights/{highlightId}`, `DELETE /api/reading-sessions/{id}/highlights/{highlightId}`, `POST /api/reading-sessions/{id}/tags`, `DELETE /api/reading-sessions/{id}/tags/{tagId}`, `POST /api/reading-sessions/{id}/insights`, `DELETE /api/reading-sessions/{id}/insights/{insightId}`, `POST /api/reading-sessions/{id}/complete`
 - `MetricController`: `POST /api/reading-sessions/{id}/metrics/snapshot`
 - `SessionWindowController`: `POST /api/session-windows`, `DELETE /api/session-windows/{id}`, `PATCH /api/session-windows/{id}/title`, `GET /api/session-windows/{id}/questions`, `POST /api/session-windows/{id}/questions`, `POST /api/session-windows/{id}/questions/generate`, `DELETE /api/questions/{id}`, `POST /api/session-windows/{id}/messages`, `POST /api/session-windows/{id}/messages/stream`, `POST /api/session-windows/{id}/debate`, `POST /api/session-windows/{id}/debate/all`
@@ -101,6 +105,8 @@ The first backend persistence slice writes through MyBatis annotation mappers an
 | API Path | Table Writes | Notes |
 | --- | --- | --- |
 | `POST /api/books` | `books` | Uses single-user id `1`, `source='ai'`, and `source_ref` from `candidateId`; reuses an existing non-deleted book when normalized title and author match; rejects zero-row inserts instead of returning a fake saved book id. |
+| `PATCH /api/books/{id}` | `books` | Updates editable book metadata for the single-user reader, rejects duplicate normalized title/author pairs with `409`, and returns the edited book. |
+| `DELETE /api/books/{id}` | `books` | Sets `deleted_at` for the saved book owned by the single-user reader and returns the refreshed active book list. |
 | `POST /api/reading-sessions` | `reading_sessions` | Verifies the linked saved book exists for single-user id `1`, then inserts with `status='active'`; missing or archived books return `404` with `message=Book not found`; zero-row inserts fail with `message=Reading session could not be saved`. |
 | `DELETE /api/reading-sessions/{id}` | `reading_sessions` | Sets `deleted_at` for a session owned by the single-user reader. |
 | `PATCH /api/reading-sessions/{id}/title` | `reading_sessions` | Updates the user-facing session title. |
@@ -136,8 +142,11 @@ The first backend persistence slice writes through MyBatis annotation mappers an
 - `books[]`: `bookId`, `title`, `author`
 
 Soft-deleted books are excluded through `books.deleted_at IS NULL`.
-`POST /api/books/search-candidates` returns AI-proposed candidates that are safe to pass back to `POST /api/books`: blank title, author, or candidate identifier suggestions are removed, and returned `candidateId`, `title`, and `author` strings are trimmed and capped at 255 characters.
-`POST /api/books` accepts `candidateId`, `title`, and `author` as required non-blank strings up to 255 characters, matching the saved book column limits. It trims title and author before persistence and returns the existing saved book instead of inserting when the same user already has a non-deleted book with matching normalized title and author. If the mapper reports that no row was inserted for a new book, the backend fails the request with `message=Book could not be saved` and does not return an unsaved record.
+`POST /api/books/search-candidates` first calls the configured external provider when `margins.book-search.enabled=true`. `MARGINS_BOOK_SEARCH_PROVIDER=kakao` makes Kakao Daum Book Search the first provider; if it is unavailable, lacks `KAKAO_REST_API_KEY`, or returns no save-compatible records, the backend tries the remaining external providers before falling back to `AiProvider.suggestBooks`. Kakao results map the preferred ISBN to `candidateId` with `kakao:` prefix, `title` to title, joined `authors` to author, and the year from `datetime` to `publishedYear`. Open Library results map `key` to `candidateId` with `openlibrary:` prefix, `title` to title, first `author_name` to author, and `first_publish_year` to `publishedYear`.
+Both external and AI paths return candidates that are safe to pass back to `POST /api/books`: blank title, author, or candidate identifier suggestions are removed, and returned `candidateId`, `title`, and `author` strings are trimmed and capped at 255 characters.
+`POST /api/books` accepts `candidateId`, `title`, and `author` as required non-blank strings up to 255 characters, matching the saved book column limits. It trims title and author before persistence and returns the existing saved book instead of inserting when the same user already has a non-deleted book with matching normalized title and author. Candidate ids with a provider prefix, such as `kakao:` or `openlibrary:`, set `books.source` to that prefix while preserving the full value in `books.source_ref`; unprefixed candidate ids continue to use `source='ai'`. If the mapper reports that no row was inserted for a new book, the backend fails the request with `message=Book could not be saved` and does not return an unsaved record.
+`PATCH /api/books/{id}` accepts non-blank `title` and `author` up to 255 characters plus optional `publishedYear`. The update is scoped to the single-user reader and ignores soft-deleted books. If the edited normalized title/author matches another active saved book, the backend returns `409` with `message=Book already exists`.
+`DELETE /api/books/{id}` soft-deletes the book by setting `books.deleted_at`, scoped to the single-user reader. Active book list reads exclude the deleted row. Existing reading sessions remain durable records and continue to own their persisted book/session/message context; the active saved-book list is the only immediate target of this endpoint.
 
 `GET /api/reading-sessions` returns session summaries for the single-user reader:
 
@@ -221,6 +230,8 @@ Response DTO:
 
 - `personas[]`: `personaId`, `name`, `displayName`, `description`, `tone`
 
+Seed personas are fantasy debate roles exposed through the same API contract: `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`. The MVP schema does not add separate age/job columns; name, age, role, and personality profile are carried in `description`, while the debate voice is carried in `system_prompt` and the compact UI label in `tone`.
+
 `POST /api/personas` accepts:
 
 - `displayName`: required non-blank user-facing persona name up to 120 characters.
@@ -237,9 +248,9 @@ The frontend uses `personaId` in `POST /api/session-windows/{id}/debate`. The ba
 `POST /api/session-windows/{id}/questions/generate` accepts:
 
 - `count`: optional integer from `1` to `5`; defaults to provider behavior.
-- `focus`: optional short context string used by the AI provider.
+- `focus`: optional short context string used by the AI provider. The owner replan frontend sends book id, title, author, and active window title when those values are available.
 
-The backend calls `AiProvider.suggestQuestions`, persists each returned question in `questions`, and returns the persisted generated ids. `POST /api/session-windows/{id}/messages` and `POST /api/session-windows/{id}/messages/stream` accept optional `questionId`; when supplied, the backend verifies that the active question belongs to the same non-deleted session window before storing any message rows. Mismatched, archived, missing, or cross-window questions return `404` through the common failure envelope. When validation succeeds, both the user message and assistant response keep that `question_id` so later metrics can trace answer coverage per question. Message and debate DTOs may still contain a compatibility `userId`, but the backend treats it as client-supplied userId and ignores it; saved user and assistant rows use the session-window context owner, falling back to MVP user `1` only when the context has no owner.
+The backend calls `AiProvider.suggestQuestions`, persists each returned question in `questions`, and returns the persisted generated ids. Generated `questionText` is required to be Korean user-facing copy, and the provider prompt explicitly keeps the sentence in Korean even when `focus` contains English book titles or names. `POST /api/session-windows/{id}/messages` and `POST /api/session-windows/{id}/messages/stream` accept optional `questionId`; when supplied, the backend verifies that the active question belongs to the same non-deleted session window before storing any message rows. Mismatched, archived, missing, or cross-window questions return `404` through the common failure envelope. When validation succeeds, both the user message and assistant response keep that `question_id` so later metrics can trace answer coverage per question. Message and debate DTOs may still contain a compatibility `userId`, but the backend treats it as client-supplied userId and ignores it; saved user and assistant rows use the session-window context owner, falling back to MVP user `1` only when the context has no owner.
 
 `POST /api/session-windows` accepts a required `sessionId`, non-blank `windowType` up to 40 characters, and non-blank `title` up to 255 characters, matching the `session_windows` VARCHAR limits. The backend verifies the parent reading session before calculating the next position and inserting the window.
 
@@ -307,11 +318,27 @@ JWT runtime configuration:
 - Boundary: `AiProvider`.
 - Window answers use `AiProvider.streamWindowMessage` for SSE requests. The default provider path streams deterministic chunks from the final answer, while `OpenAiAiProvider` sets `stream=true` on `POST {baseUrl}/responses` and forwards `response.output_text.delta` events as backend `message.delta` events.
 - OpenAI stream error events preserve provider error text from either top-level `message` or nested `error.message` / `error.detail` fields when deltas have already been emitted, so the backend `message.error` payload can expose the actionable upstream reason.
-- Fallback implementation: `PlaceholderAiProvider`, deterministic and network-free for tests or missing API keys.
+- Fallback implementation: `PlaceholderAiProvider`, deterministic and network-free for tests or missing API keys. Reader-visible answer/debate fallback text must be usable 임시 응답 copy and must not expose implementation-boundary phrases such as prompt wiring or OpenAI integration placeholders.
 - `OpenAiAiProvider` calls `POST {baseUrl}/responses` with `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_MODEL`, and `OPENAI_TIMEOUT_SECONDS` through `margins.ai.openai.*`.
 - Default OpenAI model: `gpt-5.5`, matching the current OpenAI quickstart example used for Responses API text generation.
-- Runtime fallback: if `OPENAI_API_KEY` is blank or an OpenAI request fails, the provider returns placeholder behavior instead of breaking the MVP flow.
+- Runtime fallback: if `OPENAI_API_KEY` is blank or an OpenAI request fails, the provider returns deterministic local behavior instead of breaking the MVP flow.
 - Context included in prompts: current `sessionId`, persisted questions for the window, recent messages for the session, selected `questionId`, user input, and persona `system_prompt` for debate.
+- Backend tests for `OpenAiAiProvider` must not call the real OpenAI API. Configured-provider success paths use a local mock HTTP server that implements the expected `/responses` shape, while missing-key and provider-error paths assert deterministic fallback behavior.
+
+## External Book Search Contract
+
+- Provider chain: preferred external provider from `MARGINS_BOOK_SEARCH_PROVIDER`, then remaining external providers, then AI fallback.
+- Kakao endpoint format: `{KAKAO_BOOK_SEARCH_BASE_URL}/v3/search/book?query={query}&sort=accuracy&page=1&size={limit}` with `Authorization: KakaoAK ${KAKAO_REST_API_KEY}`.
+- Open Library endpoint format: `{MARGINS_BOOK_SEARCH_BASE_URL}/search.json?q={query}&limit={limit}&fields=key,title,author_name,first_publish_year`.
+- Runtime configuration:
+  - `MARGINS_BOOK_SEARCH_ENABLED`, default `true`.
+  - `MARGINS_BOOK_SEARCH_PROVIDER`, default `openlibrary`; set to `kakao` to search Kakao first.
+  - `MARGINS_BOOK_SEARCH_BASE_URL`, default `https://openlibrary.org`.
+  - `KAKAO_BOOK_SEARCH_BASE_URL`, default `https://dapi.kakao.com`.
+  - `KAKAO_REST_API_KEY`, required for Kakao search and stored only in process/local environment.
+  - `MARGINS_BOOK_SEARCH_TIMEOUT_SECONDS`, default `5`.
+  - `MARGINS_BOOK_SEARCH_LIMIT`, default `5`, clamped by provider code to `1..10`.
+- Failure behavior: missing Kakao key, non-2xx responses, parse failures, timeouts, blank query, or missing required result fields return an empty provider result so `BookBusiness` can continue through the provider chain.
 
 ## Streaming Contract
 

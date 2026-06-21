@@ -56,6 +56,8 @@ export interface SessionBriefSummary {
 
 export type ComposerMode = 'message' | 'persona';
 
+export type MarginsPage = 'book-search' | 'book-list' | 'book-detail' | 'review' | 'debate';
+
 export interface SessionFlowState {
   query: string;
   candidates: BookCandidate[];

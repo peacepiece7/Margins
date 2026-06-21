@@ -325,7 +325,24 @@ export const marginsRepository = {
       candidateId: candidate.candidateId,
       title: candidate.title,
       author: candidate.author,
+      publishedYear: candidate.publishedYear,
     });
+  },
+
+  saveManualBook(title: string, author: string): Promise<SaveBookResponse> {
+    return postJson('/api/books', {
+      candidateId: `manual-${Date.now()}`,
+      title,
+      author,
+    });
+  },
+
+  updateBook(bookId: number, title: string, author: string): Promise<SaveBookResponse> {
+    return patchJson(`/api/books/${bookId}`, { title, author });
+  },
+
+  deleteBook(bookId: number): Promise<BookListResponse> {
+    return deleteJson(`/api/books/${bookId}`);
   },
 
   createSession(book: SaveBookResponse): Promise<CreateReadingSessionResponse> {

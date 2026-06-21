@@ -22,10 +22,10 @@ class PersonaBusinessTest {
 
         PersonaListResponse response = business.findActive();
 
-        assertThat(response.getPersonas()).hasSize(2);
+        assertThat(response.getPersonas()).hasSize(4);
         assertThat(response.getPersonas().get(0).getPersonaId()).isEqualTo(1L);
-        assertThat(response.getPersonas().get(0).getDisplayName()).isEqualTo("Careful Critic");
-        assertThat(response.getPersonas().get(1).getTone()).isEqualTo("warm");
+        assertThat(response.getPersonas().get(0).getDisplayName()).isEqualTo("전사 아르단");
+        assertThat(response.getPersonas().get(1).getTone()).isEqualTo("상징적인 마법사형");
     }
 
     @Test
@@ -80,18 +80,34 @@ class PersonaBusinessTest {
             List<PersonaRecord> seedPersonas = List.of(
                 PersonaRecord.builder()
                     .id(1L)
-                    .name("careful-critic")
-                    .displayName("Careful Critic")
-                    .description("Challenges vague reflections.")
-                    .tone("critical")
+                    .name("warrior-ardan")
+                    .displayName("전사 아르단")
+                    .description("이름: 아르단. 나이: 42세. 직업: 전사.")
+                    .tone("단호한 전사형")
                     .active(true)
                     .build(),
                 PersonaRecord.builder()
                     .id(2L)
-                    .name("empathetic-reader")
-                    .displayName("Empathetic Reader")
-                    .description("Explores emotional response.")
-                    .tone("warm")
+                    .name("wizard-lyra")
+                    .displayName("마법사 리라")
+                    .description("이름: 리라. 나이: 137세. 직업: 마법사.")
+                    .tone("상징적인 마법사형")
+                    .active(true)
+                    .build(),
+                PersonaRecord.builder()
+                    .id(3L)
+                    .name("cleric-seren")
+                    .displayName("성직자 세렌")
+                    .description("이름: 세렌. 나이: 35세. 직업: 성직자.")
+                    .tone("차분한 성직자형")
+                    .active(true)
+                    .build(),
+                PersonaRecord.builder()
+                    .id(4L)
+                    .name("rogue-nox")
+                    .displayName("도적 녹스")
+                    .description("이름: 녹스. 나이: 29세. 직업: 도적.")
+                    .tone("날카로운 도적형")
                     .active(true)
                     .build()
             );

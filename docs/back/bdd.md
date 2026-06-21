@@ -47,12 +47,28 @@ Then the backend returns the declared HTTP status
 And the response body uses `ApiResponse` with `success=false`
 And the message contains the domain reason
 
-### Scenario: Backend returns candidate books
+### Scenario: Backend returns external candidate books
 
 Given the user provides a book query
 When `/api/books/search-candidates` is called
+Then the backend first searches the external book metadata provider
+And returns candidates with title, author, and external candidate identifier when external results are available
+
+### Scenario: Backend searches Kakao before fallback providers
+
+Given `MARGINS_BOOK_SEARCH_PROVIDER` is `kakao`
+And `KAKAO_REST_API_KEY` is configured
+When `/api/books/search-candidates` is called
+Then the backend calls Kakao Daum Book Search with `Authorization: KakaoAK ${KAKAO_REST_API_KEY}`
+And maps Kakao ISBN, title, authors, publisher, status, and publish date into save-compatible candidates
+And if Kakao returns no usable records, the backend continues to the remaining external providers before AI fallback
+
+### Scenario: Backend falls back to AI candidate books
+
+Given the external book metadata provider is disabled, unavailable, or returns no usable records
+When `/api/books/search-candidates` is called
 Then the backend asks OpenAI for candidate books
-And returns candidates with title, author, and candidate identifier
+And returns candidates with title, author, and candidate identifier from the AI fallback
 
 ### Scenario: AI book candidates are safe to save
 
@@ -63,7 +79,8 @@ And returned title, author, and candidate identifier fields fit the `/api/books`
 
 ### Scenario: Skeleton returns deterministic candidates without network
 
-Given OpenAI runtime integration is not configured
+Given external book search returns no result
+And OpenAI runtime integration is not configured
 When `/api/books/search-candidates` is called
 Then the skeleton uses `AiProvider`
 And returns a placeholder candidate response without external network access
@@ -74,7 +91,7 @@ Given `margins.ai.provider` is `openai`
 And `OPENAI_API_KEY` is blank
 When book, question, answer, or debate generation is requested
 Then the backend keeps the request inside `AiProvider`
-And returns deterministic placeholder output
+And returns deterministic local fallback output without development-boundary placeholder text
 And no external network access is required
 
 ### Scenario: OpenAI provider uses persisted context
@@ -93,6 +110,7 @@ Given a question window exists
 When `/api/session-windows/{id}/questions/generate` is called
 Then the backend asks the AI provider for reflection questions
 And stores each question in `questions`
+And generated `questionText` is returned in Korean for the reader
 And returns persisted question ids
 
 ### Scenario: Reader question is created
@@ -152,6 +170,35 @@ Given the single-user reader has saved books
 When `/api/books` is called
 Then the backend returns non-deleted saved books in newest-first order
 And each book can be used to start a new reading session
+
+### Scenario: Saved book metadata is edited
+
+Given the single-user reader has a saved book
+When `/api/books/{id}` is called with `PATCH` and a non-blank title and author
+Then the backend updates the book metadata
+And future saved-book list reads return the edited title and author
+
+### Scenario: Duplicate book edit is rejected
+
+Given the single-user reader has two saved books
+When one book is edited to the same normalized title and author as the other active book
+Then the backend returns `409`
+And no duplicate active book row is presented to the frontend
+
+### Scenario: Saved book is removed from active list
+
+Given the single-user reader has a saved book
+When `/api/books/{id}` is called with `DELETE`
+Then the backend sets `books.deleted_at`
+And future `/api/books` reads exclude the deleted book
+
+### Scenario: Missing saved book mutation returns not found
+
+Given a book is missing, archived, or not owned by the MVP user
+When `/api/books/{id}` is called with `PATCH` or `DELETE`
+Then the backend returns `404`
+And response body uses `ApiResponse` with `success=false`
+And the message explains that the book was not found
 
 ### Scenario: Reading session is saved with generated database id
 

@@ -42,21 +42,21 @@ public class PlaceholderAiProvider implements AiProvider {
                 .questionType("reflection")
                 .status("active")
                 .aiModel("placeholder")
-                .questionText("What detail from " + focus + " changed how you understood the book?")
+                .questionText(focus + "에서 어떤 디테일이 이 책을 이해하는 방식을 바꾸었나요?")
                 .build(),
             QuestionDto.builder()
                 .windowId(windowId)
                 .questionType("evidence")
                 .status("active")
                 .aiModel("placeholder")
-                .questionText("Which passage would you use as evidence for your current interpretation?")
+                .questionText("지금의 해석을 뒷받침하는 근거로 어떤 구절을 고르겠나요?")
                 .build(),
             QuestionDto.builder()
                 .windowId(windowId)
                 .questionType("connection")
                 .status("active")
                 .aiModel("placeholder")
-                .questionText("What tension or contrast should the next discussion explore?")
+                .questionText("다음 대화에서는 어떤 긴장감이나 대비를 더 탐구하면 좋을까요?")
                 .build()
         );
 
@@ -67,11 +67,16 @@ public class PlaceholderAiProvider implements AiProvider {
 
     @Override
     public AiMessageResponse answerWindowMessage(Long windowId, SendMessageRequest request) {
+        String content = "AI 연결이 준비되지 않아 임시 응답입니다. "
+            + "남긴 답변의 핵심 근거를 하나 고르고, 그 근거가 해석을 어떻게 바꾸는지 이어서 정리해 보세요. "
+            + "입력: "
+            + summarize(request.getContent());
+
         return AiMessageResponse.builder()
             .messageId(null)
             .windowId(windowId)
             .role("assistant")
-            .content("Placeholder AI response. OpenAI integration will replace this boundary.")
+            .content(content)
             .streamingReady(true)
             .aiModel("placeholder")
             .build();
@@ -79,14 +84,28 @@ public class PlaceholderAiProvider implements AiProvider {
 
     @Override
     public AiMessageResponse answerDebateMessage(Long windowId, DebateMessageRequest request) {
+        String content = "AI 연결이 준비되지 않아 임시 토론 응답입니다. "
+            + "먼저 주장과 근거를 분리해 보겠습니다. "
+            + "반대 관점에서 확인할 질문은 이 해석을 뒷받침하는 장면이 충분한지입니다. "
+            + "입력: "
+            + summarize(request.getContent());
+
         return AiMessageResponse.builder()
             .messageId(null)
             .windowId(windowId)
             .role("assistant")
             .personaId(request.getPersonaId())
-            .content("Placeholder persona response. Persona prompt wiring will replace this boundary.")
+            .content(content)
             .streamingReady(true)
             .aiModel("placeholder")
             .build();
+    }
+
+    private String summarize(String content) {
+        if (content == null || content.isBlank()) {
+            return "내용 없음";
+        }
+        String trimmed = content.trim();
+        return trimmed.length() <= 80 ? trimmed : trimmed.substring(0, 80) + "...";
     }
 }

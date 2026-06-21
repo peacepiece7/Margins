@@ -107,7 +107,7 @@ db/
   - one session highlight
   - session tags when created by application flows
   - one question window and one debate window
-  - two personas
+  - four active fantasy debate personas: `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`
   - one reflection question
   - four messages including a persona response
   - one sample session metric

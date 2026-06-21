@@ -7,8 +7,12 @@ import com.margins.book.dto.BookCandidateSearchRequest;
 import com.margins.book.dto.BookCandidateSearchResponse;
 import com.margins.book.dto.SaveBookRequest;
 import com.margins.book.dto.SaveBookResponse;
+import com.margins.book.dto.UpdateBookRequest;
 import com.margins.book.mapper.BookMapper;
 import com.margins.book.model.BookRecord;
+import com.margins.book.provider.ExternalBookSearchProvider;
+import com.margins.book.provider.ExternalBookSearchProperties;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -23,17 +27,25 @@ public class BookBusiness {
     private static final int SAVE_TEXT_LIMIT = 255;
 
     private final AiProvider aiProvider;
+    private final List<ExternalBookSearchProvider> externalBookSearchProviders;
+    private final ExternalBookSearchProperties externalBookSearchProperties;
     private final BookMapper bookMapper;
 
     public BookCandidateSearchResponse searchCandidates(BookCandidateSearchRequest request) {
-        BookCandidateSearchResponse response = aiProvider.suggestBooks(request.getQuery());
-        List<BookCandidateDto> candidates = response.getCandidates() == null
-            ? List.of()
-            : response.getCandidates().stream()
-                .map(this::sanitizeCandidate)
-                .filter((candidate) -> candidate != null)
-                .toList();
+        for (ExternalBookSearchProvider provider : orderedExternalProviders()) {
+            List<BookCandidateDto> externalCandidates = sanitizeCandidates(provider.search(request.getQuery()));
+            if (externalCandidates.isEmpty()) {
+                continue;
+            }
 
+            return BookCandidateSearchResponse.builder()
+                .candidates(externalCandidates)
+                .aiModel(provider.providerName())
+                .build();
+        }
+
+        BookCandidateSearchResponse response = aiProvider.suggestBooks(request.getQuery());
+        List<BookCandidateDto> candidates = sanitizeCandidates(response.getCandidates());
         return BookCandidateSearchResponse.builder()
             .candidates(candidates)
             .aiModel(response.getAiModel())
@@ -62,7 +74,7 @@ public class BookBusiness {
             .title(title)
             .author(author)
             .publishedYear(request.getPublishedYear())
-            .source("ai")
+            .source(sourceFromCandidateId(request.getCandidateId()))
             .sourceRef(request.getCandidateId())
             .testData(true)
             .build();
@@ -72,6 +84,45 @@ public class BookBusiness {
         }
 
         return toResponse(record);
+    }
+
+    public SaveBookResponse updateBook(Long bookId, UpdateBookRequest request) {
+        BookRecord existing = bookMapper.findByIdForUser(bookId, DEFAULT_USER_ID);
+        if (existing == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Book was not found");
+        }
+
+        String title = request.getTitle().trim();
+        String author = request.getAuthor().trim();
+        BookRecord duplicate = bookMapper.findDuplicate(DEFAULT_USER_ID, title, author);
+        if (duplicate != null && !duplicate.getId().equals(bookId)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Book already exists");
+        }
+
+        BookRecord update = BookRecord.builder()
+            .id(bookId)
+            .userId(DEFAULT_USER_ID)
+            .title(title)
+            .author(author)
+            .publishedYear(request.getPublishedYear())
+            .build();
+        if (bookMapper.update(update) <= 0) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Book could not be updated");
+        }
+
+        return toResponse(bookMapper.findByIdForUser(bookId, DEFAULT_USER_ID));
+    }
+
+    public BookListResponse deleteBook(Long bookId) {
+        BookRecord existing = bookMapper.findByIdForUser(bookId, DEFAULT_USER_ID);
+        if (existing == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Book was not found");
+        }
+        if (bookMapper.softDelete(bookId, DEFAULT_USER_ID) <= 0) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Book could not be deleted");
+        }
+
+        return findSavedBooks();
     }
 
     private SaveBookResponse toResponse(BookRecord record) {
@@ -103,6 +154,17 @@ public class BookBusiness {
             .build();
     }
 
+    private List<BookCandidateDto> sanitizeCandidates(List<BookCandidateDto> candidates) {
+        if (candidates == null) {
+            return List.of();
+        }
+
+        return candidates.stream()
+            .map(this::sanitizeCandidate)
+            .filter((candidate) -> candidate != null)
+            .toList();
+    }
+
     private String trimToLimit(String value) {
         if (value == null) {
             return "";
@@ -112,5 +174,34 @@ public class BookBusiness {
             return trimmed;
         }
         return trimmed.substring(0, SAVE_TEXT_LIMIT);
+    }
+
+    private String sourceFromCandidateId(String candidateId) {
+        if (candidateId == null || !candidateId.contains(":")) {
+            return "ai";
+        }
+
+        String source = candidateId.substring(0, candidateId.indexOf(':')).trim().toLowerCase();
+        return source.isBlank() ? "ai" : trimToLimit(source);
+    }
+
+    private List<ExternalBookSearchProvider> orderedExternalProviders() {
+        List<ExternalBookSearchProvider> providers = new ArrayList<>(externalBookSearchProviders);
+        String preferredProvider = externalBookSearchProperties.getProvider() == null
+            ? ""
+            : externalBookSearchProperties.getProvider().trim().toLowerCase();
+        if (preferredProvider.isBlank()) {
+            return providers;
+        }
+
+        providers.sort((left, right) -> {
+            boolean leftPreferred = preferredProvider.equalsIgnoreCase(left.providerName());
+            boolean rightPreferred = preferredProvider.equalsIgnoreCase(right.providerName());
+            if (leftPreferred == rightPreferred) {
+                return 0;
+            }
+            return leftPreferred ? -1 : 1;
+        });
+        return providers;
     }
 }

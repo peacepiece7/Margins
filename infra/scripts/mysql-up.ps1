@@ -46,7 +46,23 @@ if ($ApplySchema) {
     }
 
     Write-Host "Applying $file"
-    Get-Content -LiteralPath $file -Raw | docker exec -i $containerName mysql -uroot "-p$rootPassword" $database
+    $containerFile = "/tmp/margins-sql/$([IO.Path]::GetFileName($file))"
+    docker exec $containerName sh -c "mkdir -p /tmp/margins-sql"
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to prepare SQL directory in $containerName"
+    }
+
+    docker cp $file "${containerName}:$containerFile"
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to copy SQL file into $containerName`: $file"
+    }
+
+    docker exec `
+      -e "MYSQL_PWD=$rootPassword" `
+      -e "MARGINS_SQL_FILE=$containerFile" `
+      -e "MARGINS_MYSQL_DATABASE=$database" `
+      $containerName `
+      sh -c 'mysql --user=root --default-character-set=utf8mb4 "$MARGINS_MYSQL_DATABASE" < "$MARGINS_SQL_FILE"'
     if ($LASTEXITCODE -ne 0) {
       throw "Failed to apply $file"
     }

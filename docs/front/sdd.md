@@ -42,8 +42,11 @@ Implemented skeleton:
 - `src/types/view-models/`: frontend workflow state.
 - `src/components/views/SessionWorkbench.tsx`: first MVP workbench view.
 - `src/components/views/LoginGate.tsx`: MVP login gate and session storage boundary.
+- `src/components/views/ReadingPortal.tsx`: owner replan page shell for login -> book search/register -> saved book list -> book detail -> reflection -> debate.
+- `public/favicon.png`, `public/apple-touch-icon.png`, `public/icon-192.png`, `public/icon-512.png`, and `public/site.webmanifest`: compressed app icon assets generated from the owner-provided book/bookmark image and linked from `index.html`.
 - `playwright.config.ts`: full-stack smoke test configuration.
 - `tests/e2e/session-workbench.spec.ts`: book/session/window/message/debate smoke flow.
+- The visible product brand pairs `Margins` with the Korean tagline `읽고 쓰는 독서기록` on the login and portal entry surfaces.
 
 ## Model Flow
 
@@ -82,6 +85,18 @@ Implemented helper:
 - Logout removes `margins.auth` and the selected session id, then returns to the login gate.
 - After login, initial workbench hydration calls the latest or selected session timeline plus library data. If that initial load fails, the frontend marks hydration as attempted so the load effect does not loop automatically, shows the backend error, and exposes an `error-retry` button that reruns the hydration request.
 
+## Owner Replan Page Flow
+
+- After login, `ReadingPortal` is the default shell. `SessionWorkbench` remains in source as the dense legacy workbench, but the user-facing flow is split into the owner-approved pages: `book-search`, `book-list`, `book-detail`, `review`, and `debate`.
+- `book-search` uses `POST /api/books/search-candidates` for external-book candidates with `candidateId`, title, author, and optional publication year; candidate ids may come from Kakao (`kakao:`), Open Library (`openlibrary:`), or AI fallback. The backend falls back to AI-generated candidates when external search is unavailable. The page can also call `POST /api/books` with a generated `manual-*` candidate id when the user manually enters a book title and author.
+- Candidate cards display the backend candidate id as the user-visible book 고유번호, plus publication year when present.
+- Candidate registration in `ReadingPortal` saves the book without creating a reading session. Session creation starts from the detail, review, or debate flow so book registration and reading work remain separate user steps.
+- `book-list` renders `GET /api/books` results as clickable rows. Rows navigate to `book-detail` and expose delete controls.
+- `book-detail` edits saved book metadata through `PATCH /api/books/{id}`, removes active saved books through `DELETE /api/books/{id}`, starts the reflection workspace, displays the AI question list, and requires a debate topic before entering `debate`.
+- When the reader generates questions from `book-detail`, the page creates or reuses a reading session for the selected book, selects the reflection window, and then calls question generation. The focus text includes backend book id, title, and author so OpenAI question generation has the book identity requested by the owner decision.
+- `review` stores personal reflection notes as `session_insights` with `insightType='reflection'`. A selected question answer still uses the existing window message stream so the user's answer and AI response remain persisted timeline messages.
+- `debate` treats each reader-chosen topic as an independent debate room backed by a `session_windows` row with `windowType='debate'` and a title formatted as `토론: {topic}`. Entering debate from `book-detail` creates or reuses the book's reading session, creates a new topic-specific debate window, selects that `windowId`, and opens the debate page with the topic prefilled as the first message draft. Before entering, the reader can choose how many active personas participate in that room.
+
 ## E2E Smoke
 
 - `npm test` is the frontend test entry point and runs `npm run test:unit` before `npm run e2e`.
@@ -96,6 +111,10 @@ Implemented helper:
 - The UI calls `GET /api/reading-sessions/latest` on load and after message/debate writes so the persisted backend timeline is authoritative after refresh.
 - E2E verifies that a failed initial `GET /api/reading-sessions/latest` request does not create an automatic retry loop and that the visible Retry control can recover once the endpoint succeeds.
 - The UI calls `GET /api/books` on load to render reusable saved books.
+- API-backed search submit buttons render a small inline spinner and pending label while their own request is in flight. This applies to `POST /api/books/search-candidates` in `ReadingPortal` and `SessionWorkbench`, plus `GET /api/reading-sessions/search` in `SessionWorkbench`; client-only filters do not show API loading state.
+- `src/components/atoms/Skeleton.tsx` is the shared loading placeholder for result regions, while `LoadingSpinner` remains scoped to submit buttons. `ReadingPortal` uses skeleton cards for pending book candidate search, skeleton rows for pending generated questions, and a messenger-style skeleton bubble while a debate reply is being requested. Legacy `SessionWorkbench` uses the same atom for pending sidebar search results and initial message timeline hydration. Short mutation actions such as delete, edit, and archive keep disabled controls rather than replacing existing content with skeletons.
+- The page shell calls `PATCH /api/books/{id}` when a reader edits saved book title or author, then refreshes saved books from backend state.
+- The page shell calls `DELETE /api/books/{id}` when a reader removes a saved book from the active list, then clears local selection if that book was active.
 - The UI calls `GET /api/reading-sessions` to render the reading session library.
 - The UI calls `GET /api/reading-sessions/stats` to render backend-derived reader statistics: total sessions, completed/active sessions, distinct books, saved quotes, answered questions, messages, and average progress.
 - The UI calls `GET /api/reading-sessions/search?query={text}` from the Reading memory panel to find persisted session titles, tags, highlights, insights, and messages; selecting a result loads that result's session timeline.
@@ -117,16 +136,20 @@ Implemented helper:
 - Readers can create a custom debate persona through `POST /api/personas`; the returned active persona list refreshes the debate selector and selects the new persona for immediate use.
 - The UI can call `POST /api/session-windows/{id}/questions/generate` from the question panel; returned questions are recovered through the timeline.
 - Message/debate responses are displayed from persisted timeline data, including generated message ids and persona ids.
-- The debate form can call `POST /api/session-windows/{id}/debate/all` with only the shared `content` so one reader prompt receives persisted responses from every active persona for side-by-side comparison in the debate window; the frontend does not send a sentinel persona id for this all-persona route.
+- `ReadingPortal` sends debate prompts through `POST /api/session-windows/{id}/debate` for each selected persona, so a room can include only the chosen participants. The legacy `SessionWorkbench` can still call `POST /api/session-windows/{id}/debate/all` with only the shared `content` for all-active-persona comparison and does not send a sentinel persona id for that all-persona route.
 - Window message sends use `POST /api/session-windows/{id}/messages/stream` when available. The stream starts with `message.start`, appends `message.delta` chunks into a transient assistant message, treats `message.error` as a send failure, and reloads the backend timeline after `message.done` so persisted state remains authoritative.
 - The SSE parser accepts both LF and CRLF event block delimiters, so browser streams remain readable if the runtime or proxy normalizes line endings while preserving the backend event contract.
 - Failed message streams and failed saves for highlights, custom questions, session tags, and personas keep the reader's draft input values visible for retry while showing the backend `ApiResponse.message`.
+- Destructive frontend actions use the shared `confirmDelete()` helper before calling delete/archive APIs. The confirmation message is `삭제하시겠습니까?`, and cancellation must stop the API request for book deletion, question deletion, session/window archive, message deletion, highlight deletion, tag deletion, and insight deletion controls.
 - `src/utils/inputLimits.ts` centralizes frontend max-length constants that mirror backend VARCHAR/request limits for session titles, window titles, progress notes, highlights, tags, review insight metadata, and persona display fields. `SessionWorkbench` uses these constants for `maxLength` attributes and submit disabled states so overlong drafts are blocked before an API request where the backend would reject them. Repository-created labels, such as the initial reading-session title generated from a saved book title plus `reflection`, are fitted through the same limits before the request is sent.
 - `src/repository/marginsRepository.test.ts` mocks `text/event-stream` responses to verify `streamMessage` forwards `message.delta` chunks, resolves with the `message.done` payload, and throws the backend message from `message.error`.
 - The bottom action area renders separate `message-composer` and `persona-composer` regions. Message answering, persona creation, and debate controls keep their existing form contracts, but are visually grouped so long sessions do not end with an unlabeled block of inputs.
 - On narrow screens, the bottom action area exposes `composer-mode-tabs` so readers switch between the message composer and persona composer instead of scanning both stacked forms. The control uses a standard tab pattern with `aria-selected`, `aria-controls`, and matching `tabpanel` regions. On `xl` and wider screens the tabs are hidden and both composers remain visible side by side for desktop efficiency.
 - Message and single-persona debate submit buttons are disabled while their draft text is blank, so repeated mobile use does not present no-op submit controls as available actions.
 - Session windows are displayed as tabs. The selected window filters visible messages by `windowId`.
+- `ReadingPortal` renders topic-specific debate windows as a debate-room list. Selecting a room calls `selectWindow(windowId)`, and the message list filters by that selected `windowId` so topics do not share conversation history. When entering the debate page without an active debate window, the latest debate window is selected by default so a recently created topic room reopens after refresh.
+- `ReadingPortal` renders the selected debate room as a messenger-style chat panel: user messages align to the right, persona responses align to the left with a circular speaker marker, and each bubble keeps the speaker name visible. The speaker strip above the chat exposes each selected persona as a clickable icon button that requests that persona's answer for the current draft/topic. The composer also exposes `다음 대답 받기`, which chooses the selected persona with the fewest visible responses in the current room.
+- Debate participant buttons derive role icons from seeded persona names: 전사, 마법사, 성직자, and 도적 use distinct visual markers so the room reads like a party-based discussion rather than a generic assistant list.
 - The active session can be searched client-side across the selected window's visible messages and the session's saved highlights; the search shows match counts and empty states without mutating persisted timeline data.
 - User-authored messages expose inline edit and delete controls. Edits call `PATCH /api/messages/{id}` with non-blank content; deletes call `DELETE /api/messages/{id}`. After either action, the UI reloads the selected session timeline so message text, counts, question coverage, review, and exports use persisted backend state.
 - New book selection creates a reading session with a backend-compatible generated title, then creates a question window and a debate window so reflection and persona debate records are separated from the start. If one of those default window calls fails after the session has already been created, the UI still loads the created session timeline instead of hiding the partially created session.
@@ -137,10 +160,14 @@ Implemented helper:
 - Session titles render in the session header and library rows so multiple sessions for the same book can be distinguished.
 - Session tags render as removable chips in the session header, searchable labels in library rows, and persisted tags in completed review context.
 - Selecting a reflection question stores `selectedQuestionId`; sending a window message includes that id so persisted messages remain tied to the prompt.
+- `ReadingPortal` renders generated questions in the book detail question list with per-row selection and delete controls. Deleting an unanswered row calls `DELETE /api/questions/{id}`, reloads the session timeline, and prevents a deleted selected question id from remaining as active UI state.
+- `ReadingPortal` hides the question delete action once a persisted user message references that `questionId`; answered rows show a read-only completed state so backend traceability rules are visible before submission.
+- The selected-question answer form in `ReadingPortal` exposes `question-answer-back`, a local navigation control that returns to the book detail question list without mutating the selected session, window, or answer draft state.
+- The selected-question answer form also renders `question-answer-history`, filtered from persisted timeline messages whose `windowId` and `questionId` match the selected question. User answers are labeled `내 답변`, assistant/persona responses keep their speaker label, and the history remains visible after timeline reloads or returning from the question list.
 - Timeline refreshes preserve the current `selectedQuestionId` when that question still belongs to the active window; if the question disappeared or the window changed, the workbench falls back to the first question in the selected window.
 - The question panel follows the selected reflection window, derives answered/open state from persisted user messages with `questionId`, shows answered coverage, and filters prompts by all, unanswered, or answered.
 - Question cards render as compact selectable rows on mobile and desktop. The full row owns `question-select`, the answered/open badge stays inside the row, and unanswered prompts expose a separate delete action only when traceability rules allow deletion.
-- Question generation targets the selected reflection window and includes the book title plus custom window title as AI focus text when applicable.
+- Question generation targets the selected reflection window and includes the book id, book title, author, plus custom window title as AI focus text when applicable.
 - Readers can add their own reflection prompt from the question panel through `POST /api/session-windows/{id}/questions`; the refreshed timeline selects the new question for immediate answering.
 - Readers can remove unanswered prompts from the question panel through `DELETE /api/questions/{id}`; answered prompts do not expose a delete control so review and metric traceability stay intact.
 - The selected session id is stored in `localStorage` under `margins.selectedSessionId`; reload first tries that session and falls back to latest if the stored session returns no timeline or the stored-session request fails. When fallback finds a latest session, the stale stored id is replaced with the recovered session id.

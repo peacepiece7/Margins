@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { marginsRepository } from '../repository/marginsRepository';
 import type { SaveBookResponse } from '../types/models/book';
 import type {
@@ -6,7 +6,7 @@ import type {
   CreateSessionWindowResponse,
   ReadingSessionTimelineResponse,
 } from '../types/models/session';
-import { createDefaultSessionPatch } from './sessionFlowStore';
+import { createDebateWindowPatch, createDefaultSessionPatch } from './sessionFlowStore';
 
 vi.mock('../repository/marginsRepository', () => ({
   marginsRepository: {
@@ -19,6 +19,10 @@ vi.mock('../repository/marginsRepository', () => ({
 }));
 
 describe('createDefaultSessionPatch', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   function timelineFor(sessionId = 11): ReadingSessionTimelineResponse {
     return {
       sessionId,
@@ -143,5 +147,49 @@ describe('createDefaultSessionPatch', () => {
     expect(patch.window?.windowId).toBe(21);
     expect(patch.windows).toHaveLength(1);
     expect(patch.error).toBe('Session started, but library summaries could not be refreshed: Library unavailable');
+  });
+
+  it('creates a topic-specific debate window and selects it', async () => {
+    const session: CreateReadingSessionResponse = {
+      sessionId: 11,
+      bookId: 7,
+      title: 'Dune reflection',
+      status: 'active',
+    };
+    const debateWindow: CreateSessionWindowResponse = {
+      windowId: 31,
+      sessionId: 11,
+      windowType: 'debate',
+      title: '토론: How does ritual shape political authority?',
+      status: 'open',
+    };
+    const timeline = timelineFor();
+    timeline.stats.windowCount = 2;
+    timeline.windows = [
+      ...timeline.windows,
+      {
+        windowId: 31,
+        sessionId: 11,
+        windowType: 'debate',
+        title: '토론: How does ritual shape political authority?',
+        position: 2,
+        status: 'open',
+      },
+    ];
+
+    vi.mocked(marginsRepository.createWindow).mockResolvedValue(debateWindow);
+    vi.mocked(marginsRepository.sessionTimeline).mockResolvedValue(timeline);
+    vi.mocked(marginsRepository.sessions).mockResolvedValue({ sessions: [] });
+    vi.mocked(marginsRepository.readingStats).mockResolvedValue(readerStats());
+
+    const patch = await createDebateWindowPatch(session, [], 'How does ritual shape political authority?');
+
+    expect(marginsRepository.createWindow).toHaveBeenCalledWith(
+      session,
+      'debate',
+      '토론: How does ritual shape political authority?',
+    );
+    expect(patch.window?.windowId).toBe(31);
+    expect(patch.windows).toHaveLength(2);
   });
 });
