@@ -89,7 +89,7 @@ try {
   }
 
   $systemdText = Get-Content -LiteralPath (Join-Path $verifyRoot "runtime\systemd\margins-back.service.example") -Raw -Encoding UTF8
-  foreach ($needle in @("EnvironmentFile=/opt/margins/shared/margins.env", "ExecStart=/usr/bin/java -jar /opt/margins/current/back/margins-back.jar", "Restart=on-failure")) {
+  foreach ($needle in @("EnvironmentFile=/opt/margins/.env", "ExecStart=/usr/bin/java -jar /opt/margins/current/back/margins-back.jar", "Restart=on-failure")) {
     if (-not $systemdText.Contains($needle)) {
       throw "Systemd example is missing required text: $needle"
     }

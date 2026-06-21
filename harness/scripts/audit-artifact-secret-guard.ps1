@@ -37,7 +37,7 @@ function New-MinimalRelease {
   ) | Set-Content -LiteralPath (Join-Path $Root "runtime\env.example") -Encoding ASCII
   @(
     "[Service]"
-    "EnvironmentFile=/opt/margins/shared/margins.env"
+    "EnvironmentFile=/opt/margins/.env"
     "ExecStart=/usr/bin/java -jar /opt/margins/current/back/margins-back.jar"
     "Restart=on-failure"
   ) | Set-Content -LiteralPath (Join-Path $Root "runtime\systemd\margins-back.service.example") -Encoding ASCII

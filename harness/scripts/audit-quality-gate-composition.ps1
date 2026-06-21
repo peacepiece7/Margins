@@ -9,6 +9,8 @@ $files = @{
   ReadinessDoc = "docs/project/development-readiness.md"
   InfraSdd = "docs/infra/sdd.md"
   InfraBdd = "docs/infra/bdd.md"
+  UploadProdEnvPs = "infra/scripts/upload-prod-env.ps1"
+  UploadProdEnvSh = "infra/scripts/upload-prod-env.sh"
 }
 
 $failures = New-Object System.Collections.Generic.List[string]
@@ -72,6 +74,8 @@ $readinessAudit = Read-Text $files.ReadinessAudit
 $readinessDoc = Read-Text $files.ReadinessDoc
 $infraSdd = Read-Text $files.InfraSdd
 $infraBdd = Read-Text $files.InfraBdd
+$uploadProdEnvPs = Read-Text $files.UploadProdEnvPs
+$uploadProdEnvSh = Read-Text $files.UploadProdEnvSh
 
 $coreAudits = @(
   "audit-mvp-readiness.ps1",
@@ -202,12 +206,27 @@ Assert-Contains "development readiness doc" $readinessDoc @(
 
 Assert-Contains "infra sdd" $infraSdd @(
   "harness/scripts/audit-quality-gate-composition.ps1",
-  "local quality gate, CI workflow, final acceptance audit, and deployment documentation"
+  "local quality gate, CI workflow, final acceptance audit, and deployment documentation",
+  "upload-prod-env.ps1",
+  "/opt/margins/.env"
 )
 
 Assert-Contains "infra bdd" $infraBdd @(
   "Quality gate composition stays aligned",
-  "harness/scripts/audit-quality-gate-composition.ps1"
+  "harness/scripts/audit-quality-gate-composition.ps1",
+  "Production runtime env is uploaded before deploy"
+)
+
+Assert-Contains "upload-prod-env.ps1" $uploadProdEnvPs @(
+  "/opt/margins/.env",
+  "runtime_env=updated",
+  "chmod 600"
+)
+
+Assert-Contains "upload-prod-env.sh" $uploadProdEnvSh @(
+  "/opt/margins/.env",
+  "runtime_env=updated",
+  "chmod 600"
 )
 
 foreach ($forbidden in @(

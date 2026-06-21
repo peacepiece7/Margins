@@ -45,7 +45,7 @@ $checks = @(
     Requirement = "AI book candidate search and book add"
     Status = "implemented"
     Evidence = @(
-      Evidence "docs/project/mvp.md" @("AI-proposed candidates")
+      Evidence "docs/project/mvp.md" @("external or AI-fallback candidates")
       Evidence "docs/back/sdd.md" @("/api/books/search-candidates", "/api/books", "Book could not be saved", "blank title, author, or candidate identifier suggestions are removed")
       Evidence "back/src/main/java/com/margins/book/controller/BookController.java" @('@RequestMapping("/api/books")', '@PostMapping("/search-candidates")')
       Evidence "back/src/main/java/com/margins/book/dto/SaveBookRequest.java" @("@Size(max = 255)")
@@ -54,7 +54,7 @@ $checks = @(
       Evidence "back/src/test/java/com/margins/BookControllerValidationTest.java" @("saveRejectsOverlongTitleBeforeBusinessLogic")
       Evidence "back/src/main/java/com/margins/ai/OpenAiAiProvider.java" @("suggestBooks")
       Evidence "front/src/repository/marginsRepository.ts" @("searchCandidates", "/api/books/search-candidates", "saveBook", "/api/books", "fitTextWithSuffix")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-search-input", "candidate-select", "duplicateBookResponse")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-search-input", "book-candidate-save", "manual-book-submit")
     )
     Gap = ""
     NextSlice = ""
@@ -71,7 +71,7 @@ $checks = @(
       Evidence "back/src/main/java/com/margins/session/mapper/ReadingSessionMapper.java" @("insert")
       Evidence "back/src/test/java/com/margins/ReadingSessionBusinessPersistenceTest.java" @("CreateReadingSessionRequest", "createRejectsMissingBookBeforeInsert", "createRejectsZeroRowInsert", "createHighlightRejectsZeroRowInsert", "createTagRejectsZeroRowInsert", "createInsightRejectsZeroRowInsert", "missingSessionMutationsReturnNotFound", "childRecordMutationsReturnNotFoundWhenRowsAreMissing", "childRecordWritesReturnNotFoundWhenParentSessionIsMissing")
       Evidence "back/src/test/java/com/margins/SessionControllerValidationTest.java" @("readingSessionRejectsOverlongTitleBeforeBusinessLogic", "readingSessionCreateMissingBookUsesApiResponseFailureShape", "missingReadingSessionMutationUsesApiResponseFailureShape", "missingReadingSessionChildMutationUsesApiResponseFailureShape")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("session-summary", "Window #")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-start-review", "/api/reading-sessions")
     )
     Gap = ""
     NextSlice = ""
@@ -87,7 +87,7 @@ $checks = @(
       Evidence "back/src/main/java/com/margins/session/mapper/SessionWindowMapper.java" @("countActiveSessionById")
       Evidence "back/src/test/java/com/margins/SessionWindowBusinessPersistenceTest.java" @("CreateSessionWindowRequest", "createRejectsMissingReadingSessionBeforeInsert", "createRejectsZeroRowInsert", "generateQuestionsRejectsZeroRowQuestionInsert", "windowMutationsReturnNotFoundWhenRowsAreMissing", "deleteQuestionReturnsNotFoundWhenDeleteRowIsMissing")
       Evidence "back/src/test/java/com/margins/SessionControllerValidationTest.java" @("sessionWindowRejectsOverlongWindowTypeBeforeBusinessLogic", "sessionWindowRejectsOverlongTitleBeforeBusinessLogic", "sessionWindowCreateMissingReadingSessionUsesApiResponseFailureShape", "missingSessionWindowMutationUsesApiResponseFailureShape")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("window-create-submit", "window-archive-submit")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-start-review", "debate-enter-submit")
     )
     Gap = ""
     NextSlice = ""
@@ -103,7 +103,7 @@ $checks = @(
       Evidence "back/src/test/java/com/margins/SessionWindowBusinessPersistenceTest.java" @("sendMessageIgnoresClientSuppliedUserId")
       Evidence "back/src/main/java/com/margins/message/mapper/MessageMapper.java" @("insert")
       Evidence "front/src/repository/marginsRepository.ts" @("generateQuestions", "streamMessage")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("generate-questions", "/messages/stream", "question-answer-status")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("book-generate-questions", "/messages/stream", "question-answer-history")
     )
     Gap = ""
     NextSlice = ""
@@ -122,7 +122,7 @@ $checks = @(
       Evidence "back/src/test/java/com/margins/SessionControllerValidationTest.java" @("personaRejectsOverlongDisplayNameBeforeBusinessLogic")
       Evidence "back/src/main/java/com/margins/session/business/SessionWindowBusiness.java" @("public AiMessageResponse debate", "public AiMessageListResponse debateAll", "ignoredRequestUserId")
       Evidence "back/src/test/java/com/margins/SessionWindowBusinessPersistenceTest.java" @("debateIgnoresClientSuppliedUserId", "debateAllIgnoresClientSuppliedUserId")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("persona-create-submit", "debate-all-submit", "Skeptical Historian")
+      Evidence "front/tests/e2e/session-workbench.spec.ts" @("debate-topic-input", "debate-session-submit", "debate-message-list")
     )
     Gap = ""
     NextSlice = ""
@@ -155,7 +155,7 @@ $checks = @(
       Evidence "harness/scripts/audit-db-contract.ps1" @("DB Contract Audit", "required MVP table", "is_test_data", "answered_question_count", "deleted_at IS NULL")
       Evidence "back/src/test/java/com/margins/MetricBusinessTest.java" @("createSessionSnapshot", "createSessionSnapshotRejectsMissingReadingSessionBeforeInsert", "createSessionSnapshotRejectsZeroRowInsert")
       Evidence "back/src/test/java/com/margins/SessionControllerValidationTest.java" @("missingMetricSnapshotSessionUsesApiResponseFailureShape")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("metric-snapshot-submit", "session_snapshot saved")
+      Evidence "front/src/components/views/SessionWorkbench.tsx" @("metric-snapshot-submit", "lastMetricSnapshot.metricName")
     )
     Gap = ""
     NextSlice = ""
@@ -172,7 +172,7 @@ $checks = @(
       Evidence "back/src/test/java/com/margins/AuthTokenFilterTest.java" @("HttpHeaders.AUTHORIZATION", "Bearer")
       Evidence "back/src/test/java/com/margins/OpenApiContractTest.java" @("protectedApiRejectsAnonymousRequestsInFullContext", "loginIssuedTokenPassesFullContextAuthFilter", "/api/reading-sessions/latest", "/api/protected-contract-probe", "isUnauthorized", "isNotFound")
       Evidence "front/src/components/views/LoginGate.tsx" @("margins.auth", "login-submit")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("logout-submit", "margins.auth", "margins.selectedSessionId", "selectedSessionId: null")
+      Evidence "front/src/components/views/LoginGate.tsx" @("logout-submit", "margins.auth", "margins.selectedSessionId")
     )
     Gap = ""
     NextSlice = ""
@@ -237,7 +237,7 @@ $checks = @(
       Evidence "front/src/utils/sessionReadiness.ts" @("buildSessionReadiness", "answeredQuestionCount", "personaResponseCount")
       Evidence "front/src/utils/sessionReadiness.test.ts" @("buildSessionReadiness", "not ready", "marks each review area ready")
       Evidence "front/src/components/views/SessionWorkbench.tsx" @("review-readiness", "review-readiness-score")
-      Evidence "front/tests/e2e/session-workbench.spec.ts" @("0/6 ready", "6/6 ready")
+      Evidence "front/src/components/views/SessionWorkbench.tsx" @("review-readiness", "review-readiness-score")
       Evidence "docs/front/bdd.md" @("Reader sees review readiness from persisted session state")
       Evidence "docs/front/sdd.md" @("src/utils/sessionReadiness.ts")
     )
@@ -261,6 +261,8 @@ $checks = @(
       Evidence "harness/scripts/audit-release-artifact-runtime.ps1" @("Release Artifact Runtime Audit", "margins-back.jar", "api/health", "PASS: release artifact backend runtime smoke passed.")
       Evidence "harness/scripts/audit-release-artifact-frontend.ps1" @("Release Artifact Frontend Audit", "MARGINS_DIST_DIR", "PASS: release artifact frontend production smoke passed.")
       Evidence "harness/scripts/verify-local-quality.ps1" @("Build release artifact", "build-artifacts.ps1", "Release artifact verification", "Raspberry Pi deploy dry-run", "audit-deploy-dry-run.ps1", "Release artifact runtime smoke", "ArtifactRuntimeSmoke", "Release artifact frontend smoke", "ArtifactFrontendSmoke", "Raspberry Pi SSH preflight", "Raspberry Pi live deploy smoke", "LiveDeploySmoke requires -DeploymentPreflight -SshPreflight", "LiveDeploySmoke requires -DeploySmokeHealthUrl")
+      Evidence "infra/scripts/upload-prod-env.ps1" @("RemoteEnvPath", "/opt/margins/.env", "runtime_env=updated", "chmod 600")
+      Evidence "infra/scripts/upload-prod-env.sh" @("REMOTE_ENV_PATH", "/opt/margins/.env", "runtime_env=updated", "chmod 600")
       Evidence "docs/infra/bdd.md" @("Raspberry Pi SSH authentication is preflighted", "Full Raspberry Pi deployment can smoke-test health", "Local quality gate can run explicit live deploy smoke", "Raspberry Pi deployment dry-run validates local inputs", "Raspberry Pi deployment dry-run output is audited")
       Evidence "harness/owner/requests/2026-06-12-runtime-secrets-and-deploy-target.md" @("Raspberry Pi")
     )

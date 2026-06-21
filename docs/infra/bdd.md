@@ -122,6 +122,16 @@ Then the script polls the configured health endpoint for an HTTP 2xx or 3xx resp
 And reports deploy smoke success without printing the health URL in dry-run output
 And reports deploy smoke failure without printing the health URL value
 
+### Scenario: Production runtime env is uploaded before deploy
+
+Given Raspberry Pi SSH authentication is configured
+And a local ignored runtime env file exists
+When `infra/scripts/upload-prod-env.ps1 -RuntimeEnvPath .env.production` or `infra/scripts/upload-prod-env.sh` runs
+Then the script uploads the runtime env to `/opt/margins/.env` by default
+And backs up the previous remote env file when one exists
+And sets the remote env file permission to `600`
+And reports only key names and permissions without printing secret values
+
 ### Scenario: Raspberry Pi database schema is applied through SSH
 
 Given Raspberry Pi SSH authentication is configured

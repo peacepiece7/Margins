@@ -78,7 +78,7 @@ try {
     ""
     "## Backend"
     ""
-    "Copy runtime/env.example to /opt/margins/shared/margins.env, fill real values outside the release directory, then run:"
+    "Copy runtime/env.example to /opt/margins/.env, fill real values outside the release directory, then run:"
     ""
     '```powershell'
     "java -jar back/margins-back.jar"
@@ -126,7 +126,7 @@ try {
     "User=margins"
     "Group=margins"
     "WorkingDirectory=/opt/margins/current"
-    "EnvironmentFile=/opt/margins/shared/margins.env"
+    "EnvironmentFile=/opt/margins/.env"
     "ExecStart=/usr/bin/java -jar /opt/margins/current/back/margins-back.jar"
     "Restart=on-failure"
     "RestartSec=5"

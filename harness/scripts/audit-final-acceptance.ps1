@@ -146,6 +146,8 @@ foreach ($requiredPath in @(
   "infra/scripts/build-artifacts.ps1",
   "infra/scripts/verify-artifacts.ps1",
   "infra/scripts/deploy-raspberry-pi.ps1",
+  "infra/scripts/upload-prod-env.ps1",
+  "infra/scripts/upload-prod-env.sh",
   "docs/project/development-readiness.md",
   "harness/owner/requests/2026-06-12-runtime-secrets-and-deploy-target.md"
 )) {
@@ -167,6 +169,7 @@ Assert-Text $failures "development-readiness" $readinessDoc @(
   "verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke -ArtifactFrontendSmoke -SkipBackend -SkipFrontendBuild",
   "verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke",
   "verify-local-quality.ps1 -DeploymentPreflight -ArtifactFrontendSmoke",
+  "upload-prod-env.ps1 -RuntimeEnvPath .env.production",
   "verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke -ArtifactFrontendSmoke -SshPreflight -LiveDeploySmoke -DeploySmokeHealthUrl",
   "Full local quality with E2E:",
   "Current full-stack E2E gate:",

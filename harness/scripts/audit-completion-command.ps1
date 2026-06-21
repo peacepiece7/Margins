@@ -16,6 +16,8 @@ function Assert-Text {
 
 $qualityGate = Get-Content -LiteralPath "harness/scripts/verify-local-quality.ps1" -Raw -Encoding UTF8
 $deployScript = Get-Content -LiteralPath "infra/scripts/deploy-raspberry-pi.ps1" -Raw -Encoding UTF8
+$uploadProdEnvPs = Get-Content -LiteralPath "infra/scripts/upload-prod-env.ps1" -Raw -Encoding UTF8
+$uploadProdEnvSh = Get-Content -LiteralPath "infra/scripts/upload-prod-env.sh" -Raw -Encoding UTF8
 $readinessDoc = Get-Content -LiteralPath "docs/project/development-readiness.md" -Raw -Encoding UTF8
 $infraSdd = Get-Content -LiteralPath "docs/infra/sdd.md" -Raw -Encoding UTF8
 $infraBdd = Get-Content -LiteralPath "docs/infra/bdd.md" -Raw -Encoding UTF8
@@ -50,6 +52,20 @@ Assert-Text "deploy-raspberry-pi" $deployScript @(
   "Deploy smoke failed for configured health URL"
 )
 
+Assert-Text "upload-prod-env.ps1" $uploadProdEnvPs @(
+  "[string] `$RemoteEnvPath",
+  "/opt/margins/.env",
+  "runtime_env=updated",
+  "chmod 600"
+)
+
+Assert-Text "upload-prod-env.sh" $uploadProdEnvSh @(
+  "REMOTE_ENV_PATH",
+  "/opt/margins/.env",
+  "runtime_env=updated",
+  "chmod 600"
+)
+
 Assert-Text "development-readiness" $readinessDoc @(
   $completionCommand,
   "artifact verification, dry-run audit, backend artifact runtime smoke, frontend artifact render smoke, SSH auth, full transfer/restart, and health smoke are captured by one command"
@@ -57,6 +73,8 @@ Assert-Text "development-readiness" $readinessDoc @(
 
 Assert-Text "infra-sdd" $infraSdd @(
   $completionCommand,
+  "upload-prod-env.ps1",
+  "/opt/margins/.env",
   "explicit full Raspberry Pi completion gate",
   "builds and verifies the artifact",
   "artifact runtime smoke",
@@ -67,6 +85,7 @@ Assert-Text "infra-sdd" $infraSdd @(
 
 Assert-Text "infra-bdd" $infraBdd @(
   $completionCommand,
+  "Production runtime env is uploaded before deploy",
   "full transfer, service restart, and HTTP health smoke"
 )
 
@@ -75,5 +94,6 @@ Write-Output ""
 Write-Output "Checked: final Raspberry Pi completion command is documented."
 Write-Output "Checked: local quality gate includes artifact runtime/frontend smokes before SSH and live deploy smoke."
 Write-Output "Checked: local quality gate maps DeploySmokeHealthUrl to deploy script SmokeHealthUrl."
+Write-Output "Checked: production runtime env upload scripts use the current Raspberry Pi env path."
 Write-Output ""
 Write-Output "PASS: final deployment completion command is consistent across docs and scripts."
