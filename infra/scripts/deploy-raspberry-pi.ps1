@@ -88,6 +88,11 @@ if ($frontendService) {
   Assert-SafeDeployValue -Name "MARGINS_FRONTEND_SERVICE" -Value $frontendService -Pattern "^[A-Za-z0-9_.@-]+$" -Description "a systemd service name containing only letters, numbers, dot, underscore, at sign, or hyphen"
 }
 
+function Convert-ToRemoteShellCommand {
+  param([string] $Command)
+  return ($Command -replace "`r`n", "`n").Trim()
+}
+
 if ($env:MARGINS_DEPLOY_SSH_KEY) {
   if (-not (Test-Path -LiteralPath $env:MARGINS_DEPLOY_SSH_KEY -PathType Leaf)) {
     throw "MARGINS_DEPLOY_SSH_KEY must point to an existing private key file"
@@ -168,6 +173,7 @@ $restartCommand
 }
 
 $remoteCommandToRun = if ($Rollback) { $rollbackCommand } else { $remoteCommand }
+$remoteCommandToRun = Convert-ToRemoteShellCommand $remoteCommandToRun
 
 if ($DryRun) {
   Write-Output "Dry run passed."

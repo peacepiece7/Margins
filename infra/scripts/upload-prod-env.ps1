@@ -13,6 +13,15 @@ $loadEnv = Join-Path $scriptRoot "load-env.ps1"
 & $loadEnv -EnvPath (Join-Path $repoRoot $DeployEnvPath)
 
 $runtimeEnv = Resolve-Path -LiteralPath (Join-Path $repoRoot $RuntimeEnvPath)
+$runtimeEnvKeys = Get-Content -LiteralPath $runtimeEnv.Path |
+  Where-Object { $_ -match '^[A-Za-z_][A-Za-z0-9_]*=' } |
+  ForEach-Object { ($_ -split '=', 2)[0] }
+
+foreach ($name in @("MARGINS_DB_URL", "MARGINS_MYSQL_USER", "MARGINS_MYSQL_PASSWORD", "MARGINS_AUTH_JWT_SECRET", "MARGINS_SINGLE_USER_USERNAME", "MARGINS_SINGLE_USER_PASSWORD", "SPRING_PROFILES_ACTIVE")) {
+  if ($runtimeEnvKeys -notcontains $name) {
+    throw "Runtime env file is missing required key: $name"
+  }
+}
 
 foreach ($name in @("MARGINS_DEPLOY_HOST", "MARGINS_DEPLOY_USER")) {
   if (-not [Environment]::GetEnvironmentVariable($name, "Process")) {
@@ -37,6 +46,11 @@ $remoteTmp = "/tmp/margins.env.$([Guid]::NewGuid().ToString("N"))"
 $remoteDir = $RemoteEnvPath -replace "/[^/]+$", ""
 if (-not $remoteDir -or $remoteDir -eq $RemoteEnvPath) {
   throw "RemoteEnvPath must include a directory"
+}
+
+function Convert-ToRemoteShellCommand {
+  param([string] $Command)
+  return ($Command -replace "`r`n", "`n").Trim()
 }
 
 scp @sshOptions $runtimeEnv.Path "${target}:$remoteTmp"
@@ -65,6 +79,8 @@ printf '\nruntime_env_perms='
 stat -c '%a %U:%G' "`$remote_env"
 printf '\n'
 "@
+
+$remoteCommand = Convert-ToRemoteShellCommand $remoteCommand
 
 ssh @sshOptions $target $remoteCommand
 if ($LASTEXITCODE -ne 0) {
