@@ -327,7 +327,7 @@ JWT runtime configuration:
 - Default OpenAI model: `gpt-5.5`, matching the current OpenAI quickstart example used for Responses API text generation.
 - Runtime fallback: if `OPENAI_API_KEY` is blank or an OpenAI request fails, the provider returns deterministic local behavior instead of breaking the MVP flow.
 - Context included in prompts: current `sessionId`, persisted questions for the window, recent messages for the session, selected `questionId`, user input, and persona `system_prompt` for debate.
-- Multi-persona debate uses `AiProvider.answerDebateMessages`. `OpenAiAiProvider` batches selected persona prompts into one Responses API request and parses one reply per requested `personaId`; the default provider path remains deterministic and network-free for tests.
+- Multi-persona debate uses `AiProvider.answerDebateMessages`. `OpenAiAiProvider` batches selected persona prompts into one Responses API request and parses one reply per requested `personaId`; when OpenAI returns only a partial valid JSON array, the provider fills missing persona replies through the per-persona fallback path before returning. The default provider path remains deterministic and network-free for tests.
 - Shared outbound HTTP clients are provided through `HttpClientConfig` and injected into OpenAI, Kakao, and Open Library providers instead of constructing a new `HttpClient` per request.
 - Backend tests for `OpenAiAiProvider` must not call the real OpenAI API. Configured-provider success paths use a local mock HTTP server that implements the expected `/responses` shape, while missing-key and provider-error paths assert deterministic fallback behavior.
 

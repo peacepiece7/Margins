@@ -191,6 +191,51 @@ class OpenAiAiProviderFallbackTest {
         }
     }
 
+    @Test
+    void fillsMissingPersonaRepliesWhenBatchResponseIsPartial() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        AtomicReference<Integer> requestCount = new AtomicReference<>(0);
+        server.createContext("/responses", (exchange) -> {
+            int currentRequest = requestCount.updateAndGet((count) -> count + 1);
+            String output = currentRequest == 1
+                ? "[{\"personaId\":1,\"content\":\"Batch answer\"}]"
+                : "Missing persona answer";
+            byte[] response = ("{\"output_text\":\"" + output.replace("\"", "\\\"") + "\"}").getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            OpenAiProperties properties = new OpenAiProperties();
+            properties.setApiKey("test-key");
+            properties.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+            OpenAiAiProvider provider = new OpenAiAiProvider(
+                properties,
+                new ObjectMapper(),
+                new FakeSessionWindowMapper(),
+                new FakeMessageMapper(),
+                new FakeQuestionMapper(),
+                new FakePersonaMapper(),
+                HttpClient.newHttpClient()
+            );
+
+            List<AiMessageResponse> responses = provider.answerDebateMessages(10L, List.of(
+                DebateMessageRequest.builder().personaId(1L).content("Debate").build(),
+                DebateMessageRequest.builder().personaId(2L).content("Debate").build()
+            ));
+
+            assertThat(responses).hasSize(2);
+            assertThat(responses).extracting(AiMessageResponse::getPersonaId).containsExactly(1L, 2L);
+            assertThat(responses).extracting(AiMessageResponse::getContent).containsExactly("Batch answer", "Missing persona answer");
+            assertThat(requestCount.get()).isEqualTo(2);
+        } finally {
+            server.stop(0);
+        }
+    }
+
     private static class FakeSessionWindowMapper implements SessionWindowMapper {
         @Override
         public int insert(SessionWindowRecord record) {

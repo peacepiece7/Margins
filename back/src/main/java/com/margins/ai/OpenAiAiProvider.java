@@ -212,7 +212,7 @@ public class OpenAiAiProvider implements AiProvider {
             if (responses.isEmpty()) {
                 return AiProvider.super.answerDebateMessages(windowId, requests);
             }
-            return responses;
+            return fillMissingDebateResponses(windowId, requests, responses);
         } catch (RuntimeException exception) {
             logOpenAiFallback("debate batch answer", exception);
             return AiProvider.super.answerDebateMessages(windowId, requests);
@@ -476,6 +476,30 @@ public class OpenAiAiProvider implements AiProvider {
                 .streamingReady(true)
                 .aiModel(properties.getModel())
                 .build())
+            .toList();
+    }
+
+    private List<AiMessageResponse> fillMissingDebateResponses(Long windowId, List<DebateMessageRequest> requests, List<AiMessageResponse> responses) {
+        java.util.Map<Long, AiMessageResponse> responseByPersonaId = responses.stream()
+            .filter((response) -> response.getPersonaId() != null)
+            .collect(java.util.stream.Collectors.toMap(
+                AiMessageResponse::getPersonaId,
+                (response) -> response,
+                (left, right) -> left,
+                java.util.LinkedHashMap::new
+            ));
+
+        List<DebateMessageRequest> missingRequests = requests.stream()
+            .filter((request) -> !responseByPersonaId.containsKey(request.getPersonaId()))
+            .toList();
+        if (!missingRequests.isEmpty()) {
+            AiProvider.super.answerDebateMessages(windowId, missingRequests)
+                .forEach((response) -> responseByPersonaId.putIfAbsent(response.getPersonaId(), response));
+        }
+
+        return requests.stream()
+            .map((request) -> responseByPersonaId.get(request.getPersonaId()))
+            .filter(java.util.Objects::nonNull)
             .toList();
     }
 

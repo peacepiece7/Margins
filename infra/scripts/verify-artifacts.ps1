@@ -103,13 +103,13 @@ try {
   }
 
   $envText = Get-Content -LiteralPath (Join-Path $verifyRoot "runtime\env.example") -Raw -Encoding UTF8
-  foreach ($needle in @("MARGINS_DB_URL=", "MARGINS_MYSQL_USER=", "MARGINS_MYSQL_PASSWORD=", "MARGINS_AUTH_JWT_SECRET=", "OPENAI_API_KEY=", "OPENAI_MODEL=", "MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=", "MARGINS_BOOK_SEARCH_PROVIDER=", "SPRING_PROFILES_ACTIVE=prod")) {
+  foreach ($needle in @("MARGINS_DB_URL=", "MARGINS_MYSQL_USER=", "MARGINS_MYSQL_PASSWORD=", "MARGINS_AUTH_JWT_SECRET=", "MARGINS_SINGLE_USER_USERNAME=", "MARGINS_SINGLE_USER_PASSWORD=", "OPENAI_API_KEY=", "OPENAI_MODEL=", "MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=", "MARGINS_BOOK_SEARCH_PROVIDER=", "SPRING_PROFILES_ACTIVE=prod")) {
     if (-not $envText.Contains($needle)) {
       throw "Runtime env example is missing required variable: $needle"
     }
   }
 
-  foreach ($needle in @("MARGINS_MYSQL_PASSWORD=change-me", "MARGINS_AUTH_JWT_SECRET=change-me", "OPENAI_API_KEY=")) {
+  foreach ($needle in @("MARGINS_MYSQL_PASSWORD=change-me", "MARGINS_AUTH_JWT_SECRET=change-me", "MARGINS_SINGLE_USER_PASSWORD=change-me", "OPENAI_API_KEY=")) {
     if (-not $envText.Contains($needle)) {
       throw "Runtime env example is missing safe placeholder: $needle"
     }
@@ -128,7 +128,8 @@ try {
   )
   $secretLinePatterns = @(
     '^MARGINS_AUTH_JWT_SECRET=(?!change-me\s*$).+',
-    '^MARGINS_MYSQL_PASSWORD=(?!change-me\s*$).+'
+    '^MARGINS_MYSQL_PASSWORD=(?!change-me\s*$).+',
+    '^MARGINS_SINGLE_USER_PASSWORD=(?!change-me\s*$).+'
   )
 
   foreach ($file in $artifactFiles) {

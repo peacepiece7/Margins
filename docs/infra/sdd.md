@@ -78,6 +78,7 @@ These defaults are local-development values only. Raspberry Pi deployment should
 ## Packaged Runtime Examples
 
 - `runtime/systemd/margins-back.service.example` starts `/opt/margins/current/back/margins-back.jar` with `EnvironmentFile=/opt/margins/.env`, keeping real secrets outside the release artifact. The current Raspberry Pi target uses the same runtime env path, so release examples and production service configuration stay aligned.
+- `runtime/env.example` includes `MARGINS_SINGLE_USER_USERNAME` and `MARGINS_SINGLE_USER_PASSWORD` placeholders so a fresh Raspberry Pi deployment can configure the required MVP login before starting the backend.
 - `runtime/env.example` includes `MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=false` and `MARGINS_BOOK_SEARCH_PROVIDER=kakao`, so external-provider failures are visible during Kakao/Open Library debugging unless operators explicitly opt into AI-generated book candidates.
 - `runtime/nginx/margins.conf.example` serves `/opt/margins/current/front/dist`, proxies `/api/` to `127.0.0.1:8080`, and falls back to `/index.html` for the React app.
 - These files are examples, not automatic remote installation. Operators should copy/adapt them on the Raspberry Pi, then let `deploy-raspberry-pi.ps1` transfer and unpack release artifacts.
