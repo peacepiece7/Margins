@@ -16,7 +16,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "margins.auth.single-user.password=reader"
+})
 @AutoConfigureMockMvc
 class OpenApiContractTest {
 
@@ -71,7 +73,7 @@ class OpenApiContractTest {
     void loginIssuedTokenPassesFullContextAuthFilter() throws Exception {
         String loginBody = mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"test-reader\",\"password\":\"reader\"}"))
+                .content("{\"username\":\"peacepiece\",\"password\":\"reader\"}"))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
@@ -83,5 +85,22 @@ class OpenApiContractTest {
         mockMvc.perform(get("/api/protected-contract-probe")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken))
             .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void loginRejectsInvalidSingleUserCredentials() throws Exception {
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"wrong-user\",\"password\":\"reader\"}"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("invalid username or password"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"peacepiece\",\"password\":\"wrong-password\"}"))
+            .andExpect(status().isUnauthorized())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("invalid username or password"));
     }
 }

@@ -1,8 +1,19 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 test.setTimeout(60000);
 
 const backendUrl = process.env.MARGINS_BACKEND_URL || 'http://localhost:8080';
+const e2eUsername = process.env.MARGINS_E2E_USERNAME || 'peacepiece';
+const e2ePassword = process.env.MARGINS_E2E_PASSWORD || 'reader';
+
+async function login(page: Page) {
+  await expect(page.getByTestId('login-form')).toBeVisible();
+  await expect(page.getByTestId('login-username-input')).toHaveValue('');
+  await expect(page.getByTestId('login-password-input')).toHaveValue('');
+  await page.getByTestId('login-username-input').fill(e2eUsername);
+  await page.getByTestId('login-password-input').fill(e2ePassword);
+  await page.getByTestId('login-submit').click();
+}
 
 test.beforeEach(async ({ request }) => {
   const response = await request.post(`${backendUrl}/api/test/reset`);
@@ -19,9 +30,8 @@ test('follows the owner replan page flow from book registration to reflection an
   });
 
   await page.goto('/');
-  await expect(page.getByTestId('login-form')).toBeVisible();
-  await page.getByTestId('login-submit').click();
-  await expect(page.getByTestId('auth-session-bar')).toContainText('Test Reader');
+  await login(page);
+  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eUsername);
   await expect(page.getByTestId('reading-portal')).toBeVisible();
 
   await page.getByTestId('book-search-input').fill('Dune');
@@ -131,8 +141,8 @@ test('supports manual registration and saved-book deletion from the page shell',
   });
 
   await page.goto('/');
-  await page.getByTestId('login-submit').click();
-  await expect(page.getByTestId('auth-session-bar')).toContainText('Test Reader');
+  await login(page);
+  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eUsername);
 
   await page.getByTestId('manual-book-title-input').fill('Manual Margins Book');
   await page.getByTestId('manual-book-author-input').fill('Reader Author');

@@ -15,16 +15,23 @@ And curated model files remain in `src/types/models`
 ### Scenario: User enters the workbench through MVP login
 
 Given the user opens Margins without a stored auth session
-When the user submits the login form
+When the user enters the configured credentials and submits the login form
 Then the UI stores the returned auth session
 And opens the reading workbench
 
-### Scenario: User sees the product tagline
+### Scenario: Login form does not prefill credentials
+
+Given the user opens Margins without a stored auth session
+When the login form is visible
+Then the username input is empty
+And the password input is empty
+
+### Scenario: User sees the product title
 
 Given the user opens the login or portal entry surface
 When the brand header is visible
 Then the UI shows `Margins`
-And the tagline is `읽고 쓰는 독서기록`
+And no Korean tagline is rendered under the title
 
 ### Scenario: Browser receives Margins icon assets
 
@@ -454,6 +461,21 @@ When the user selects one question
 And submits an answer
 Then the UI sends the selected `questionId` with the message
 And the persisted timeline links that answer to the question
+
+### Scenario: User dictates a selected-question answer
+
+Given the browser supports `SpeechRecognition` or `webkitSpeechRecognition`
+And the user is writing a selected-question answer
+When the user starts voice input and the browser returns final transcript text
+Then the transcript is appended to the answer draft
+And submitting the answer uses the existing message save flow with the selected `questionId`
+
+### Scenario: Speech input remains optional
+
+Given the browser does not support speech recognition or the microphone permission is denied
+When the review or debate composer renders
+Then the voice control shows an unavailable or retryable state
+And the user can still type and submit reflection notes, question answers, and debate messages normally
 
 ### Scenario: Selected question survives timeline refresh
 

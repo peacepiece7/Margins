@@ -26,8 +26,8 @@ function readAuthSession() {
 
 export function LoginGate() {
   const [authSession, setAuthSession] = useState<LoginResponse | undefined>();
-  const [username, setUsername] = useState('test-reader');
-  const [password, setPassword] = useState('reader');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -86,7 +86,6 @@ export function LoginGate() {
       <form className="grid gap-4 rounded border border-stone-300 bg-white p-5" onSubmit={submitLogin} {...testAttr('login-form')}>
         <div>
           <h1 className="text-2xl font-semibold">Margins</h1>
-          <p className="text-sm text-stone-600">읽고 쓰는 독서기록</p>
         </div>
         {error && (
           <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800" {...testAttr('login-error')}>

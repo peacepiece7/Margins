@@ -46,7 +46,7 @@ Implemented skeleton:
 - `public/favicon.png`, `public/apple-touch-icon.png`, `public/icon-192.png`, `public/icon-512.png`, and `public/site.webmanifest`: compressed app icon assets generated from the owner-provided book/bookmark image and linked from `index.html`.
 - `playwright.config.ts`: full-stack smoke test configuration.
 - `tests/e2e/session-workbench.spec.ts`: book/session/window/message/debate smoke flow.
-- The visible product brand pairs `Margins` with the Korean tagline `읽고 쓰는 독서기록` on the login and portal entry surfaces.
+- The visible product brand uses `Margins` as the standalone title on login and portal entry surfaces.
 
 ## Model Flow
 
@@ -80,6 +80,7 @@ Implemented helper:
 ## Auth UX
 
 - The first screen is a login gate backed by `POST /api/auth/login`.
+- Login username and password inputs render empty by default; the reader must enter the configured credentials manually.
 - Login response is stored in `localStorage` under `margins.auth`.
 - Repository requests include `Authorization: Bearer <accessToken>` when a stored auth session exists; protected backend `/api/**` routes reject missing or invalid tokens.
 - Logout removes `margins.auth` and the selected session id, then returns to the login gate.
@@ -95,7 +96,9 @@ Implemented helper:
 - `book-detail` edits saved book metadata through `PATCH /api/books/{id}`, removes active saved books through `DELETE /api/books/{id}`, starts the reflection workspace, displays the AI question list, and requires a debate topic before entering `debate`.
 - When the reader generates questions from `book-detail`, the page creates or reuses a reading session for the selected book, selects the reflection window, and then calls question generation. The focus text includes backend book id, title, and author so OpenAI question generation has the book identity requested by the owner decision.
 - `review` stores personal reflection notes as `session_insights` with `insightType='reflection'`. A selected question answer still uses the existing window message stream so the user's answer and AI response remain persisted timeline messages.
+- `review` exposes browser speech-to-text draft controls for reflection content and selected-question answers. The frontend uses the Web Speech API (`SpeechRecognition` or `webkitSpeechRecognition`) with `lang='ko-KR'`, appends final transcripts to the local draft, and persists only when the reader submits through the existing insight or message API path.
 - `debate` treats each reader-chosen topic as an independent debate room backed by a `session_windows` row with `windowType='debate'` and a title formatted as `토론: {topic}`. Entering debate from `book-detail` creates or reuses the book's reading session, creates a new topic-specific debate window, selects that `windowId`, and opens the debate page with the topic prefilled as the first message draft. Before entering, the reader can choose how many active personas participate in that room.
+- `debate` exposes the same speech-to-text draft control for the active debate message composer. Unsupported browsers show a disabled control and keep normal typing available. Microphone permission failures show an inline retryable error without clearing the draft.
 
 ## E2E Smoke
 

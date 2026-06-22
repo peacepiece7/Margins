@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { LoadingSpinner } from '../atoms/LoadingSpinner';
 import { Skeleton } from '../atoms/Skeleton';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useSessionFlow } from '../../hooks/useSessionFlow';
 import type { BookCandidate, SaveBookResponse } from '../../types/models/book';
 import type { Persona } from '../../types/models/persona';
@@ -80,6 +81,49 @@ function DebateReplySkeleton() {
         </div>
       </div>
     </article>
+  );
+}
+
+interface SpeechDraftControlProps {
+  disabled?: boolean;
+  label: string;
+  onChange: (value: string) => void;
+  value: string;
+}
+
+function SpeechDraftControl({ disabled = false, label, onChange, value }: SpeechDraftControlProps) {
+  const speech = useSpeechRecognition({ onTranscript: onChange, value });
+  const blocked = disabled || !speech.supported;
+
+  return (
+    <div className="grid gap-1">
+      <button
+        aria-label={speech.listening ? '음성 입력 중지' : '음성 입력 시작'}
+        aria-pressed={speech.listening}
+        className={`inline-flex min-h-9 items-center justify-center gap-2 rounded border px-3 py-2 text-sm font-medium ${
+          speech.listening
+            ? 'border-red-700 bg-red-50 text-red-800'
+            : 'border-stone-300 bg-white text-stone-700 hover:border-stone-950'
+        } disabled:cursor-not-allowed disabled:opacity-50`}
+        disabled={blocked}
+        onClick={speech.toggle}
+        type="button"
+        {...testAttr(`${label}-speech-toggle`)}
+      >
+        <span aria-hidden="true" className={`h-2 w-2 rounded-full ${speech.listening ? 'bg-red-600' : 'bg-stone-400'}`} />
+        {speech.listening ? '중지' : '음성 입력'}
+      </button>
+      {!speech.supported && (
+        <div className="text-xs text-stone-500" {...testAttr(`${label}-speech-unsupported`)}>
+          현재 브라우저는 음성 입력을 지원하지 않습니다.
+        </div>
+      )}
+      {speech.error && (
+        <div className="text-xs text-red-700" role="status" {...testAttr(`${label}-speech-error`)}>
+          {speech.error}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -383,8 +427,7 @@ export function ReadingPortal() {
       <header className="border-b border-stone-300 bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Margins</p>
-            <h1 className="mt-2 text-3xl font-semibold">읽고 쓰는 독서기록</h1>
+            <h1 className="text-3xl font-semibold">Margins</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-stone-600">
               도서 검색/등록부터 독후감, 질문 답변, AI 페르소나 토론까지 페이지 단위로 진행합니다.
             </p>
@@ -668,6 +711,7 @@ export function ReadingPortal() {
               <form className="grid gap-3 rounded border border-stone-300 bg-white p-5" onSubmit={submitReflection} {...testAttr('reflection-form')}>
                 <h2 className="text-xl font-semibold">독후감 페이지</h2>
                 <textarea className="min-h-36 rounded border border-stone-300 px-3 py-2 text-sm" onChange={(event) => setReflectionContent(event.target.value)} placeholder="독후감, 좋았던 점, 개인 의견을 기록하세요." value={reflectionContent} {...testAttr('reflection-content-input')} />
+                <SpeechDraftControl disabled={flow.state.loading} label="reflection-content" onChange={setReflectionContent} value={reflectionContent} />
                 <input className="rounded border border-stone-300 px-3 py-2 text-sm" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder="관련 구절이나 근거" value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
                 <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={!flow.state.session || flow.state.loading || !reflectionContent.trim()} type="submit" {...testAttr('reflection-submit')}>
                   기록 저장
@@ -688,6 +732,7 @@ export function ReadingPortal() {
                 </div>
                 <div className="rounded bg-stone-100 p-3 text-sm">{selectedQuestion?.questionText || '책 상세 페이지에서 질문을 선택하세요.'}</div>
                 <textarea className="min-h-24 rounded border border-stone-300 px-3 py-2 text-sm" onChange={(event) => setAnswerDraft(event.target.value)} placeholder="질문에 대한 답변" value={answerDraft} {...testAttr('question-answer-input')} />
+                <SpeechDraftControl disabled={flow.state.loading} label="question-answer" onChange={setAnswerDraft} value={answerDraft} />
                 <button className="rounded border border-stone-950 px-4 py-2 text-sm font-medium disabled:opacity-50" disabled={!flow.state.window || !answerDraft.trim() || flow.state.loading} type="submit" {...testAttr('question-answer-submit')}>
                   답변 저장 및 AI 응답 받기
                 </button>
@@ -803,6 +848,7 @@ export function ReadingPortal() {
 
                 <form className="grid gap-3 border-t border-stone-200 bg-white p-4" onSubmit={submitDebate} {...testAttr('debate-session-form')}>
                   <textarea className="min-h-20 rounded border border-stone-300 px-3 py-2 text-sm" onChange={(event) => setDebateDraft(event.target.value)} placeholder="메신저처럼 보낼 말을 입력하세요." value={debateDraft} {...testAttr('debate-session-message-input')} />
+                  <SpeechDraftControl disabled={flow.state.loading || flow.state.window?.windowType !== 'debate'} label="debate-session-message" onChange={setDebateDraft} value={debateDraft} />
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-xs text-stone-500">선택된 토론자 {selectedDebatePersonas.length}명</div>
                     <div className="flex flex-wrap gap-2">

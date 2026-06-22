@@ -287,13 +287,15 @@ Current executor:
 
 ## Auth Contract
 
-`POST /api/auth/login` accepts non-blank `username` and `password`. MVP behavior returns the deterministic single-user identity:
+`POST /api/auth/login` accepts non-blank `username` and `password`. MVP behavior validates the submitted username against `MARGINS_SINGLE_USER_USERNAME` and the submitted password against required runtime env `MARGINS_SINGLE_USER_PASSWORD` before issuing the deterministic single-user identity:
 
 - `userId`: `1`
-- `username`: request username
-- `displayName`: `Test Reader`
+- `username`: configured single-user username
+- `displayName`: configured single-user display name
 - `authMode`: `single-user-jwt`
 - `accessToken`: HMAC-SHA256 JWT signed with `margins.auth.jwt.secret`
+
+Invalid configured single-user credentials, including a missing runtime password, return `401` with `message=invalid username or password`. The password value must come from process/runtime environment and is not stored in repository files.
 
 `AuthTokenFilter` protects `/api/**` routes and requires `Authorization: Bearer <accessToken>` after login. The filter allows these unauthenticated routes:
 

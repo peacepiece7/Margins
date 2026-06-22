@@ -46,7 +46,7 @@ class AuthControllerValidationTest {
     void loginRejectsBlankPassword() throws Exception {
         mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"test-reader\",\"password\":\"\"}"))
+                .content("{\"username\":\"peacepiece\",\"password\":\"\"}"))
             .andExpect(status().isBadRequest());
 
         verifyNoInteractions(authService);

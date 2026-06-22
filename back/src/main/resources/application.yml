@@ -17,6 +17,10 @@ server:
 margins:
   auth:
     mode: single-user
+    single-user:
+      username: ${MARGINS_SINGLE_USER_USERNAME:peacepiece}
+      display-name: ${MARGINS_SINGLE_USER_DISPLAY_NAME:peacepiece}
+      password: ${MARGINS_SINGLE_USER_PASSWORD:}
     jwt:
       issuer: ${MARGINS_AUTH_JWT_ISSUER:margins}
       secret: ${MARGINS_AUTH_JWT_SECRET:margins-local-dev-secret-change-before-production}

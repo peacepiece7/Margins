@@ -6,10 +6,17 @@
 
 ### Scenario: User logs in through MVP auth
 
-Given the frontend submits a non-blank username and password
+Given the frontend submits the configured single-user username and password
 When `/api/auth/login` is called
 Then the backend returns the single-user reader identity
 And returns an HMAC-signed JWT access token that can be sent as a bearer token by the frontend
+
+### Scenario: Invalid single-user credentials are rejected
+
+Given the login request has a username or password that does not match configured single-user credentials
+When `/api/auth/login` is called
+Then the backend returns `401`
+And the response body uses `ApiResponse` with `success=false`
 
 ### Scenario: Protected API rejects missing bearer token
 
