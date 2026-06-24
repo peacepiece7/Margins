@@ -16,6 +16,7 @@ Infra owns local service execution, Raspberry Pi deployment flow, Docker boundar
 - Frontend and backend may initially run as build artifacts or services outside Docker.
 - Keep directory structure ready for future Docker Compose integration.
 - Local MySQL runtime is defined by `infra/docker/mysql-compose.yml`.
+- The MySQL container uses Docker restart policy `unless-stopped` so Raspberry Pi reboots or Docker daemon restarts bring `margins-mysql` back without manual intervention.
 - `infra/scripts/mysql-up.ps1 -ApplySchema` starts MySQL, waits for container health, applies every `db/schema/*.sql` file in name order, then applies `db/seed/001_seed_mvp_data.sql`.
 - `infra/scripts/mysql-down.ps1` stops the local MySQL container; `-Volumes` also removes local data.
 - `infra/scripts/build-artifacts.ps1` builds backend and frontend artifacts, then writes `infra/artifacts/margins-release.zip` with forward-slash zip entries for Linux `unzip` compatibility plus `manifest.txt`, `checksums.sha256`, `README.md`, `runtime/env.example`, `runtime/systemd/margins-back.service.example`, and `runtime/nginx/margins.conf.example`.

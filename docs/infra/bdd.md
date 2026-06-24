@@ -7,6 +7,7 @@
 Given Docker is installed
 When `infra/scripts/mysql-up.ps1 -ApplySchema` runs
 Then the `margins-mysql` container becomes healthy
+And the container is configured to restart unless explicitly stopped
 And every `db/schema/*.sql` script is applied in name order
 And `db/seed/001_seed_mvp_data.sql` initializes development data
 
