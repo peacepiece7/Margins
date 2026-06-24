@@ -153,6 +153,51 @@ class OpenAiAiProviderFallbackTest {
     }
 
     @Test
+    void readsEventStreamTextFromNonStreamingResponseWhenProviderReturnsSseBody() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        AtomicReference<String> acceptHeader = new AtomicReference<>();
+        server.createContext("/responses", (exchange) -> {
+            acceptHeader.set(exchange.getRequestHeaders().getFirst("Accept"));
+            byte[] response = String.join("",
+                "data: {\"type\":\"response.output_text.delta\",\"delta\":\"Debate \"}\n\n",
+                "data: {\"type\":\"response.output_text.delta\",\"delta\":\"answer\"}\n\n",
+                "data: {\"type\":\"response.completed\"}\n\n"
+            ).getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "text/event-stream");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            OpenAiProperties properties = new OpenAiProperties();
+            properties.setApiKey("test-key");
+            properties.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+            OpenAiAiProvider provider = new OpenAiAiProvider(
+                properties,
+                new ObjectMapper(),
+                new FakeSessionWindowMapper(),
+                new FakeMessageMapper(),
+                new FakeQuestionMapper(),
+                new FakePersonaMapper(),
+                HttpClient.newHttpClient()
+            );
+
+            AiMessageResponse response = provider.answerDebateMessage(10L, DebateMessageRequest.builder()
+                .personaId(2L)
+                .content("Debate")
+                .build());
+
+            assertThat(response.getContent()).isEqualTo("Debate answer");
+            assertThat(response.getAiModel()).isEqualTo(properties.getModel());
+            assertThat(acceptHeader.get()).isEqualTo("application/json");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
     void preservesNestedOpenAiStreamErrorMessageAfterProviderDelta() throws Exception {
         HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/responses", (exchange) -> {

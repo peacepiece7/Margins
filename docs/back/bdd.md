@@ -121,6 +121,14 @@ When an AI answer or debate response is requested
 Then the OpenAI provider sends the user input with persisted session context
 And persona debate includes the selected persona `system_prompt`
 
+### Scenario: OpenAI provider tolerates event-stream text body on non-streaming requests
+
+Given `margins.ai.provider` is `openai`
+And `OPENAI_API_KEY` is configured
+When a non-streaming OpenAI response returns `data:` events with `response.output_text.delta`
+Then the backend accumulates the deltas into one assistant answer
+And does not use local fallback solely because the body was not a JSON object
+
 ## Feature: Session Message Persistence
 
 ### Scenario: Questions are generated and persisted

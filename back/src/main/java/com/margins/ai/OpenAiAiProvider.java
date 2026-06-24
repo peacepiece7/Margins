@@ -236,6 +236,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .timeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
                 .header("Authorization", "Bearer " + properties.getApiKey())
                 .header("Content-Type", "application/json")
+                .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(root)))
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -246,13 +247,13 @@ public class OpenAiAiProvider implements AiProvider {
                     + summarizeForLog(response.body()));
             }
 
-            String text = extractOutputText(objectMapper.readTree(response.body()));
+            String text = extractOutputText(parseTextResponseBody(response));
             if (text.isBlank()) {
                 throw new IllegalStateException("OpenAI response did not include text output");
             }
             return text.trim();
         } catch (IOException exception) {
-            throw new IllegalStateException("OpenAI response could not be parsed", exception);
+            throw new IllegalStateException("OpenAI request could not be completed", exception);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("OpenAI request interrupted", exception);
@@ -273,6 +274,7 @@ public class OpenAiAiProvider implements AiProvider {
                 .timeout(Duration.ofSeconds(properties.getTimeoutSeconds()))
                 .header("Authorization", "Bearer " + properties.getApiKey())
                 .header("Content-Type", "application/json")
+                .header("Accept", "text/event-stream")
                 .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(root)))
                 .build();
             HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
@@ -356,6 +358,58 @@ public class OpenAiAiProvider implements AiProvider {
             message = event.path("error").path("detail").asText("");
         }
         return message.isBlank() ? "OpenAI stream failed" : message;
+    }
+
+    private JsonNode parseTextResponseBody(HttpResponse<String> response) {
+        String body = response.body();
+        if (body == null || body.isBlank()) {
+            throw new IllegalStateException("OpenAI response body was empty. status="
+                + response.statusCode()
+                + ", contentType="
+                + responseContentType(response)
+                + ", bodyLength=0");
+        }
+
+        try {
+            return objectMapper.readTree(body);
+        } catch (IOException jsonException) {
+            if (looksLikeEventStream(body)) {
+                try {
+                    String streamedOutput = readStreamedOutput(
+                        new java.io.ByteArrayInputStream(body.getBytes(StandardCharsets.UTF_8)),
+                        (delta) -> {
+                        }
+                    );
+                    ObjectNode root = objectMapper.createObjectNode();
+                    root.put("output_text", streamedOutput);
+                    return root;
+                } catch (IOException streamException) {
+                    throw malformedTextResponse(response, streamException);
+                }
+            }
+
+            throw malformedTextResponse(response, jsonException);
+        }
+    }
+
+    private boolean looksLikeEventStream(String body) {
+        return body.stripLeading().startsWith("data:");
+    }
+
+    private IllegalStateException malformedTextResponse(HttpResponse<String> response, Exception cause) {
+        String body = response.body() == null ? "" : response.body();
+        return new IllegalStateException("OpenAI response could not be parsed. status="
+            + response.statusCode()
+            + ", contentType="
+            + responseContentType(response)
+            + ", bodyLength="
+            + body.length()
+            + ", bodyPreview="
+            + summarizeForLog(body), cause);
+    }
+
+    private String responseContentType(HttpResponse<?> response) {
+        return response.headers().firstValue("content-type").orElse("");
     }
 
     private ObjectNode message(String role, String content) {
