@@ -137,11 +137,20 @@ And reports only key names and permissions without printing secret values
 
 Given Raspberry Pi SSH authentication is configured
 And the Raspberry Pi MySQL Docker container is running
-And the remote MySQL password is provided through the process environment
+And remote MySQL credentials are provided through the process environment or the container's existing MySQL environment
 When `infra/scripts/apply-raspberry-pi-schema.ps1 -ApplySeed` runs
 Then every `db/schema/*.sql` file is applied in name order through `docker exec`
 And the seed script can be applied after the schema
 And the script does not print the MySQL password
+
+### Scenario: Raspberry Pi schema apply repairs operational book profiles
+
+Given Raspberry Pi SSH authentication is configured
+And existing saved books may have missing or stale `raw_metadata.aiProfile`
+When `infra/scripts/apply-raspberry-pi-schema.ps1` runs without `-ApplySeed`
+Then every schema file is still applied in name order
+And the book AI profile backfill runs as part of the schema set
+And production metadata repair does not depend on reseeding test data
 
 ### Scenario: Local quality gate can run explicit live deploy smoke
 

@@ -24,7 +24,7 @@ public class PlaceholderAiProvider implements AiProvider {
                 .candidateId("placeholder-1")
                 .title(query == null || query.isBlank() ? "Untitled Candidate" : query)
                 .author("AI Candidate")
-                .reason("Placeholder candidate until OpenAI integration is wired.")
+                .reason("입력한 검색어를 바탕으로 만든 임시 후보입니다.")
                 .build()))
             .build();
     }
@@ -33,7 +33,7 @@ public class PlaceholderAiProvider implements AiProvider {
     public QuestionListResponse suggestQuestions(Long windowId, GenerateQuestionsRequest request) {
         int count = request.getCount() == null ? 3 : request.getCount();
         String focus = request.getFocus() == null || request.getFocus().isBlank()
-            ? "this reading"
+            ? "이번 독서"
             : request.getFocus();
 
         List<QuestionDto> questions = List.of(
@@ -42,7 +42,7 @@ public class PlaceholderAiProvider implements AiProvider {
                 .questionType("reflection")
                 .status("active")
                 .aiModel("placeholder")
-                .questionText(focus + "에서 어떤 디테일이 이 책을 이해하는 방식을 바꾸었나요?")
+                .questionText(focus + "에서 어떤 장면이 이 책을 이해하는 방식을 바꾸었나요?")
                 .build(),
             QuestionDto.builder()
                 .windowId(windowId)
@@ -67,8 +67,8 @@ public class PlaceholderAiProvider implements AiProvider {
 
     @Override
     public AiMessageResponse answerWindowMessage(Long windowId, SendMessageRequest request) {
-        String content = "AI 연결이 준비되지 않아 임시 응답입니다. "
-            + "남긴 답변의 핵심 근거를 하나 고르고, 그 근거가 해석을 어떻게 바꾸는지 이어서 정리해 보세요. "
+        String content = "임시 독서 응답입니다. "
+            + "방금 남긴 답변에서 근거가 되는 장면이나 문장을 하나 고르고, 그 근거가 해석을 어떻게 바꾸는지 이어서 정리해 보세요. "
             + "입력: "
             + summarize(request.getContent());
 
@@ -84,9 +84,8 @@ public class PlaceholderAiProvider implements AiProvider {
 
     @Override
     public AiMessageResponse answerDebateMessage(Long windowId, DebateMessageRequest request) {
-        String content = "AI 연결이 준비되지 않아 임시 토론 응답입니다. "
-            + "먼저 주장과 근거를 분리해 보겠습니다. "
-            + "반대 관점에서 확인할 질문은 이 해석을 뒷받침하는 장면이 충분한지입니다. "
+        String content = "임시 토론 응답입니다. "
+            + "먼저 주장을 한 문장으로 세우고, 그 주장을 지지하는 근거와 반대 관점에서 확인할 질문을 나눠 보겠습니다. "
             + "입력: "
             + summarize(request.getContent());
 

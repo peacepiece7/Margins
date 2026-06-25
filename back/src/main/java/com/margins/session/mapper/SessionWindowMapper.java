@@ -54,12 +54,20 @@ public interface SessionWindowMapper {
 
     @Select("""
         SELECT
-          id,
-          session_id,
-          user_id
-        FROM session_windows
-        WHERE id = #{id}
-          AND deleted_at IS NULL
+          sw.id AS id,
+          sw.session_id AS sessionId,
+          sw.user_id AS userId,
+          b.id AS bookId,
+          b.title AS bookTitle,
+          b.author AS bookAuthor,
+          b.isbn AS bookIsbn,
+          b.raw_metadata AS bookRawMetadata
+        FROM session_windows sw
+        INNER JOIN reading_sessions rs ON rs.id = sw.session_id
+        INNER JOIN books b ON b.id = rs.book_id
+        WHERE sw.id = #{id}
+          AND sw.deleted_at IS NULL
+          AND rs.deleted_at IS NULL
         """)
     SessionWindowContext findContextById(Long id);
 

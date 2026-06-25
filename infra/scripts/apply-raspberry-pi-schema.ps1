@@ -33,9 +33,7 @@ foreach ($name in @("MARGINS_DEPLOY_HOST", "MARGINS_DEPLOY_USER")) {
   }
 }
 
-if (-not $MysqlPassword) {
-  throw "Missing required environment variable: MARGINS_REMOTE_MYSQL_PASSWORD or MARGINS_MYSQL_PASSWORD"
-}
+$useContainerEnvCredentials = -not [bool]$MysqlPassword
 
 function Assert-SafeShellToken {
   param(
@@ -75,8 +73,13 @@ if ($ApplySeed) {
   $sqlFiles += Join-Path $repoRoot "db\seed\001_seed_mvp_data.sql"
 }
 
-$password = Escape-SingleQuotedShellValue -Value $MysqlPassword
-$remoteCommand = "docker exec -i -e MYSQL_PWD='$password' '$RemoteMysqlContainer' mysql -u '$MysqlUser' '$MysqlDatabase'"
+if ($useContainerEnvCredentials) {
+  $remoteCommand = "docker exec -i '$RemoteMysqlContainer' sh -c 'test -n ""`$MYSQL_USER"" && test -n ""`$MYSQL_PASSWORD"" && test -n ""`$MYSQL_DATABASE"" && mysql --default-character-set=utf8mb4 -u ""`$MYSQL_USER"" -p""`$MYSQL_PASSWORD"" ""`$MYSQL_DATABASE""'"
+  Write-Output "Using MySQL credentials from remote container environment."
+} else {
+  $password = Escape-SingleQuotedShellValue -Value $MysqlPassword
+  $remoteCommand = "docker exec -i -e MYSQL_PWD='$password' '$RemoteMysqlContainer' mysql --default-character-set=utf8mb4 -u '$MysqlUser' '$MysqlDatabase'"
+}
 
 foreach ($file in $sqlFiles) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {

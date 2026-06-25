@@ -121,6 +121,29 @@ When an AI answer or debate response is requested
 Then the OpenAI provider sends the user input with persisted session context
 And persona debate includes the selected persona `system_prompt`
 
+### Scenario: Context pack is assembled for a continued debate
+
+Given a debate window has persisted messages, highlights, questions, and a selected persona
+And the saved book has a generated book profile
+When `/api/session-windows/{id}/debate` or `/api/session-windows/{id}/debate/all` is called
+Then the backend assembles an AI context pack with book profile, session state, window state, debate state, recent messages, persona profile, and user input
+And the provider prompt orders that context before the current user input
+And provider tests can inspect the outbound request body to verify that the context pack was included
+
+### Scenario: Debate state guides the next response
+
+Given a debate window has prior persona replies with conflicting positions
+When the next debate prompt is sent
+Then the backend includes the current topic, user position, persona positions, agreements, conflicts, and open questions in the debate state
+And the AI response is instructed to connect to the latest user point before adding a new perspective
+
+### Scenario: Professional persona metadata is used safely
+
+Given a selected professional persona has a lens and avoid rules
+When the backend requests a persona debate response
+Then the provider prompt includes the persona's lens, tone, response pattern, and avoid rules
+And the response is not instructed to diagnose the reader, mock reading taste, or assert unsupported facts about the book
+
 ### Scenario: OpenAI provider tolerates event-stream text body on non-streaming requests
 
 Given `margins.ai.provider` is `openai`
@@ -176,6 +199,14 @@ Given the single-user MVP seed user exists
 When `/api/books` is called with a selected AI candidate
 Then the backend inserts a row in `books`
 And returns the generated `bookId`
+
+### Scenario: Book edit refreshes AI context metadata
+
+Given a saved book has an existing `raw_metadata.aiProfile`
+When `/api/books/{id}` updates the book title, author, or publication year
+Then the backend persists the edited columns
+And regenerates the book profile metadata from the current values
+And later AI context packs do not include stale title or author profile data
 
 ### Scenario: Book save does not succeed when no row is inserted
 

@@ -46,6 +46,11 @@ class BookBusinessPersistenceTest {
         assertThat(mapper.inserted.getIsbn()).isEqualTo("9788996991342");
         assertThat(mapper.inserted.getSource()).isEqualTo("ai");
         assertThat(mapper.inserted.getSourceRef()).isEqualTo("candidate-1");
+        assertThat(mapper.inserted.getRawMetadata())
+            .contains("\"aiProfile\"")
+            .contains("\"isbn\":\"9788996991342\"")
+            .contains("\"discussionAngles\"")
+            .contains("\"confidence\":\"low\"");
     }
 
     @Test
@@ -62,6 +67,7 @@ class BookBusinessPersistenceTest {
 
         assertThat(mapper.inserted.getSource()).isEqualTo("kakao");
         assertThat(mapper.inserted.getSourceRef()).isEqualTo("kakao:9788996991342");
+        assertThat(mapper.inserted.getRawMetadata()).contains("\"provider\":\"kakao\"");
     }
 
     @Test
@@ -136,6 +142,12 @@ class BookBusinessPersistenceTest {
         assertThat(mapper.updated.getTitle()).isEqualTo("Updated Book");
         assertThat(mapper.updated.getAuthor()).isEqualTo("Updated Author");
         assertThat(mapper.updated.getPublishedYear()).isEqualTo(2026);
+        assertThat(mapper.updated.getRawMetadata())
+            .contains("\"title\":\"Updated Book\"")
+            .contains("\"author\":\"Updated Author\"")
+            .contains("\"publishedYear\":2026")
+            .doesNotContain("Before")
+            .doesNotContain("Old");
     }
 
     @Test

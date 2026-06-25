@@ -151,6 +151,15 @@ Then user messages appear as right-aligned bubbles labeled `나`
 And persona responses appear as left-aligned bubbles with visible speaker identity
 And the speaker icon row can request one selected persona's answer
 
+### Scenario: Default debate reply is selected heuristically
+
+Given the user opened a topic-specific debate room with multiple selected personas
+And the visible room history has uneven persona reply counts
+When the user submits the debate composer
+Then the frontend requests one answer from the selected persona with the fewest visible assistant replies
+And the user can still request a specific persona from the speaker row
+And the user can still request every selected persona through the explicit all-persona button
+
 ### Scenario: Skeleton creates a session from a candidate
 
 Given the backend is running
@@ -730,6 +739,36 @@ Given a debate window exists with personas
 When the user sends a debate message to a persona
 Then the response is labeled with that persona
 And the persona identity remains visible in the message history
+
+### Scenario: Debate answer visibly continues the current topic
+
+Given the user is in a topic-specific debate room with prior messages
+When the user sends the next debate message
+Then the UI keeps the active room selected while the reply loads
+And the refreshed message list shows the new persona response in the same room
+And messages from other debate rooms remain hidden
+
+### Scenario: User chooses a professional reading lens
+
+Given fantasy and professional personas are available
+When the user opens the debate participant selector
+Then professional personas show their display name, tone, and short lens description
+And selecting one sends its `personaId` through the existing debate request path
+
+### Scenario: User sees structured debate support when available
+
+Given the backend returns or persists a debate response with claim, support, alternative lens, and next question metadata
+When the debate room renders the response
+Then the UI can show those sections in a compact response block
+And the full persisted message remains visible or exportable as part of the transcript
+
+### Scenario: Missing book context does not block debate
+
+Given a registered book has no generated book profile yet
+When the user enters a debate room and sends a prompt
+Then the UI still sends the debate request
+And the debate reply appears from the persisted backend response
+And no blocking profile-generation error is shown as a debate failure
 
 ### Scenario: User asks selected personas to debate one prompt
 

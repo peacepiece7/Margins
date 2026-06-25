@@ -70,6 +70,7 @@ Recent owner-requested slices are implemented across the existing MVP domains:
 - Seed personas use Korean fantasy-role identities for debate: warrior, wizard, cleric, and rogue style profiles. Persona identity remains visible in debate room controls and message bubbles.
 - OpenAI integration is wired behind `AiProvider`. Runtime failures such as quota exhaustion fall back to deterministic local responses, and backend tests use mock/local HTTP servers instead of calling the real OpenAI API.
 - Multi-persona debate uses one frontend `/api/session-windows/{id}/debate/all` request with selected `personaIds`; OpenAI-backed batch debate uses one provider request for selected personas instead of one provider request per persona.
+- The default debate-room send action is heuristic and conversational: it requests one next-turn persona based on the visible room history. Readers still keep explicit controls for choosing a specific persona or asking every selected persona to answer.
 - Reading session library reads avoid avoidable duplicate work: frontend dashboard stats are derived from loaded session summaries, and backend summary tags are loaded in bulk instead of one tag query per session.
 - External book search uses the configured provider chain. Kakao Daum Book Search can be selected with `MARGINS_BOOK_SEARCH_PROVIDER=kakao` and `KAKAO_REST_API_KEY`; Open Library remains the secondary metadata provider, while AI fallback is controlled by `MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED`.
 - Registered-book flow separates search/add from reading-session creation. Saved books can be listed, opened, edited, and soft-deleted. Reflection, question generation, and debate entry create or reuse the selected book's reading session only when needed.
@@ -77,6 +78,49 @@ Recent owner-requested slices are implemented across the existing MVP domains:
 - Selected-question answering shows persisted answer history for that exact `windowId` and `questionId`, so previously submitted answers are visible after timeline reload or returning from the question list.
 - API-backed search and AI-response waits show progress UI: submit buttons use spinners, while result regions use skeleton cards, rows, and chat bubbles.
 - Full-stack verification remains local and repeatable through `harness/scripts/run-fullstack-e2e.ps1`, which starts isolated MySQL/backend/frontend services and then runs Playwright.
+
+## Planned Context-Aware Debate Direction
+
+Margins의 다음 AI 토론 목표는 사용자가 "이전 대화와 책 맥락을 이해한 상태에서 자연스럽게 이어 말한다"고 느끼는 것이다. 이 목표는 MVP의 `No RAG` 원칙을 바꾸지 않는다. 1차 구현은 저장된 책 메타데이터, 세션 진행 상태, 하이라이트, 질문, 최근 메시지, 토론 상태 요약, 페르소나 정의를 하나의 `AI Context Pack`으로 조립해 OpenAI 요청에 주입하는 방식으로 진행한다.
+
+기획 기준은 다음 외부 제품/독서 방법론에서 가져온다.
+
+- Goodreads: 책장, 독서 상태, 커뮤니티 토론의 기본 UX.
+- The StoryGraph: mood, pace, theme, topic 기반 독서 맥락과 통계적 분류.
+- Fable: 주제별 북클럽/토론방과 참여자 중심 대화 UX. AI 요약이나 취향 평가 문구는 안전 검토가 필요하다.
+- Readwise: 하이라이트와 노트를 다시 불러와 대화의 근거로 쓰는 흐름.
+- Adler/Van Doren `How to Read a Book`: 분석적 읽기와 비교/종합 읽기 단계.
+- Harvard Project Zero `Claim-Support-Question`: 주장, 근거, 남는 질문으로 독서 토론을 구조화하는 루틴.
+- Socratic Seminar: AI가 정답을 확정하기보다 열린 질문으로 독자의 사고를 이어가게 하는 진행 방식.
+
+계획된 컨텍스트 조립 순서는 다음과 같다.
+
+```text
+system instruction
+  -> book_ai_profile
+  -> reading_session state
+  -> current window and debate topic
+  -> debate_state_summary
+  -> selected highlights and questions
+  -> recent messages
+  -> selected persona profile
+  -> current user input
+```
+
+`book_ai_profile`은 책 등록 또는 사용자가 명시적으로 갱신할 때 생성되는 JSON 요약이다. 1차 구현은 `books.raw_metadata.aiProfile`에 ISBN, 제목, 저자, 출판연도, 장르, mood, pace, 핵심 주제, 짧은 줄거리, 주요 인물/개념, 토론 각도, spoiler 정책, 생성 출처, 신뢰도를 저장한다. AI가 만든 줄거리나 배경 지식은 사실처럼 숨기지 않고 `source`, `confidence`, `generatedAt`, `reviewedByUser`로 추적한다.
+
+`debate_state_summary`는 토론방별로 갱신되는 짧은 상태 요약이다. 현재 주제, 사용자의 최근 입장, 각 페르소나의 입장, 합의점, 충돌점, 열린 질문, 다음 응답 전략을 포함한다. 다음 AI 응답은 최근 메시지 원문만이 아니라 이 요약을 먼저 읽고 이어 말해야 한다.
+
+페르소나는 기존 fantasy 역할을 유지하되 전문직 프리셋을 추가할 수 있게 한다. 초기 전문직 후보는 문학평론가, 철학자, 심리학자, 역사학자, 사회학자, 편집자, 회의적인 독자, 독서 모임 진행자다. 전문직 페르소나는 `system_prompt`만이 아니라 관점, 말투, 피해야 할 단정, 응답 패턴을 구조화해 저장한다.
+
+AI 응답 원칙은 다음과 같다.
+
+- 사용자의 마지막 발화를 먼저 받아 이어 말한다.
+- 책 배경과 저장된 대화에서 확인 가능한 근거를 우선 사용한다.
+- 제공된 정보 밖의 줄거리, 저자 의도, 시대 배경은 단정하지 않는다.
+- 전문직 페르소나 관점과 다른 관점 1~2개를 비교한다.
+- `Claim-Support-Question` 형태로 주장, 근거, 다음 질문을 남길 수 있어야 한다.
+- 사용자의 독서 취향, 정체성, 능력을 조롱하거나 평가하지 않는다.
 
 ## Delivery Harness
 

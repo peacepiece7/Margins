@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 class OpenAiAiProviderFallbackTest {
 
     @Test
-    void usesPlaceholderBehaviorWhenApiKeyIsMissing() {
+    void usesReaderSafePlaceholderBehaviorWhenApiKeyIsMissing() {
         OpenAiAiProvider provider = new OpenAiAiProvider(
             new OpenAiProperties(),
             new ObjectMapper(),
@@ -52,14 +52,27 @@ class OpenAiAiProviderFallbackTest {
         AiMessageResponse debate = provider.answerDebateMessage(10L, DebateMessageRequest.builder().personaId(2L).content("Debate").build());
 
         assertThat(candidates.getAiModel()).isEqualTo("placeholder");
+        assertThat(candidates.getCandidates()).singleElement()
+            .satisfies((candidate) -> assertThat(candidate.getReason())
+                .contains("임시 후보")
+                .doesNotContain("OpenAI")
+                .doesNotContain("integration"));
         assertThat(questions.getQuestions()).hasSize(2);
         assertThat(questions.getQuestions())
             .extracting((question) -> question.getQuestionText())
-            .allMatch((questionText) -> questionText.matches(".*[가-힣].*"));
+            .allSatisfy((questionText) -> assertThat(questionText)
+                .containsAnyOf("어떤 장면", "어떤 구절")
+                .doesNotContain("OpenAI")
+                .doesNotContain("integration"));
         assertThat(answer.getAiModel()).isEqualTo("placeholder");
+        assertThat(answer.getContent())
+            .contains("임시 독서 응답")
+            .doesNotContain("OpenAI")
+            .doesNotContain("integration");
         assertThat(streamed.getAiModel()).isEqualTo("placeholder");
         assertThat(String.join("", streamedDeltas)).isEqualTo(streamed.getContent());
         assertThat(debate.getPersonaId()).isEqualTo(2L);
+        assertThat(debate.getContent()).contains("임시 토론 응답");
     }
 
     @Test
@@ -192,6 +205,123 @@ class OpenAiAiProviderFallbackTest {
             assertThat(response.getContent()).isEqualTo("Debate answer");
             assertThat(response.getAiModel()).isEqualTo(properties.getModel());
             assertThat(acceptHeader.get()).isEqualTo("application/json");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @Test
+    void includesContextPackAndDebateStateInConfiguredDebatePrompt() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        AtomicReference<String> requestBody = new AtomicReference<>();
+        server.createContext("/responses", (exchange) -> {
+            requestBody.set(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            byte[] response = "{\"output_text\":\"Context aware answer\"}".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, response.length);
+            exchange.getResponseBody().write(response);
+            exchange.close();
+        });
+        server.start();
+
+        try {
+            OpenAiProperties properties = new OpenAiProperties();
+            properties.setApiKey("test-key");
+            properties.setBaseUrl("http://127.0.0.1:" + server.getAddress().getPort());
+            OpenAiAiProvider provider = new OpenAiAiProvider(
+                properties,
+                new ObjectMapper(),
+                new FakeSessionWindowMapper() {
+                    @Override
+                    public SessionWindowContext findContextById(Long id) {
+                        return new SessionWindowContext(
+                            id,
+                            1L,
+                            1L,
+                            11L,
+                            "The Left Hand of Darkness",
+                            "Ursula K. Le Guin",
+                            "9780441478125",
+                            "{\"aiProfile\":{\"themes\":[\"estrangement\"],\"source\":{\"confidence\":\"low\"}}}"
+                        );
+                    }
+
+                    @Override
+                    public SessionWindowRecord findById(Long id) {
+                        return SessionWindowRecord.builder()
+                            .id(id)
+                            .sessionId(1L)
+                            .windowType("debate")
+                            .title("토론: 침묵은 회피인가")
+                            .status("open")
+                            .build();
+                    }
+                },
+                new FakeMessageMapper() {
+                    @Override
+                    public List<MessageRecord> findBySessionId(Long sessionId) {
+                        return List.of(
+                            MessageRecord.builder()
+                                .id(1L)
+                                .sessionId(sessionId)
+                                .windowId(10L)
+                                .role("user")
+                                .content("주인공의 침묵은 책임 회피처럼 보입니다.")
+                                .build(),
+                            MessageRecord.builder()
+                                .id(2L)
+                                .sessionId(sessionId)
+                                .windowId(10L)
+                                .role("assistant")
+                                .personaId(2L)
+                                .content("심리학자 관점에서는 방어기제로 볼 수 있습니다.")
+                                .build()
+                        );
+                    }
+                },
+                new FakeQuestionMapper() {
+                    @Override
+                    public List<QuestionRecord> findByWindowId(Long windowId) {
+                        return List.of(QuestionRecord.builder()
+                            .id(7L)
+                            .windowId(windowId)
+                            .questionText("침묵은 선택인가, 강요된 반응인가?")
+                            .build());
+                    }
+                },
+                new FakePersonaMapper() {
+                    @Override
+                    public PersonaRecord findActiveById(Long id) {
+                        return PersonaRecord.builder()
+                            .id(id)
+                            .name("psychologist")
+                            .displayName("심리학자")
+                            .systemPrompt("Respond through a careful psychology lens.")
+                            .tone("분석적")
+                            .active(true)
+                            .build();
+                    }
+                },
+                HttpClient.newHttpClient()
+            );
+
+            AiMessageResponse response = provider.answerDebateMessage(10L, DebateMessageRequest.builder()
+                .personaId(2L)
+                .content("그렇다면 이 침묵을 어떻게 이어서 봐야 할까요?")
+                .build());
+
+            assertThat(response.getContent()).isEqualTo("Context aware answer");
+            assertThat(requestBody.get()).contains("AI Context Pack");
+            assertThat(requestBody.get()).contains("Book profile");
+            assertThat(requestBody.get()).contains("The Left Hand of Darkness");
+            assertThat(requestBody.get()).contains("estrangement");
+            assertThat(requestBody.get()).contains("Window type: debate");
+            assertThat(requestBody.get()).contains("Debate state summary");
+            assertThat(requestBody.get()).contains("userPosition");
+            assertThat(requestBody.get()).contains("personaPositions");
+            assertThat(requestBody.get()).contains("심리학자");
+            assertThat(requestBody.get()).contains("Claim, Support, Question");
+            assertThat(requestBody.get()).contains("침묵은 선택인가");
         } finally {
             server.stop(0);
         }

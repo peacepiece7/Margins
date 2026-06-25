@@ -145,7 +145,7 @@ Soft-deleted books are excluded through `books.deleted_at IS NULL`.
 `POST /api/books/search-candidates` first calls the configured external provider when `margins.book-search.enabled=true`. `MARGINS_BOOK_SEARCH_PROVIDER=kakao` makes Kakao Daum Book Search the first provider; if it is unavailable, lacks `KAKAO_REST_API_KEY`, or returns no save-compatible records, the backend tries the remaining external providers. The API falls back to `AiProvider.suggestBooks` only when `MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=true`; the default is `false` so Kakao/Open Library misses return a successful empty candidate list with `aiModel=external-none` instead of being masked by AI candidates or breaking the search UI. Kakao results map the preferred ISBN to both `candidateId` with `kakao:` prefix and the separate optional `isbn` response field, `title` to title, joined `authors` to author, and the year from `datetime` to `publishedYear`. Open Library results map `key` to `candidateId` with `openlibrary:` prefix, title to title, first `author_name` to author, and `first_publish_year` to `publishedYear`.
 Both external and AI paths return candidates that are safe to pass back to `POST /api/books`: blank title, author, or candidate identifier suggestions are removed, returned `candidateId`, `title`, and `author` strings are trimmed and capped at 255 characters, and optional `isbn` is trimmed and capped at 32 characters.
 `POST /api/books` accepts `candidateId`, `title`, and `author` as required non-blank strings up to 255 characters plus optional `isbn` up to 32 characters, matching the saved book column limits. It trims title, author, and ISBN before persistence and returns the existing saved book instead of inserting when the same user already has a non-deleted book with matching normalized title and author. Candidate ids with a provider prefix, such as `kakao:` or `openlibrary:`, set `books.source` to that prefix while preserving the full value in `books.source_ref`; unprefixed candidate ids continue to use `source='ai'`. If the mapper reports that no row was inserted for a new book, the backend fails the request with `message=Book could not be saved` and does not return an unsaved record.
-`PATCH /api/books/{id}` accepts non-blank `title` and `author` up to 255 characters plus optional `publishedYear`. The update is scoped to the single-user reader and ignores soft-deleted books. If the edited normalized title/author matches another active saved book, the backend returns `409` with `message=Book already exists`.
+`PATCH /api/books/{id}` accepts non-blank `title` and `author` up to 255 characters plus optional `publishedYear`. The update is scoped to the single-user reader and ignores soft-deleted books. If the edited normalized title/author matches another active saved book, the backend returns `409` with `message=Book already exists`. Successful edits regenerate `books.raw_metadata.aiProfile` from the current editable metadata while preserving immutable provider fields such as ISBN/source reference, so later AI context packs do not mix stale title/author profile data with current book columns.
 `DELETE /api/books/{id}` soft-deletes the book by setting `books.deleted_at`, scoped to the single-user reader. Active book list reads exclude the deleted row. Existing reading sessions remain durable records and continue to own their persisted book/session/message context; the active saved-book list is the only immediate target of this endpoint.
 
 `GET /api/reading-sessions` returns session summaries for the single-user reader:
@@ -231,7 +231,7 @@ Response DTO:
 
 - `personas[]`: `personaId`, `name`, `displayName`, `description`, `tone`
 
-Seed personas are fantasy debate roles exposed through the same API contract: `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`. The MVP schema does not add separate age/job columns; name, age, role, and personality profile are carried in `description`, while the debate voice is carried in `system_prompt` and the compact UI label in `tone`.
+Seed personas include fantasy debate roles exposed through the same API contract: `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`. The seed also includes professional reading lenses: literary critic, philosopher, psychologist, historian, sociologist, editor, skeptical reader, and book-club facilitator. The MVP schema does not add separate age/job/lens columns; profile metadata is carried in `description`, the debate voice is carried in `system_prompt`, and the compact UI label is carried in `tone`.
 
 `POST /api/personas` accepts:
 
@@ -328,9 +328,44 @@ JWT runtime configuration:
 - Default OpenAI model: `gpt-5.5`, matching the current OpenAI quickstart example used for Responses API text generation.
 - Runtime fallback: if `OPENAI_API_KEY` is blank or an OpenAI request fails, the provider returns deterministic local behavior instead of breaking the MVP flow. OpenAI parse failures log status, content type, body length, and a bounded body preview without logging API keys so production fallback causes can be diagnosed.
 - Context included in prompts: current `sessionId`, persisted questions for the window, recent messages for the session, selected `questionId`, user input, and persona `system_prompt` for debate.
+- Current OpenAI prompt context is labeled as `AI Context Pack` and includes session id, window id, stored book profile from `books.raw_metadata`, window type/title, conversation rules, active window questions, a derived debate state summary for the current window, and bounded recent messages. Debate state is derived from persisted messages and is used to connect the next answer to the reader's latest point before adding another lens.
 - Multi-persona debate uses `AiProvider.answerDebateMessages`. `OpenAiAiProvider` batches selected persona prompts into one Responses API request and parses one reply per requested `personaId`; when OpenAI returns only a partial valid JSON array, the provider fills missing persona replies through the per-persona fallback path before returning. The default provider path remains deterministic and network-free for tests.
 - Shared outbound HTTP clients are provided through `HttpClientConfig` and injected into OpenAI, Kakao, and Open Library providers instead of constructing a new `HttpClient` per request.
 - Backend tests for `OpenAiAiProvider` must not call the real OpenAI API. Configured-provider success paths use a local mock HTTP server that implements the expected `/responses` shape, while missing-key and provider-error paths assert deterministic fallback behavior.
+
+### Planned AI Context Pack Contract
+
+The next context-aware debate slice keeps the `AiProvider` boundary and does not introduce RAG. The backend will add an orchestration object, tentatively named `AiContextPack`, assembled before question, answer, and debate provider calls.
+
+`AiContextPack` fields:
+
+- `bookProfile`: stored book context payload with ISBN, title, author, publication year, genre, mood, pace, short summary, themes, major characters or concepts, discussion angles, spoiler policy, source, confidence, generated timestamp, and reviewed flag.
+- `sessionState`: session id, title, status, reading goal, page range, current page, progress note, tags, latest highlights, and active insights.
+- `windowState`: window id, window type, title, debate topic when applicable, and selected question id when applicable.
+- `debateState`: current topic, user's latest position, persona positions, agreements, conflicts, open questions, and next response strategy.
+- `recentMessages`: bounded ordered messages from the active window plus enough session-level messages to preserve continuity.
+- `personaProfile`: selected persona id, display name, tone, system prompt, professional lens, response pattern, and avoid rules.
+- `userInput`: the current request content.
+
+Planned prompt assembly order:
+
+```text
+system instruction
+bookProfile
+sessionState
+windowState
+debateState
+highlights/questions
+recentMessages
+personaProfile
+userInput
+```
+
+Provider instructions must require the model to connect to the user's latest point first, use stored context as grounding, avoid unsupported claims about the book, compare more than one interpretation when useful, and end with a continuation question. When the caller requests a structured discussion turn, the provider should return or internally follow `claim`, `support`, `alternativeLens`, and `nextQuestion` sections.
+
+`debateState` is derived from persisted messages first. A later persistence slice may store the latest summarized debate state in a table such as `session_window_contexts`; until then, the backend can build it on demand and save the assembled context in `messages.context_snapshot` for replay and debugging.
+
+Professional personas are structured through existing persona fields. The existing `personas.system_prompt` remains the executable instruction, while `description` carries profile metadata such as persona type, primary lens, and avoid rules. A future migration may add typed or JSON fields if the frontend needs richer grouping.
 
 ## External Book Search Contract
 

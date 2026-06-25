@@ -23,6 +23,27 @@ When the user saves that candidate as a book
 Then `books.isbn` stores the candidate ISBN
 And `books.source_ref` keeps the provider candidate identifier
 
+### Scenario: Book AI profile stores generated reading context
+
+Given a saved book has title, author, ISBN, and provider source metadata
+When the AI enrichment job creates a book profile
+Then the database stores summary, themes, mood, pace, discussion angles, source, confidence, and spoiler policy as generated metadata
+And the original provider title, author, ISBN, and source reference remain unchanged
+
+### Scenario: Book profile refreshes when editable metadata changes
+
+Given a saved book already has `books.raw_metadata.aiProfile`
+When the application updates the book title, author, or publication year
+Then the database stores a refreshed profile payload matching the current editable columns
+And old profile title or author values are not retained as active AI context
+
+### Scenario: Missing book profile does not block registration
+
+Given AI enrichment is unavailable or returns low-confidence metadata
+When the user saves a book
+Then the book row remains usable for sessions
+And the profile payload is null, missing, or marked with low confidence instead of preventing book registration
+
 ### Scenario: Archived reading sessions are excluded from user-facing reads
 
 Given a reading session has `deleted_at` set
@@ -121,9 +142,10 @@ And the persona definition can be joined for display or analysis
 
 Given seed data is restored
 When the application opens a debate session
-Then four active test personas are available
+Then the four fantasy test personas remain available
 And their display names are `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`
-And each persona description includes name, age, role, and personality context for debate
+And each fantasy persona description includes name, age, role, and personality context for debate
+And professional test personas are also available for literary, philosophical, psychological, historical, sociological, editorial, skeptical-reader, and facilitator lenses
 
 ### Scenario: Persona trace query returns persona prompt context
 
@@ -131,6 +153,20 @@ Given a persona debate message is stored
 When `db/queries/003_persona_trace.sql` is run for the session
 Then the result includes persona id, name, display name, and system prompt
 And the message remains linked to its session and window
+
+### Scenario: Debate state summary is rebuildable from messages
+
+Given a debate window has stored user prompts and persona replies
+When a context-aware debate summary is missing or stale
+Then the backend can rebuild the topic, user position, persona positions, agreements, conflicts, and open questions from persisted messages
+And any stored summary is treated as a derived cache, not the source of truth
+
+### Scenario: AI context snapshot explains a generated response
+
+Given the backend sends an AI context pack for a debate reply
+When the assistant message is persisted
+Then `messages.context_snapshot` can store the bounded context pack or a redacted equivalent
+And later audits can identify the book profile, debate state, persona profile, and recent messages used for that response
 
 ## Feature: Metric-Ready Records
 
@@ -181,6 +217,22 @@ Given test data was inserted
 When reset scripts run
 Then the database returns to known seed state
 And local development can rerun E2E tests deterministically
+
+### Scenario: Reseed refreshes existing test book metadata
+
+Given seed book `id=1` already exists from an older local run
+When the seed script is rerun
+Then the seed book raw metadata is updated to the latest `aiProfile`
+And the next AI context pack can use the refreshed seed profile
+
+### Scenario: Production schema apply backfills book AI profiles
+
+Given saved books already exist in a non-reset database
+And some books have missing or stale `books.raw_metadata.aiProfile`
+When the schema scripts are applied in order
+Then the book AI profile backfill refreshes those payloads from current book columns
+And the seed script is not required to repair production book metadata
+And the profile gap query can confirm no mismatched profile rows remain
 
 ### Scenario: Reset keeps non-test records
 

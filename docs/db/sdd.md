@@ -47,6 +47,33 @@ Implemented in `db/schema/001_create_mvp_schema.sql`.
 - Reader library statistics are derived from non-deleted `reading_sessions` summary joins over books, active windows, active-window questions, active-window messages, and highlights; the API does not persist derived stats into `metrics` during the MVP.
 - `db/queries/004_metric_sources.sql` exposes session metric source counts including `window_count`, `question_count`, `answered_question_count`, `highlight_count`, `message_count`, and `persona_count`; `answered_question_count` is derived from distinct non-deleted user messages with a `question_id` in non-deleted windows.
 
+## AI Context Persistence
+
+The context-aware debate enhancement remains non-RAG. It stores compact, generated metadata and summaries that can be injected into AI requests without retrieving book passages at answer time.
+
+Current `books` profile payload:
+
+- Store the first implementation in `books.raw_metadata.aiProfile` so no new table is required for the MVP slice.
+- Required payload keys: `isbn`, `title`, `author`, `publishedYear`, `language`, `genre[]`, `mood[]`, `pace`, `themes[]`, `summaryShort`, `summaryLong`, `characters[]` or `concepts[]`, `discussionAngles[]`, `spoilerLevel`, `source.provider`, `source.confidence`, `generatedAt`, `reviewedByUser`.
+- The generated profile is advisory context. It must not replace provider metadata fields such as `books.title`, `books.author`, `books.isbn`, or `books.source_ref`.
+- If AI enrichment fails, book registration still succeeds and the profile can be null or marked with `source.confidence='missing'`.
+- Book metadata updates and seed upserts must refresh `books.raw_metadata` when the current title, author, publication year, or seed profile changes. During the current test period, deterministic reset/reseed behavior is preferred over preserving stale test metadata.
+- Production schema application includes `db/schema/007_backfill_book_ai_profiles.sql`, an idempotent backfill that refreshes missing or stale `books.raw_metadata.aiProfile` payloads from the current book columns without requiring seed data.
+
+Planned debate context payload:
+
+- Store the latest per-window summary in a future `session_window_contexts` table or append it to `session_windows.context_snapshot` if a migration chooses that route.
+- Required payload keys: `topic`, `currentFocus`, `userPosition`, `personaPositions[]`, `agreements[]`, `conflicts[]`, `openQuestions[]`, `nextBestMove`, `updatedFromMessageId`, and `generatedAt`.
+- Raw `messages` remain the source of truth. Debate summaries are derived caches and can be rebuilt from messages.
+- Every AI-generated response can keep the exact assembled context pack or a bounded redacted form in `messages.context_snapshot` so later debugging can explain why a response continued a topic in a specific way.
+
+Professional persona metadata:
+
+- Existing `personas.system_prompt` remains required.
+- The MVP seed stores professional persona profile metadata in `description` and executable behavior in `system_prompt`.
+- A future JSON metadata field may normalize `personaType`, `primaryLens[]`, `stanceStyle`, `responsePattern[]`, and `avoid[]`.
+- Professional persona rows remain ordinary `personas` rows so metrics and trace queries can group fantasy and professional voices through the same `persona_id` dimension.
+
 ## Key Relationships
 
 | Parent | Child | Notes |
@@ -87,6 +114,7 @@ db/
   schema/004_add_session_pin.sql
   schema/005_create_session_tags.sql
   schema/006_create_session_insights.sql
+  schema/007_backfill_book_ai_profiles.sql
   seed/001_seed_mvp_data.sql
   queries/001_session_timeline.sql
   queries/002_window_messages.sql
@@ -108,12 +136,15 @@ db/
   - session tags when created by application flows
   - one question window and one debate window
   - four active fantasy debate personas: `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`
+  - eight active professional debate personas: literary critic, philosopher, psychologist, historian, sociologist, editor, skeptical reader, and book-club facilitator
   - one reflection question
   - four messages including a persona response
   - one sample session metric
 - Reset deletes rows where `is_test_data = TRUE`, including session tags and insights, and reloads seed data through the MySQL client `SOURCE` command. The backend JDBC reset executor mirrors the deletion list and re-enables `FOREIGN_KEY_CHECKS` in a `finally` path if cleanup fails.
+- Seed upserts refresh the seed book's provider columns and `raw_metadata.aiProfile` on duplicate rows, so rerunning seed scripts upgrades existing local/E2E rows to the latest AI context payload.
 - Non-test rows are not deleted by reset scripts.
-- `harness/scripts/audit-db-contract.ps1` checks schema, seed, query, and reset SQL contracts without requiring a running MySQL server. It verifies required MVP tables, soft-delete and test-data markers, metric dimensions/source columns, reset `is_test_data` safety, backend JDBC reset FK-check recovery, timeline lookup filters, direct window-message lookup filters, persona trace fields, and metric source filters including archived-window exclusion for question and message counts.
+- `db/queries/005_book_ai_profile_gaps.sql` lists books whose stored AI profile is missing or no longer matches current title, author, ISBN, or publication year. Operators can run it before and after schema application to confirm the backfill closed profile gaps.
+- `harness/scripts/audit-db-contract.ps1` checks schema, seed, query, and reset SQL contracts without requiring a running MySQL server. It verifies required MVP tables, soft-delete and test-data markers, metric dimensions/source columns, book AI profile backfill text, reset `is_test_data` safety, backend JDBC reset FK-check recovery, timeline lookup filters, direct window-message lookup filters, persona trace fields, book AI profile gap query fields, and metric source filters including archived-window exclusion for question and message counts.
 
 ## Metric Constraints
 

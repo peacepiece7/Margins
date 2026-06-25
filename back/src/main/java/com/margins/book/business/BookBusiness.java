@@ -1,5 +1,9 @@
 package com.margins.book.business;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.margins.ai.AiProvider;
 import com.margins.book.dto.BookCandidateDto;
 import com.margins.book.dto.BookListResponse;
@@ -28,6 +32,7 @@ public class BookBusiness {
     private static final long DEFAULT_USER_ID = 1L;
     private static final int SAVE_TEXT_LIMIT = 255;
     private static final int ISBN_TEXT_LIMIT = 32;
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final AiProvider aiProvider;
     private final List<ExternalBookSearchProvider> externalBookSearchProviders;
@@ -99,6 +104,7 @@ public class BookBusiness {
             .publishedYear(request.getPublishedYear())
             .source(sourceFromCandidateId(request.getCandidateId()))
             .sourceRef(request.getCandidateId())
+            .rawMetadata(bookAiProfileMetadata(title, author, trimIsbn(request.getIsbn()), request.getPublishedYear(), request.getCandidateId()))
             .testData(true)
             .build();
 
@@ -128,6 +134,7 @@ public class BookBusiness {
             .title(title)
             .author(author)
             .publishedYear(request.getPublishedYear())
+            .rawMetadata(bookAiProfileMetadata(title, author, existing.getIsbn(), request.getPublishedYear(), existing.getSourceRef()))
             .build();
         if (bookMapper.update(update) <= 0) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Book could not be updated");
@@ -222,6 +229,42 @@ public class BookBusiness {
 
         String source = candidateId.substring(0, candidateId.indexOf(':')).trim().toLowerCase();
         return source.isBlank() ? "ai" : trimToLimit(source);
+    }
+
+    private String bookAiProfileMetadata(String title, String author, String isbn, Integer publishedYear, String candidateId) {
+        ObjectNode root = OBJECT_MAPPER.createObjectNode();
+        ObjectNode profile = root.putObject("aiProfile");
+        profile.put("isbn", isbn == null ? "" : isbn);
+        profile.put("title", title);
+        profile.put("author", author == null ? "" : author);
+        if (publishedYear != null) {
+            profile.put("publishedYear", publishedYear);
+        }
+        profile.put("language", "");
+        profile.putArray("genre");
+        profile.putArray("mood");
+        profile.put("pace", "unknown");
+        ArrayNode themes = profile.putArray("themes");
+        themes.add("reader-reflection");
+        profile.put("summaryShort", "사용자가 등록한 책 정보를 바탕으로 생성된 초기 토론 컨텍스트입니다.");
+        profile.put("summaryLong", "아직 검수된 줄거리나 전문 메타데이터가 없으므로, AI는 제목, 저자, ISBN, 사용자의 세션 기록을 우선 근거로 사용해야 합니다.");
+        profile.putArray("characters");
+        ArrayNode discussionAngles = profile.putArray("discussionAngles");
+        discussionAngles.add("문학적 관점");
+        discussionAngles.add("철학적 관점");
+        discussionAngles.add("심리학적 관점");
+        discussionAngles.add("역사/사회적 관점");
+        profile.put("spoilerLevel", "unknown");
+        ObjectNode source = profile.putObject("source");
+        source.put("provider", sourceFromCandidateId(candidateId));
+        source.put("confidence", "low");
+        profile.put("generatedAt", "book-save");
+        profile.put("reviewedByUser", false);
+        try {
+            return OBJECT_MAPPER.writeValueAsString(root);
+        } catch (JsonProcessingException exception) {
+            return "{\"aiProfile\":{\"source\":{\"confidence\":\"missing\"}}}";
+        }
     }
 
     private List<ExternalBookSearchProvider> orderedExternalProviders() {

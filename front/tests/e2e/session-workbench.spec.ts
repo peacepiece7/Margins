@@ -118,6 +118,10 @@ test('follows the owner replan page flow from book registration to reflection an
   ]);
   await expect(page.getByTestId('debate-message-list')).toContainText('How does ritual shape political authority?');
   await expect(page.getByTestId('debate-message-list')).toContainText('전사 아르단', { timeout: 20000 });
+  await Promise.all([
+    page.waitForResponse((response) => response.url().includes('/api/session-windows/') && response.url().endsWith('/debate/all') && response.request().method() === 'POST' && response.status() === 200),
+    page.getByTestId('debate-all-submit').click(),
+  ]);
   await expect(page.getByTestId('debate-message-list')).toContainText('마법사 리라', { timeout: 20000 });
   await expect(page.getByTestId('debate-message-list')).toContainText('성직자 세렌', { timeout: 20000 });
 

@@ -50,6 +50,7 @@ $timelineQuery = Read-RequiredText -Path (Join-Path $queryRoot "001_session_time
 $windowMessagesQuery = Read-RequiredText -Path (Join-Path $queryRoot "002_window_messages.sql")
 $metricQuery = Read-RequiredText -Path (Join-Path $queryRoot "004_metric_sources.sql")
 $personaQuery = Read-RequiredText -Path (Join-Path $queryRoot "003_persona_trace.sql")
+$bookAiProfileGapsQuery = Read-RequiredText -Path (Join-Path $queryRoot "005_book_ai_profile_gaps.sql")
 
 $requiredTables = @(
   "users",
@@ -86,7 +87,9 @@ Assert-Contains $failures "schema" $schemaText @(
   "reading_goal",
   "current_page",
   "target_page",
-  "pinned BOOLEAN NOT NULL DEFAULT FALSE"
+  "pinned BOOLEAN NOT NULL DEFAULT FALSE",
+  "schema-007-book-ai-profile-backfill",
+  "JSON_SET("
 )
 
 Assert-Contains $failures "reset" $resetText @(
@@ -157,11 +160,19 @@ Assert-Contains $failures "metric source query" $metricQuery @(
   "pages_read_estimate"
 )
 
+Assert-Contains $failures "book AI profile gaps query" $bookAiProfileGapsQuery @(
+  "JSON_EXTRACT(b.raw_metadata, '$.aiProfile') IS NULL",
+  "profile_title",
+  "profile_author",
+  "profile_isbn",
+  "profile_published_year"
+)
+
 Write-Output "# DB Contract Audit"
 Write-Output ""
 Write-Output "Schema files checked: $((Get-ChildItem -LiteralPath $schemaRoot -Filter "*.sql").Count)"
 Write-Output "Required MVP tables checked: $($requiredTables.Count)"
-Write-Output "Query files checked: 4"
+Write-Output "Query files checked: 5"
 Write-Output "Reset script checked: $resetPath"
 Write-Output "JDBC reset executor checked: $jdbcResetExecutorPath"
 

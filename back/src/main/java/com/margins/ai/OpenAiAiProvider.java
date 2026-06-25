@@ -20,6 +20,7 @@ import com.margins.session.dto.DebateMessageRequest;
 import com.margins.session.dto.SendMessageRequest;
 import com.margins.session.mapper.SessionWindowMapper;
 import com.margins.session.model.SessionWindowContext;
+import com.margins.session.model.SessionWindowRecord;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -426,7 +427,23 @@ public class OpenAiAiProvider implements AiProvider {
         }
 
         StringBuilder builder = new StringBuilder();
+        builder.append("AI Context Pack\n");
         builder.append("Session id: ").append(context.getSessionId()).append('\n');
+        builder.append("Window id: ").append(windowId).append('\n');
+        appendBookProfile(builder, context);
+
+        SessionWindowRecord window = sessionWindowMapper.findById(windowId);
+        if (window != null) {
+            builder.append("Window type: ").append(safe(window.getWindowType())).append('\n');
+            builder.append("Window title/topic: ").append(safe(window.getTitle())).append('\n');
+        }
+
+        builder.append("Conversation rules:\n");
+        builder.append("- Connect to the reader's latest point before adding a new interpretation.\n");
+        builder.append("- Ground claims in persisted questions, highlights, messages, or explicit book metadata.\n");
+        builder.append("- Do not invent plot details or author intent when context is missing.\n");
+        builder.append("- Prefer Claim, Support, Question when it helps the discussion continue.\n");
+
         List<QuestionRecord> questions = questionMapper.findByWindowId(windowId);
         if (!questions.isEmpty()) {
             builder.append("Questions:\n");
@@ -439,16 +456,90 @@ public class OpenAiAiProvider implements AiProvider {
         }
 
         List<MessageRecord> messages = messageMapper.findBySessionId(context.getSessionId());
+        appendDebateState(builder, windowId, messages);
         if (!messages.isEmpty()) {
             builder.append("Recent messages:\n");
             messages.stream().skip(Math.max(0, messages.size() - 8)).forEach((message) -> builder
                 .append("- ")
-                .append(message.getRole())
+                .append(messageLabel(message))
                 .append(": ")
-                .append(message.getContent())
+                .append(truncate(message.getContent(), 500))
                 .append('\n'));
         }
         return builder.toString();
+    }
+
+    private void appendBookProfile(StringBuilder builder, SessionWindowContext context) {
+        if (context.getBookId() == null) {
+            return;
+        }
+        builder.append("Book profile:\n");
+        builder.append("- bookId: ").append(context.getBookId()).append('\n');
+        builder.append("- title: ").append(safe(context.getBookTitle())).append('\n');
+        builder.append("- author: ").append(safe(context.getBookAuthor())).append('\n');
+        if (context.getBookIsbn() != null && !context.getBookIsbn().isBlank()) {
+            builder.append("- isbn: ").append(context.getBookIsbn()).append('\n');
+        }
+        if (context.getBookRawMetadata() != null && !context.getBookRawMetadata().isBlank()) {
+            builder.append("- metadata: ")
+                .append(truncate(context.getBookRawMetadata(), 1200))
+                .append('\n');
+        }
+    }
+
+    private void appendDebateState(StringBuilder builder, Long windowId, List<MessageRecord> messages) {
+        List<MessageRecord> windowMessages = messages.stream()
+            .filter((message) -> windowId.equals(message.getWindowId()))
+            .toList();
+        if (windowMessages.isEmpty()) {
+            return;
+        }
+
+        MessageRecord latestUser = null;
+        List<MessageRecord> personaReplies = new ArrayList<>();
+        for (MessageRecord message : windowMessages) {
+            if ("user".equals(message.getRole())) {
+                latestUser = message;
+            } else if (message.getPersonaId() != null) {
+                personaReplies.add(message);
+            }
+        }
+
+        builder.append("Debate state summary:\n");
+        if (latestUser != null) {
+            builder.append("- userPosition: ")
+                .append(truncate(latestUser.getContent(), 300))
+                .append('\n');
+        }
+        if (!personaReplies.isEmpty()) {
+            builder.append("- personaPositions:\n");
+            personaReplies.stream()
+                .skip(Math.max(0, personaReplies.size() - 4))
+                .forEach((message) -> builder
+                    .append("  - ")
+                    .append(messageLabel(message))
+                    .append(": ")
+                    .append(truncate(message.getContent(), 240))
+                    .append('\n'));
+        }
+        builder.append("- nextBestMove: acknowledge the latest reader position, contrast useful lenses, and leave one follow-up question.\n");
+    }
+
+    private String messageLabel(MessageRecord message) {
+        if (message.getPersonaId() == null) {
+            return safe(message.getRole());
+        }
+        PersonaRecord persona = personaMapper.findActiveById(message.getPersonaId());
+        String personaName = persona == null ? "persona#" + message.getPersonaId() : safe(persona.getDisplayName());
+        return safe(message.getRole()) + "(" + personaName + ")";
+    }
+
+    private String truncate(String value, int maxLength) {
+        String safeValue = safe(value).replaceAll("\\s+", " ").trim();
+        if (safeValue.length() <= maxLength) {
+            return safeValue;
+        }
+        return safeValue.substring(0, maxLength - 3) + "...";
     }
 
     private List<BookCandidateDto> parseBookCandidates(String output) {

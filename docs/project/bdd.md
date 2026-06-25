@@ -47,6 +47,28 @@ When the user sends a message to that persona
 Then OpenAI is called with persona context
 And the persona response is stored with session, window, message, and persona identity
 
+### Scenario: AI continues debate from stored context
+
+Given a debate window has prior user messages, persona replies, highlights, and a debate state summary
+When the user sends the next debate message
+Then the AI request is built from a context pack containing book profile, session state, recent messages, persona profile, and debate state
+And the response connects to the user's latest point before adding a new interpretation
+And the response can expose a claim, supporting evidence, and a follow-up question
+
+### Scenario: Book profile supports non-RAG background context
+
+Given a registered book has an ISBN and generated book profile metadata
+When a reflection or debate AI request is made for that book
+Then the request can include the stored book profile without fetching external passages at answer time
+And uncertain generated metadata remains traceable through source and confidence fields
+
+### Scenario: Professional personas add diverse reading lenses
+
+Given professional personas are available alongside fantasy personas
+When the reader selects a literary critic, psychologist, historian, or philosopher for debate
+Then the AI response uses that persona's structured lens and avoid rules
+And the debate history keeps the selected persona identity visible
+
 ### Scenario: Persona tests avoid real provider billing
 
 Given backend tests cover OpenAI or external-provider success paths

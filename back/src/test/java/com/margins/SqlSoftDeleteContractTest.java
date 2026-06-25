@@ -34,6 +34,60 @@ class SqlSoftDeleteContractTest {
         assertMetricSourceContract(lookupQuery);
     }
 
+    @Test
+    void bookMapperStoresRawMetadataWithoutSelectAliasesInInsertColumns() throws IOException {
+        String mapper = Files.readString(Path.of("src/main/java/com/margins/book/mapper/BookMapper.java"));
+
+        assertThat(mapper)
+            .contains("raw_metadata,\n          is_test_data")
+            .contains("#{rawMetadata},")
+            .contains("raw_metadata = #{rawMetadata}")
+            .doesNotContain("INSERT INTO books (\n          user_id,\n          title,\n          author,\n          isbn,\n          published_year,\n          source,\n          source_ref,\n          raw_metadata AS rawMetadata");
+    }
+
+    @Test
+    void seedRefreshesBookRawMetadataOnDuplicateRows() throws IOException {
+        String seed = Files.readString(Path.of("../db/seed/001_seed_mvp_data.sql"));
+
+        assertThat(seed)
+            .contains("'aiProfile', JSON_OBJECT(")
+            .contains("raw_metadata = VALUES(raw_metadata)")
+            .contains("published_year = VALUES(published_year)")
+            .contains("isbn = VALUES(isbn)");
+    }
+
+    @Test
+    void productionSchemaBackfillsMissingOrStaleBookAiProfiles() throws IOException {
+        String backfill = Files.readString(Path.of("../db/schema/007_backfill_book_ai_profiles.sql"));
+        String gapQuery = Files.readString(Path.of("../db/queries/005_book_ai_profile_gaps.sql"));
+
+        assertThat(backfill)
+            .contains("UPDATE books")
+            .contains("JSON_SET(")
+            .contains("'$.aiProfile'")
+            .contains("'schema-007-book-ai-profile-backfill'")
+            .contains("JSON_EXTRACT(raw_metadata, '$.aiProfile') IS NULL")
+            .contains("JSON_EXTRACT(raw_metadata, '$.aiProfile.title')")
+            .contains("NULLIF(JSON_UNQUOTE(JSON_EXTRACT(raw_metadata, '$.aiProfile.publishedYear')), 'null')");
+
+        assertThat(gapQuery)
+            .contains("profile_title")
+            .contains("profile_author")
+            .contains("profile_isbn")
+            .contains("profile_published_year")
+            .contains("JSON_EXTRACT(b.raw_metadata, '$.aiProfile') IS NULL");
+    }
+
+    @Test
+    void sessionWindowAiContextKeepsSessionsForSoftDeletedBooksReadable() throws IOException {
+        String mapper = Files.readString(Path.of("src/main/java/com/margins/session/mapper/SessionWindowMapper.java"));
+
+        assertThat(mapper)
+            .contains("b.raw_metadata AS bookRawMetadata")
+            .contains("AND rs.deleted_at IS NULL")
+            .doesNotContain("AND b.deleted_at IS NULL");
+    }
+
     private static void assertMetricSourceContract(String sqlText) {
         assertThat(sqlText)
             .contains("FROM session_windows qsw")

@@ -18,5 +18,6 @@ public class BookRecord {
     private Integer publishedYear;
     private String source;
     private String sourceRef;
+    private String rawMetadata;
     private boolean testData;
 }

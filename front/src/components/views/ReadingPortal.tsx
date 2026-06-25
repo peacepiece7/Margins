@@ -8,6 +8,7 @@ import type { Persona } from '../../types/models/persona';
 import type { SessionDisplayMessage } from '../../types/view-models/sessionFlow';
 import type { MarginsPage } from '../../types/view-models/sessionFlow';
 import { confirmDelete } from '../../utils/deleteConfirmation';
+import { selectNextDebatePersona } from '../../utils/personaSelection';
 import { testAttr } from '../../utils/testAttrs';
 
 const pageLabels: Record<MarginsPage, string> = {
@@ -371,13 +372,18 @@ export function ReadingPortal() {
 
   function submitDebate(event: FormEvent) {
     event.preventDefault();
-    if (!debateDraft.trim() || !selectedDebatePersonaIds.length) {
+    requestNextPersonaReply();
+  }
+
+  function requestAllPersonaReplies() {
+    const prompt = debateDraft.trim() || debateTopic.trim();
+    if (!prompt || !selectedDebatePersonas.length) {
       return;
     }
 
-    const prompt = debateDraft.trim();
-    void flow.debateWithPersonas(selectedDebatePersonaIds, prompt).then((saved) => {
-      if (saved) {
+    const personaIds = selectedDebatePersonas.map((persona) => persona.personaId);
+    void flow.debateWithPersonas(personaIds, prompt).then((saved) => {
+      if (saved && debateDraft.trim()) {
         setDebateDraft('');
       }
     });
@@ -410,16 +416,10 @@ export function ReadingPortal() {
       return;
     }
 
-    const responseCounts = new Map<number, number>();
-    activeMessages.forEach((message) => {
-      if (message.personaId) {
-        responseCounts.set(message.personaId, (responseCounts.get(message.personaId) || 0) + 1);
-      }
-    });
-    const nextPersona = [...selectedDebatePersonas].sort((left, right) => (
-      (responseCounts.get(left.personaId) || 0) - (responseCounts.get(right.personaId) || 0)
-    ))[0];
-    requestPersonaReply(nextPersona.personaId);
+    const nextPersona = selectNextDebatePersona(selectedDebatePersonas, activeMessages);
+    if (nextPersona) {
+      requestPersonaReply(nextPersona.personaId);
+    }
   }
 
   return (
@@ -684,13 +684,20 @@ export function ReadingPortal() {
                       const selected = selectedDebatePersonaIds.includes(persona.personaId);
                       return (
                         <button
-                          className={`rounded border px-3 py-2 text-sm ${selected ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-300 bg-white text-stone-700'}`}
+                          className={`grid max-w-56 gap-1 rounded border px-3 py-2 text-left text-sm ${selected ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-300 bg-white text-stone-700'}`}
                           key={persona.personaId}
                           onClick={() => toggleDebatePersona(persona.personaId)}
+                          title={persona.description}
                           type="button"
                           {...testAttr('debate-participant-toggle')}
                         >
-                          <span aria-hidden="true">{personaIcon(persona)}</span> {persona.displayName}
+                          <span className="font-medium"><span aria-hidden="true">{personaIcon(persona)}</span> {persona.displayName}</span>
+                          {persona.tone && <span className={`text-xs ${selected ? 'text-stone-200' : 'text-stone-500'}`}>{persona.tone}</span>}
+                          {persona.description && (
+                            <span className={`line-clamp-2 text-xs leading-5 ${selected ? 'text-stone-200' : 'text-stone-500'}`}>
+                              {persona.description}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -852,11 +859,11 @@ export function ReadingPortal() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="text-xs text-stone-500">선택된 토론자 {selectedDebatePersonas.length}명</div>
                     <div className="flex flex-wrap gap-2">
-                      <button className="rounded border border-stone-950 px-4 py-2 text-sm font-medium disabled:opacity-50" disabled={flow.state.window?.windowType !== 'debate' || !selectedDebatePersonas.length || flow.state.loading || !(debateDraft.trim() || debateTopic.trim())} onClick={requestNextPersonaReply} type="button" {...testAttr('debate-next-reply-submit')}>
-                        다음 대답 받기
+                      <button className="rounded border border-stone-950 px-4 py-2 text-sm font-medium disabled:opacity-50" disabled={flow.state.window?.windowType !== 'debate' || !selectedDebatePersonas.length || flow.state.loading || !(debateDraft.trim() || debateTopic.trim())} onClick={requestAllPersonaReplies} type="button" {...testAttr('debate-all-submit')}>
+                        모두에게 답변받기
                       </button>
-                      <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={flow.state.window?.windowType !== 'debate' || !selectedDebatePersonas.length || !debateDraft.trim() || flow.state.loading} type="submit" {...testAttr('debate-session-submit')}>
-                        선택 토론자에게 보내기
+                      <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={flow.state.window?.windowType !== 'debate' || !selectedDebatePersonas.length || flow.state.loading || !(debateDraft.trim() || debateTopic.trim())} type="submit" {...testAttr('debate-session-submit')}>
+                        다음 답변 받기
                       </button>
                     </div>
                   </div>

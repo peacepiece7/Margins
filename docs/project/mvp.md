@@ -21,6 +21,14 @@ Margins helps a reader save a book, create reading sessions, write notes and AI 
 - Full front/back/db Docker Compose integration.
 - Advanced statistics screens and automated language ability analysis.
 
+## Planned AI Debate Enhancement
+
+- Context-aware debate continuity: the first backend slice builds OpenAI requests from saved book metadata, window questions, recent messages, derived debate state summary, and selected persona profile.
+- ISBN-based book AI profile: the first persistence slice stores generated metadata in `books.raw_metadata.aiProfile` with summary, themes, mood, pace, discussion angles, source, confidence, and spoiler policy.
+- Professional persona set: seed data includes literary critic, philosopher, psychologist, historian, sociologist, editor, skeptical reader, and book-club facilitator style personas alongside fantasy personas.
+- Structured discussion output: support claim, evidence/support, alternative lens, and follow-up question so debates feel natural while remaining grounded.
+- This enhancement remains non-RAG for MVP unless the product scope changes.
+
 ## Initial Technical Decisions
 
 - Auth starts as single-user mode or simple JWT login.

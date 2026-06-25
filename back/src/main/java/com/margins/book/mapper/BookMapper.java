@@ -21,6 +21,7 @@ public interface BookMapper {
           published_year,
           source,
           source_ref,
+          raw_metadata,
           is_test_data
         )
         VALUES (
@@ -31,6 +32,7 @@ public interface BookMapper {
           #{publishedYear},
           #{source},
           #{sourceRef},
+          #{rawMetadata},
           #{testData}
         )
         """)
@@ -47,6 +49,7 @@ public interface BookMapper {
           published_year,
           source,
           source_ref,
+          raw_metadata AS rawMetadata,
           is_test_data
         FROM books
         WHERE user_id = #{userId}
@@ -78,6 +81,7 @@ public interface BookMapper {
           published_year,
           source,
           source_ref,
+          raw_metadata AS rawMetadata,
           is_test_data
         FROM books
         WHERE user_id = #{userId}
@@ -96,6 +100,7 @@ public interface BookMapper {
           published_year,
           source,
           source_ref,
+          raw_metadata AS rawMetadata,
           is_test_data
         FROM books
         WHERE id = #{bookId}
@@ -111,6 +116,7 @@ public interface BookMapper {
           title = #{title},
           author = #{author},
           published_year = #{publishedYear},
+          raw_metadata = #{rawMetadata},
           updated_at = CURRENT_TIMESTAMP
         WHERE id = #{id}
           AND user_id = #{userId}
