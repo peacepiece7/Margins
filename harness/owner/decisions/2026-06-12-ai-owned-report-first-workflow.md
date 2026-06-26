@@ -20,7 +20,7 @@
 
 - project owner는 commit scope와 timing도 AI가 정해야 하며, owner는 최대한 결과를 보고받는 역할이라고 정했습니다.
 
-## 적용 범위
+## 적용 범위`~
 
 - product scope를 되돌리기 어렵게 변경하지 않는 일반 planning refinement.
 - 일반 design/development/QA/revision 실행.
