@@ -40,6 +40,7 @@ public class JdbcTestDataResetExecutor implements TestDataResetExecutor {
             try {
                 statement.executeUpdate("DELETE FROM metrics WHERE is_test_data = TRUE");
                 statement.executeUpdate("DELETE FROM messages WHERE is_test_data = TRUE");
+                statement.executeUpdate("DELETE FROM reading_session_reviews WHERE is_test_data = TRUE");
                 statement.executeUpdate("DELETE FROM session_insights WHERE is_test_data = TRUE");
                 statement.executeUpdate("DELETE FROM session_tags WHERE is_test_data = TRUE");
                 statement.executeUpdate("DELETE FROM session_highlights WHERE is_test_data = TRUE");

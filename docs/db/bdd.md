@@ -196,3 +196,19 @@ When `harness/scripts/audit-db-contract.ps1` runs
 Then it verifies required MVP tables and metric-ready columns
 And verifies reset deletes only `is_test_data` rows
 And verifies timeline, direct window-message, and metric-source queries exclude soft-deleted records
+
+## Feature: Reading Review Post Records
+
+### Scenario: Reading review post is persisted per session
+
+Given a reading session exists
+When the user saves a review post
+Then `reading_session_reviews` stores the post title, editor HTML, editor type, status, and timestamps
+And the post remains linked to the reading session and user for timeline reload
+
+### Scenario: Reset removes test reading review posts
+
+Given test-owned reading review posts exist with `is_test_data = TRUE`
+When `db/reset/001_reset_test_data.sql` runs
+Then those review rows are deleted before session rows
+And non-test review posts remain available

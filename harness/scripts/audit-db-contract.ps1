@@ -5,6 +5,7 @@ $queryRoot = "db/queries"
 $resetPath = "db/reset/001_reset_test_data.sql"
 $seedPath = "db/seed/001_seed_mvp_data.sql"
 $jdbcResetExecutorPath = "back/src/main/java/com/margins/testsupport/business/JdbcTestDataResetExecutor.java"
+$sessionSearchMapperPath = "back/src/main/java/com/margins/session/mapper/SessionSearchMapper.java"
 
 function Read-RequiredText {
   param([string] $Path)
@@ -46,6 +47,7 @@ $schemaText = (Get-ChildItem -LiteralPath $schemaRoot -Filter "*.sql" | Sort-Obj
 $resetText = Read-RequiredText -Path $resetPath
 $seedText = Read-RequiredText -Path $seedPath
 $jdbcResetExecutorText = Read-RequiredText -Path $jdbcResetExecutorPath
+$sessionSearchMapperText = Read-RequiredText -Path $sessionSearchMapperPath
 $timelineQuery = Read-RequiredText -Path (Join-Path $queryRoot "001_session_timeline.sql")
 $windowMessagesQuery = Read-RequiredText -Path (Join-Path $queryRoot "002_window_messages.sql")
 $metricQuery = Read-RequiredText -Path (Join-Path $queryRoot "004_metric_sources.sql")
@@ -63,7 +65,8 @@ $requiredTables = @(
   "metrics",
   "session_highlights",
   "session_tags",
-  "session_insights"
+  "session_insights",
+  "reading_session_reviews"
 )
 
 foreach ($table in $requiredTables) {
@@ -86,7 +89,10 @@ Assert-Contains $failures "schema" $schemaText @(
   "reading_goal",
   "current_page",
   "target_page",
-  "pinned BOOLEAN NOT NULL DEFAULT FALSE"
+  "pinned BOOLEAN NOT NULL DEFAULT FALSE",
+  "content_html MEDIUMTEXT NOT NULL",
+  "editor_type VARCHAR(60) NOT NULL DEFAULT 'tiptap-free'",
+  "UNIQUE KEY uq_reading_session_reviews_session"
 )
 
 Assert-Contains $failures "reset" $resetText @(
@@ -97,6 +103,7 @@ Assert-Contains $failures "reset" $resetText @(
 
 Assert-Contains $failures "JDBC reset executor" $jdbcResetExecutorText @(
   "statement.execute(""SET FOREIGN_KEY_CHECKS = 0"")",
+  "DELETE FROM reading_session_reviews WHERE is_test_data = TRUE",
   "finally",
   "statement.execute(""SET FOREIGN_KEY_CHECKS = 1"")",
   "ScriptUtils.executeSqlScript"
@@ -106,6 +113,7 @@ Assert-Contains $failures "seed" $seedText @(
   "INSERT INTO personas",
   "INSERT INTO questions",
   "INSERT INTO messages",
+  "INSERT INTO reading_session_reviews",
   "INSERT INTO metrics",
   "is_test_data"
 )
@@ -157,11 +165,20 @@ Assert-Contains $failures "metric source query" $metricQuery @(
   "pages_read_estimate"
 )
 
+Assert-Contains $failures "session search mapper" $sessionSearchMapperText @(
+  "reading_session_reviews",
+  "'review' AS result_type",
+  "rr.deleted_at IS NULL",
+  "rr.title",
+  "rr.content_html"
+)
+
 Write-Output "# DB Contract Audit"
 Write-Output ""
 Write-Output "Schema files checked: $((Get-ChildItem -LiteralPath $schemaRoot -Filter "*.sql").Count)"
 Write-Output "Required MVP tables checked: $($requiredTables.Count)"
 Write-Output "Query files checked: 4"
+Write-Output "Java mapper files checked: 1"
 Write-Output "Reset script checked: $resetPath"
 Write-Output "JDBC reset executor checked: $jdbcResetExecutorPath"
 

@@ -177,3 +177,18 @@ Implemented helper:
 - [ ] Exact API client generator.
 - [ ] Exact state library, if React hooks alone are insufficient.
 - [x] Production mechanism for stripping `data-*` selectors: `testAttr()` omits selectors in production.
+
+## Reading Review Post Editor
+
+- Reading sessions expose a dedicated review post editor before the completed-review evidence panel.
+- The editor uses the free local Tiptap React stack: `@tiptap/react`, `@tiptap/starter-kit`, and `@tiptap/extension-image`.
+- Image insertion accepts external `http` or `https` URLs only so the frontend matches the backend jsoup storage safelist. Direct binary upload is deferred until a storage boundary is selected.
+- Unsupported image URL feedback is rendered inline with alert semantics instead of a browser alert so the editor remains testable and accessible.
+- Review post status is typed as `draft | published` in frontend models, store actions, repository requests, and editor state so unsupported status strings do not spread through UI state. The shared `SaveReadingSessionReviewRequest` frontend model is reused by the editor, store, and repository save path.
+- The editor supports formatted text, headings, lists, blockquotes, and image insertion by URL.
+- Review posts save through `PATCH /api/reading-sessions/{id}/review` with `title`, `contentHtml`, and optional `status`.
+- Timeline reload remains authoritative after save. A saved post renders as a preview with an Edit action; editing reloads the persisted HTML into the editor.
+- Saved review HTML is sanitized by the backend before persistence and with DOMPurify before preview rendering.
+- Binary image upload is deferred until storage, size limits, and deploy paths are designed.
+- Review Markdown export includes the persisted review post HTML when available.
+- `src/repository/marginsRepository.test.ts` covers that `saveReview` sends the review title, editor HTML, and status to the session review endpoint.

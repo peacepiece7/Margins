@@ -173,6 +173,72 @@ describe('marginsRepository.debateAll', () => {
   });
 });
 
+describe('marginsRepository.saveReview', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('patches the reading-session review endpoint with editor HTML', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(apiResponse(200, {
+        success: true,
+        data: {
+          sessionId: 12,
+          bookId: 3,
+          bookTitle: 'Dune',
+          title: 'Dune reflection',
+          status: 'active',
+          pinned: false,
+          review: {
+            reviewId: 44,
+            sessionId: 12,
+            title: 'Dune review',
+            contentHtml: '<h2>Dune</h2><p>Arrakis changes everything.</p>',
+            editorType: 'tiptap-free',
+            status: 'draft',
+          },
+          stats: {
+            windowCount: 0,
+            questionCount: 0,
+            answeredQuestionCount: 0,
+            messageCount: 0,
+            personaResponseCount: 0,
+            personaCount: 0,
+          },
+          nextActions: [],
+          windows: [],
+          highlights: [],
+          tags: [],
+          insights: [],
+          questions: [],
+          messages: [],
+        },
+      })),
+    );
+
+    const result = await marginsRepository.saveReview(12, {
+      title: 'Dune review',
+      contentHtml: '<h2>Dune</h2><p>Arrakis changes everything.</p>',
+      status: 'draft',
+    });
+
+    expect(fetch).toHaveBeenCalledWith('/api/reading-sessions/12/review', expect.objectContaining({
+      method: 'PATCH',
+      headers: expect.objectContaining({
+        'Content-Type': 'application/json',
+      }),
+      body: JSON.stringify({
+        title: 'Dune review',
+        contentHtml: '<h2>Dune</h2><p>Arrakis changes everything.</p>',
+        status: 'draft',
+      }),
+    }));
+    expect(result.review?.editorType).toBe('tiptap-free');
+    expect(result.review?.contentHtml).toContain('Arrakis');
+  });
+});
+
 describe('marginsRepository.createSession', () => {
   afterEach(() => {
     vi.restoreAllMocks();

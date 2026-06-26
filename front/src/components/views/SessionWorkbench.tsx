@@ -7,6 +7,7 @@ import { isOptionalPageNumberDraft, parseOptionalPageNumber } from '../../utils/
 import { buildSessionBrief } from '../../utils/sessionBrief';
 import { buildSessionReadiness } from '../../utils/sessionReadiness';
 import { testAttr } from '../../utils/testAttrs';
+import { ReviewPostEditor } from './ReviewPostEditor';
 
 export function SessionWorkbench() {
   const flow = useSessionFlow();
@@ -597,6 +598,9 @@ export function SessionWorkbench() {
       '',
       '## Closeout',
       flow.state.sessionSummary || 'No closeout summary recorded.',
+      '',
+      '## Review Post',
+      flow.state.review?.contentHtml || 'No review post saved.',
       '',
       '## Reading Goal',
       flow.state.readingGoal || 'No reading goal recorded.',
@@ -1442,6 +1446,16 @@ export function SessionWorkbench() {
                 ))}
               </div>
             </section>
+          )}
+
+          {flow.state.session && (
+            <ReviewPostEditor
+              bookTitle={flow.state.selectedBook?.title}
+              loading={flow.state.loading}
+              onSave={flow.saveReview}
+              review={flow.state.review}
+              sessionId={flow.state.session.sessionId}
+            />
           )}
 
           {flow.state.session && (

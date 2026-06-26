@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { marginsRepository } from '../repository/marginsRepository';
 import type { BookCandidate, SaveBookResponse } from '../types/models/book';
 import type { Persona } from '../types/models/persona';
-import type { ReadingSessionTimelineResponse, SessionWindowTimeline } from '../types/models/session';
+import type { ReadingSessionTimelineResponse, SaveReadingSessionReviewRequest, SessionWindowTimeline } from '../types/models/session';
 import type { SessionFlowState } from '../types/view-models/sessionFlow';
 import { selectAvailablePersonaId } from '../utils/personaSelection';
 
@@ -81,6 +81,7 @@ function emptyTimelinePatch(): Partial<SessionFlowState> {
     selectedBook: undefined,
     session: undefined,
     sessionSummary: undefined,
+    review: undefined,
     lastMetricSnapshot: undefined,
     memorySearchResults: [],
     readingGoal: undefined,
@@ -177,6 +178,7 @@ function patchFromTimeline(
       status: timeline.status,
     },
     sessionSummary: timeline.summary ?? undefined,
+    review: timeline.review ?? undefined,
     lastMetricSnapshot: undefined,
     readingGoal: timeline.readingGoal ?? undefined,
     startPage: timeline.startPage ?? undefined,
@@ -712,6 +714,21 @@ export function useSessionFlowStore() {
       const sessionId = state.session.sessionId;
       return run(async () => {
         const timeline = await marginsRepository.updateSessionProgress(sessionId, progress);
+        const library = await libraryPatch();
+        return {
+          ...patchFromTimeline(timeline, state.personas, state.window?.windowId, state.selectedQuestionId),
+          ...library,
+        };
+      });
+    },
+    saveReview(review: SaveReadingSessionReviewRequest) {
+      if (!state.session) {
+        return Promise.resolve(false);
+      }
+
+      const sessionId = state.session.sessionId;
+      return run(async () => {
+        const timeline = await marginsRepository.saveReview(sessionId, review);
         const library = await libraryPatch();
         return {
           ...patchFromTimeline(timeline, state.personas, state.window?.windowId, state.selectedQuestionId),

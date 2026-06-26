@@ -10,6 +10,7 @@ import com.margins.session.dto.CreateSessionTagRequest;
 import com.margins.session.dto.ReadingLibraryStatsResponse;
 import com.margins.session.dto.ReadingSessionListResponse;
 import com.margins.session.dto.ReadingSessionTimelineResponse;
+import com.margins.session.dto.SaveReadingSessionReviewRequest;
 import com.margins.session.dto.SessionSearchResponse;
 import com.margins.session.dto.UpdateSessionHighlightRequest;
 import com.margins.session.dto.UpdateReadingSessionPinRequest;
@@ -78,6 +79,11 @@ public class ReadingSessionService {
     @Transactional
     public ReadingSessionListResponse updatePinned(Long sessionId, UpdateReadingSessionPinRequest request) {
         return readingSessionBusiness.updatePinned(sessionId, request);
+    }
+
+    @Transactional
+    public ReadingSessionTimelineResponse saveReview(Long sessionId, SaveReadingSessionReviewRequest request) {
+        return readingSessionBusiness.saveReview(sessionId, request);
     }
 
     @Transactional

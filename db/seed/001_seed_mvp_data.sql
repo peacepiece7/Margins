@@ -249,6 +249,34 @@ ON DUPLICATE KEY UPDATE
   is_test_data = VALUES(is_test_data),
   deleted_at = NULL;
 
+INSERT INTO reading_session_reviews (
+  id,
+  session_id,
+  user_id,
+  title,
+  content_html,
+  editor_type,
+  status,
+  is_test_data
+)
+VALUES (
+  1,
+  1,
+  1,
+  'Seed review post',
+  '<h2>The Left Hand of Darkness reflection</h2><p>The seed review keeps the reader-facing post separate from the closeout summary.</p><p><img src="https://covers.openlibrary.org/b/isbn/9780441478125-M.jpg" alt="Seed book cover"></p>',
+  'tiptap-free',
+  'draft',
+  TRUE
+)
+ON DUPLICATE KEY UPDATE
+  title = VALUES(title),
+  content_html = VALUES(content_html),
+  editor_type = VALUES(editor_type),
+  status = VALUES(status),
+  is_test_data = VALUES(is_test_data),
+  deleted_at = NULL;
+
 INSERT INTO metrics (
   id,
   user_id,

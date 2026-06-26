@@ -354,3 +354,14 @@ JWT runtime configuration:
 - [x] Exact first runtime streaming transport: SSE through `POST /api/session-windows/{id}/messages/stream`, with provider-backed OpenAI delta forwarding for window answers. WebSocket remains deferred until multi-client delivery is required.
 - [x] Exact OpenAPI generation plugin: springdoc-openapi.
 - [x] Single-user mode versus JWT for the first runnable slice: single-user identity with signed bearer JWT enforcement.
+
+## Reading Review Post API
+
+- `PATCH /api/reading-sessions/{id}/review` upserts the one review post for a reading session.
+- Request fields: required non-blank `title` up to 255 characters, required non-blank `contentHtml`, and optional `status` up to 40 characters.
+- The backend sanitizes `contentHtml` with jsoup before storage, stores `editor_type='tiptap-free'`, marks MVP writes as test data, and returns the refreshed timeline.
+- Review status is normalized to `draft` or `published`; missing or unsupported values are stored as `draft`.
+- Timeline response includes `review` with `reviewId`, `sessionId`, `title`, `contentHtml`, `editorType`, `status`, `createdAt`, and `updatedAt`.
+- The review post is separate from `reading_sessions.summary`; summary remains the session closeout, while review is the publishable editor post.
+- `GET /api/reading-sessions/search?query={text}` includes review post title and editor HTML in reading-memory results with `resultType='review'`.
+- `SessionControllerValidationTest` covers blank review title, blank editor HTML, and overlong status before service/business execution.

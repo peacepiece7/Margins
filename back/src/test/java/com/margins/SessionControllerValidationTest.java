@@ -315,6 +315,40 @@ class SessionControllerValidationTest {
     }
 
     @Test
+    void readingSessionReviewRejectsBlankTitleBeforeBusinessLogic() throws Exception {
+        mockMvc.perform(patch("/api/reading-sessions/1/review")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"\",\"contentHtml\":\"<p>Review</p>\"}"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(readingSessionService);
+    }
+
+    @Test
+    void readingSessionReviewRejectsBlankContentBeforeBusinessLogic() throws Exception {
+        mockMvc.perform(patch("/api/reading-sessions/1/review")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Review\",\"contentHtml\":\"\"}"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(readingSessionService);
+    }
+
+    @Test
+    void readingSessionReviewRejectsOverlongStatusBeforeBusinessLogic() throws Exception {
+        String status = "a".repeat(41);
+
+        mockMvc.perform(patch("/api/reading-sessions/1/review")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"title":"Review","contentHtml":"<p>Review</p>","status":"%s"}
+                    """.formatted(status)))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(readingSessionService);
+    }
+
+    @Test
     void missingMetricSnapshotSessionUsesApiResponseFailureShape() throws Exception {
         when(metricService.createSessionSnapshot(404L))
             .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Reading session not found"));

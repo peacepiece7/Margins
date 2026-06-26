@@ -26,6 +26,7 @@ public class ReadingSessionTimelineResponse {
     private Integer progressPercent;
     private String progressNote;
     private String summary;
+    private ReadingSessionReviewDto review;
     private ReadingSessionStatsDto stats;
     private List<ReadingSessionNextActionDto> nextActions;
     private List<SessionWindowTimelineDto> windows;

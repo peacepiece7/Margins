@@ -87,6 +87,25 @@ export interface SessionInsight {
   insightOrder: number;
 }
 
+export type ReadingSessionReviewStatus = 'draft' | 'published';
+
+export interface ReadingSessionReview {
+  reviewId: number;
+  sessionId: number;
+  title: string;
+  contentHtml: string;
+  editorType: string;
+  status: ReadingSessionReviewStatus;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface SaveReadingSessionReviewRequest {
+  title: string;
+  contentHtml: string;
+  status?: ReadingSessionReviewStatus;
+}
+
 export interface ReadingSessionTimelineResponse {
   sessionId: number;
   bookId: number;
@@ -102,6 +121,7 @@ export interface ReadingSessionTimelineResponse {
   progressPercent?: number | null;
   progressNote?: string | null;
   summary?: string | null;
+  review?: ReadingSessionReview | null;
   stats: ReadingSessionStats;
   nextActions: ReadingSessionNextAction[];
   windows: SessionWindowTimeline[];

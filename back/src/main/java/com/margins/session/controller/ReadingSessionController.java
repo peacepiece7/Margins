@@ -10,6 +10,7 @@ import com.margins.session.dto.CreateSessionTagRequest;
 import com.margins.session.dto.ReadingLibraryStatsResponse;
 import com.margins.session.dto.ReadingSessionListResponse;
 import com.margins.session.dto.ReadingSessionTimelineResponse;
+import com.margins.session.dto.SaveReadingSessionReviewRequest;
 import com.margins.session.dto.SessionSearchResponse;
 import com.margins.session.dto.UpdateSessionHighlightRequest;
 import com.margins.session.dto.UpdateReadingSessionPinRequest;
@@ -100,6 +101,14 @@ public class ReadingSessionController {
         @Valid @RequestBody UpdateReadingSessionPinRequest request
     ) {
         return ApiResponse.ok(readingSessionService.updatePinned(sessionId, request));
+    }
+
+    @PatchMapping("/{id}/review")
+    public ApiResponse<ReadingSessionTimelineResponse> saveReview(
+        @PathVariable("id") Long sessionId,
+        @Valid @RequestBody SaveReadingSessionReviewRequest request
+    ) {
+        return ApiResponse.ok(readingSessionService.saveReview(sessionId, request));
     }
 
     @PostMapping("/{id}/highlights")

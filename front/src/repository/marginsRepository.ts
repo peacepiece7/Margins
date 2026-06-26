@@ -16,6 +16,7 @@ import type {
   MetricSnapshotResponse,
   ReadingLibraryStatsResponse,
   ReadingSessionListResponse,
+  SaveReadingSessionReviewRequest,
   SessionSearchResponse,
   ReadingSessionTimelineResponse,
   SessionMessage,
@@ -252,6 +253,13 @@ export const marginsRepository = {
     },
   ): Promise<ReadingSessionTimelineResponse> {
     return patchJson(`/api/reading-sessions/${sessionId}/progress`, progress);
+  },
+
+  saveReview(
+    sessionId: number,
+    review: SaveReadingSessionReviewRequest,
+  ): Promise<ReadingSessionTimelineResponse> {
+    return patchJson(`/api/reading-sessions/${sessionId}/review`, review);
   },
 
   createHighlight(

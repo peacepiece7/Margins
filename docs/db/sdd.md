@@ -113,7 +113,7 @@ db/
   - one sample session metric
 - Reset deletes rows where `is_test_data = TRUE`, including session tags and insights, and reloads seed data through the MySQL client `SOURCE` command. The backend JDBC reset executor mirrors the deletion list and re-enables `FOREIGN_KEY_CHECKS` in a `finally` path if cleanup fails.
 - Non-test rows are not deleted by reset scripts.
-- `harness/scripts/audit-db-contract.ps1` checks schema, seed, query, and reset SQL contracts without requiring a running MySQL server. It verifies required MVP tables, soft-delete and test-data markers, metric dimensions/source columns, reset `is_test_data` safety, backend JDBC reset FK-check recovery, timeline lookup filters, direct window-message lookup filters, persona trace fields, and metric source filters including archived-window exclusion for question and message counts.
+- `harness/scripts/audit-db-contract.ps1` checks schema, seed, query, mapper, and reset contracts without requiring a running MySQL server. It verifies required MVP tables including `reading_session_reviews`, soft-delete and test-data markers, review editor HTML columns, review search mapper coverage, metric dimensions/source columns, reset `is_test_data` safety, backend JDBC reset FK-check recovery, timeline lookup filters, direct window-message lookup filters, persona trace fields, and metric source filters including archived-window exclusion for question and message counts.
 
 ## Metric Constraints
 
@@ -129,3 +129,11 @@ db/
 - [x] Exact migration tool: raw SQL scripts for MVP bootstrap.
 - [x] Whether metric details use typed columns, JSON, or both: both typed dimensions and JSON details.
 - [x] Soft delete policy: `deleted_at` on durable user-facing records; reset deletes only `is_test_data`.
+
+## Reading Review Post Table
+
+- `reading_session_reviews` stores one rich review post per reading session.
+- Columns include `session_id`, `user_id`, `title`, `content_html`, `editor_type`, `status`, timestamps, `deleted_at`, and `is_test_data`.
+- `UNIQUE KEY uq_reading_session_reviews_session (session_id)` enforces one active review record per session for the MVP.
+- `content_html` stores Tiptap-generated editor HTML. Image support is URL-based inside that HTML until binary storage is designed.
+- Seed data includes one review post, and reset scripts delete test-owned review posts before deleting reading sessions.

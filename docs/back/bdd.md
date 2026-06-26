@@ -697,3 +697,23 @@ Given one reading session has multiple windows
 When messages are inserted into one window
 Then the next `message_order` is calculated for that `window_id`
 And messages in another window do not advance this window's order
+
+## Feature: Reading Review Post API
+
+### Scenario: Reading review post is saved and edited
+
+Given an active reading session exists
+When `PATCH /api/reading-sessions/{id}/review` receives a title and editor HTML
+Then the backend creates a review post for that session
+And stores sanitized editor HTML
+And normalizes unsupported status values to `draft`
+And returns the refreshed timeline with `review`
+When the same route is called again for that session
+Then the backend updates the existing review post instead of creating a second active post
+
+### Scenario: Invalid review post request is rejected before persistence
+
+Given a review post request has a blank title or blank editor HTML
+When the backend controller receives the request
+Then it returns `400`
+And no review row is inserted or updated

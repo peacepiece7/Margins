@@ -78,6 +78,21 @@ public interface SessionSearchMapper {
           UNION ALL
           SELECT
             rs.id AS session_id,
+            rr.id AS source_id,
+            'review' AS result_type,
+            b.title AS book_title,
+            rs.title AS session_title,
+            LEFT(CONCAT_WS(' ', rr.title, rr.content_html), 240) AS snippet,
+            rr.updated_at AS sort_time
+          FROM reading_session_reviews rr
+          INNER JOIN reading_sessions rs ON rs.id = rr.session_id AND rs.deleted_at IS NULL
+          INNER JOIN books b ON b.id = rs.book_id AND b.deleted_at IS NULL
+          WHERE rr.user_id = #{userId}
+            AND rr.deleted_at IS NULL
+            AND LOWER(CONCAT_WS(' ', rr.title, rr.content_html)) LIKE CONCAT('%', LOWER(#{query}), '%')
+          UNION ALL
+          SELECT
+            rs.id AS session_id,
             m.id AS source_id,
             'message' AS result_type,
             b.title AS book_title,

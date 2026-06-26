@@ -15,3 +15,45 @@ input,
 textarea {
   font: inherit;
 }
+
+.review-post-editor {
+  min-height: 320px;
+  padding: 1rem;
+}
+
+.review-post-editor p,
+.review-post-preview p {
+  margin: 0.75rem 0;
+}
+
+.review-post-editor h2,
+.review-post-preview h2 {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.review-post-editor blockquote,
+.review-post-preview blockquote {
+  margin: 1rem 0;
+  border-left: 3px solid #44403c;
+  padding-left: 1rem;
+  color: #57534e;
+}
+
+.review-post-editor ul,
+.review-post-preview ul {
+  margin: 0.75rem 0;
+  padding-left: 1.25rem;
+  list-style: disc;
+}
+
+.review-post-editor img,
+.review-post-preview img,
+.review-post-image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #e7e5e4;
+  background: #fafaf9;
+}

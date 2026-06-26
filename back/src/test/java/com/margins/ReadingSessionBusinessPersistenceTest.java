@@ -15,17 +15,20 @@ import com.margins.session.dto.CreateSessionHighlightRequest;
 import com.margins.session.dto.CreateSessionInsightRequest;
 import com.margins.session.dto.CreateSessionTagRequest;
 import com.margins.session.dto.ReadingSessionTimelineResponse;
+import com.margins.session.dto.SaveReadingSessionReviewRequest;
 import com.margins.session.dto.UpdateSessionHighlightRequest;
 import com.margins.session.dto.UpdateReadingSessionPinRequest;
 import com.margins.session.dto.UpdateReadingSessionProgressRequest;
 import com.margins.session.dto.UpdateReadingSessionTitleRequest;
 import com.margins.session.mapper.ReadingSessionMapper;
+import com.margins.session.mapper.ReadingSessionReviewMapper;
 import com.margins.session.mapper.SessionHighlightMapper;
 import com.margins.session.mapper.SessionInsightMapper;
 import com.margins.session.mapper.SessionSearchMapper;
 import com.margins.session.mapper.SessionTagMapper;
 import com.margins.session.mapper.SessionWindowMapper;
 import com.margins.session.model.ReadingSessionRecord;
+import com.margins.session.model.ReadingSessionReviewRecord;
 import com.margins.session.model.SessionHighlightRecord;
 import com.margins.session.model.SessionInsightRecord;
 import com.margins.session.model.SessionSearchResultRecord;
@@ -280,6 +283,67 @@ class ReadingSessionBusinessPersistenceTest {
         assertThat(mapper.updatedPinnedSessionId).isEqualTo(77L);
         assertThat(mapper.updatedPinnedUserId).isEqualTo(1L);
         assertThat(mapper.pinned).isTrue();
+    }
+
+    @Test
+    void saveReviewCreatesAndUpdatesReviewPost() {
+        FakeReadingSessionReviewMapper reviewMapper = new FakeReadingSessionReviewMapper();
+        ReadingSessionBusiness business = business(
+            new FakeReadingSessionMapper(),
+            new FakeSessionWindowMapper(),
+            new FakeSessionHighlightMapper(),
+            new FakeSessionInsightMapper(),
+            new FakeSessionSearchMapper(),
+            new FakeSessionTagMapper(),
+            reviewMapper,
+            new FakeMessageMapper(),
+            new FakeQuestionMapper()
+        );
+
+        ReadingSessionTimelineResponse created = business.saveReview(77L, SaveReadingSessionReviewRequest.builder()
+            .title("My review")
+            .contentHtml("<h2>Review</h2><p>Saved post</p>")
+            .build());
+        ReadingSessionTimelineResponse updated = business.saveReview(77L, SaveReadingSessionReviewRequest.builder()
+            .title("Edited review")
+            .contentHtml("<p onclick=\"alert(1)\">Edited post</p><script>alert(1)</script><img src=\"javascript:alert(1)\"><img src=\"https://example.test/cover.jpg\" alt=\"Cover\">")
+            .status("published")
+            .build());
+
+        assertThat(created.getReview().getTitle()).isEqualTo("My review");
+        assertThat(created.getReview().getStatus()).isEqualTo("draft");
+        assertThat(updated.getReview().getTitle()).isEqualTo("Edited review");
+        assertThat(updated.getReview().getStatus()).isEqualTo("published");
+        assertThat(updated.getReview().getContentHtml()).contains("Edited post");
+        assertThat(updated.getReview().getContentHtml())
+            .doesNotContain("script", "onclick", "javascript:")
+            .contains("https://example.test/cover.jpg");
+        assertThat(reviewMapper.inserted).isEqualTo(1);
+        assertThat(reviewMapper.updated).isEqualTo(1);
+    }
+
+    @Test
+    void saveReviewNormalizesUnsupportedStatusToDraft() {
+        FakeReadingSessionReviewMapper reviewMapper = new FakeReadingSessionReviewMapper();
+        ReadingSessionBusiness business = business(
+            new FakeReadingSessionMapper(),
+            new FakeSessionWindowMapper(),
+            new FakeSessionHighlightMapper(),
+            new FakeSessionInsightMapper(),
+            new FakeSessionSearchMapper(),
+            new FakeSessionTagMapper(),
+            reviewMapper,
+            new FakeMessageMapper(),
+            new FakeQuestionMapper()
+        );
+
+        ReadingSessionTimelineResponse response = business.saveReview(77L, SaveReadingSessionReviewRequest.builder()
+            .title("My review")
+            .contentHtml("<p>Saved post</p>")
+            .status("archived")
+            .build());
+
+        assertThat(response.getReview().getStatus()).isEqualTo("draft");
     }
 
     @Test
@@ -552,6 +616,7 @@ class ReadingSessionBusinessPersistenceTest {
     ) {
         return new ReadingSessionBusiness(
             readingSessionMapper,
+            new FakeReadingSessionReviewMapper(),
             new FakeSessionWindowMapper(),
             sessionHighlightMapper,
             sessionInsightMapper,
@@ -574,6 +639,31 @@ class ReadingSessionBusinessPersistenceTest {
     ) {
         return new ReadingSessionBusiness(
             readingSessionMapper,
+            new FakeReadingSessionReviewMapper(),
+            sessionWindowMapper,
+            sessionHighlightMapper,
+            sessionInsightMapper,
+            sessionSearchMapper,
+            sessionTagMapper,
+            messageMapper,
+            questionMapper
+        );
+    }
+
+    private ReadingSessionBusiness business(
+        FakeReadingSessionMapper readingSessionMapper,
+        SessionWindowMapper sessionWindowMapper,
+        SessionHighlightMapper sessionHighlightMapper,
+        FakeSessionInsightMapper sessionInsightMapper,
+        FakeSessionSearchMapper sessionSearchMapper,
+        FakeSessionTagMapper sessionTagMapper,
+        FakeReadingSessionReviewMapper readingSessionReviewMapper,
+        MessageMapper messageMapper,
+        QuestionMapper questionMapper
+    ) {
+        return new ReadingSessionBusiness(
+            readingSessionMapper,
+            readingSessionReviewMapper,
             sessionWindowMapper,
             sessionHighlightMapper,
             sessionInsightMapper,
@@ -725,6 +815,32 @@ class ReadingSessionBusinessPersistenceTest {
                 .progressNote(progressNote)
                 .summary(completedSummary)
                 .build();
+        }
+    }
+
+    private static class FakeReadingSessionReviewMapper implements ReadingSessionReviewMapper {
+        private ReadingSessionReviewRecord record;
+        private int inserted;
+        private int updated;
+
+        @Override
+        public ReadingSessionReviewRecord findBySessionId(Long sessionId, Long userId) {
+            return record;
+        }
+
+        @Override
+        public int insert(ReadingSessionReviewRecord record) {
+            this.inserted++;
+            record.setId(500L);
+            this.record = record;
+            return 1;
+        }
+
+        @Override
+        public int update(ReadingSessionReviewRecord record) {
+            this.updated++;
+            this.record = record;
+            return 1;
         }
     }
 

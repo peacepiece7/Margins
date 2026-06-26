@@ -616,3 +616,18 @@ And the persisted response is labeled with the selected persona display name
 - Prefer selectors from the `data-*` contract.
 - Reset persisted data through backend test reset API or DB script.
 - Current smoke test covers book search, candidate selection, session/window creation, question generation, selected-question answers, persona debate display, session switching, closeout completion, and reload persistence.
+
+## Feature: Rich Reading Review Post
+
+### Scenario: User writes and edits a rich review post
+
+Given a reading session is loaded in the workbench
+When the user writes a review post with formatted text and an image URL
+And saves the post
+Then the frontend calls `PATCH /api/reading-sessions/{id}/review`
+And the saved post appears as a persisted preview
+And unsupported image values are rejected before save with an inline editor message
+And title, status, editor input, and cancel controls are disabled while the save request is in flight
+When the user chooses Edit post and saves changes
+Then the editor reloads the saved HTML
+And the preview reflects the edited post after timeline refresh

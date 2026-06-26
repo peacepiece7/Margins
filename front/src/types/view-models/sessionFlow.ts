@@ -9,6 +9,7 @@ import type {
   MetricSnapshotResponse,
   ReadingSessionStats,
   ReadingSessionSummary,
+  ReadingSessionReview,
   SessionSearchResult,
   SessionHighlight,
   SessionInsight,
@@ -63,6 +64,7 @@ export interface SessionFlowState {
   selectedBook?: SaveBookResponse;
   session?: CreateReadingSessionResponse;
   sessionSummary?: string;
+  review?: ReadingSessionReview;
   readingGoal?: string;
   startPage?: number;
   currentPage?: number;

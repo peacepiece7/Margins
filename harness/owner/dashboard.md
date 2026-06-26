@@ -17,6 +17,12 @@
 | --- | --- | --- | --- |
 | `harness/owner/requests/2026-06-12-runtime-secrets-and-deploy-target.md` | open | Raspberry Pi 원격 배포 재시도 | `.env`에 OpenAI key와 Raspberry Pi target은 확인되었습니다. 원격 transfer/restart를 위해 `MARGINS_DEPLOY_SSH_KEY` 또는 현재 사용자 SSH 인증 설정이 필요합니다. |
 
+## 진행 중 작업
+
+| 작업 | 상태 | 다음 단계 |
+| --- | --- | --- |
+| `harness/work/reading-review-editor-posts/` | active | 구현 및 정적 검토 완료. 실행 가능한 환경에서 런타임/테스트 검증 필요 |
+
 ## 최근 보고
 
 | 보고서 | 상태 | 요약 |

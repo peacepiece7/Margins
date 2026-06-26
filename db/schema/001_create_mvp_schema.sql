@@ -222,6 +222,27 @@ CREATE TABLE IF NOT EXISTS session_insights (
   CONSTRAINT fk_session_insights_user FOREIGN KEY (user_id) REFERENCES users (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS reading_session_reviews (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  session_id BIGINT NOT NULL,
+  user_id BIGINT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  content_html MEDIUMTEXT NOT NULL,
+  editor_type VARCHAR(60) NOT NULL DEFAULT 'tiptap-free',
+  status VARCHAR(40) NOT NULL DEFAULT 'draft',
+  is_test_data BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_reading_session_reviews_session (session_id),
+  KEY idx_reading_session_reviews_user (user_id, updated_at),
+  KEY idx_reading_session_reviews_status (status),
+  KEY idx_reading_session_reviews_test_data (is_test_data),
+  CONSTRAINT fk_reading_session_reviews_session FOREIGN KEY (session_id) REFERENCES reading_sessions (id),
+  CONSTRAINT fk_reading_session_reviews_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS messages (
   id BIGINT NOT NULL AUTO_INCREMENT,
   session_id BIGINT NOT NULL,

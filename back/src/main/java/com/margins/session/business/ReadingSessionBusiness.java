@@ -12,6 +12,7 @@ import com.margins.session.dto.CreateSessionInsightRequest;
 import com.margins.session.dto.CreateSessionTagRequest;
 import com.margins.session.dto.CreateSessionHighlightRequest;
 import com.margins.session.dto.ReadingLibraryStatsResponse;
+import com.margins.session.dto.ReadingSessionReviewDto;
 import com.margins.session.dto.ReadingSessionNextActionDto;
 import com.margins.session.dto.ReadingSessionListResponse;
 import com.margins.session.dto.ReadingSessionStatsDto;
@@ -22,6 +23,7 @@ import com.margins.session.dto.SessionSearchResultDto;
 import com.margins.session.dto.SessionHighlightDto;
 import com.margins.session.dto.SessionInsightDto;
 import com.margins.session.dto.SessionMessageDto;
+import com.margins.session.dto.SaveReadingSessionReviewRequest;
 import com.margins.session.dto.SessionTagDto;
 import com.margins.session.dto.SessionWindowTimelineDto;
 import com.margins.session.dto.UpdateSessionHighlightRequest;
@@ -29,12 +31,14 @@ import com.margins.session.dto.UpdateReadingSessionPinRequest;
 import com.margins.session.dto.UpdateReadingSessionProgressRequest;
 import com.margins.session.dto.UpdateReadingSessionTitleRequest;
 import com.margins.session.mapper.ReadingSessionMapper;
+import com.margins.session.mapper.ReadingSessionReviewMapper;
 import com.margins.session.mapper.SessionHighlightMapper;
 import com.margins.session.mapper.SessionInsightMapper;
 import com.margins.session.mapper.SessionSearchMapper;
 import com.margins.session.mapper.SessionTagMapper;
 import com.margins.session.mapper.SessionWindowMapper;
 import com.margins.session.model.ReadingSessionRecord;
+import com.margins.session.model.ReadingSessionReviewRecord;
 import com.margins.session.model.SessionHighlightRecord;
 import com.margins.session.model.SessionInsightRecord;
 import com.margins.session.model.SessionSearchResultRecord;
@@ -43,6 +47,8 @@ import com.margins.session.model.SessionWindowRecord;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.jsoup.Jsoup;
+import org.jsoup.safety.Safelist;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
@@ -53,8 +59,15 @@ public class ReadingSessionBusiness {
 
     private static final long DEFAULT_USER_ID = 1L;
     private static final String ACTIVE_STATUS = "active";
+    private static final String REVIEW_EDITOR_TYPE = "tiptap-free";
+    private static final String REVIEW_DRAFT_STATUS = "draft";
+    private static final Safelist REVIEW_HTML_SAFELIST = Safelist.relaxed()
+        .addTags("h1", "h2", "h3")
+        .addAttributes("img", "alt", "title")
+        .addProtocols("img", "src", "http", "https");
 
     private final ReadingSessionMapper readingSessionMapper;
+    private final ReadingSessionReviewMapper readingSessionReviewMapper;
     private final SessionWindowMapper sessionWindowMapper;
     private final SessionHighlightMapper sessionHighlightMapper;
     private final SessionInsightMapper sessionInsightMapper;
@@ -186,6 +199,30 @@ public class ReadingSessionBusiness {
         return findSummaries();
     }
 
+    public ReadingSessionTimelineResponse saveReview(Long sessionId, SaveReadingSessionReviewRequest request) {
+        ReadingSessionRecord session = requireSession(sessionId);
+        ReadingSessionReviewRecord existing = readingSessionReviewMapper.findBySessionId(sessionId, DEFAULT_USER_ID);
+        String sanitizedContent = sanitizeReviewHtml(request.getContentHtml());
+        ReadingSessionReviewRecord record = ReadingSessionReviewRecord.builder()
+            .id(existing == null ? null : existing.getId())
+            .sessionId(session.getId())
+            .userId(DEFAULT_USER_ID)
+            .title(request.getTitle().trim())
+            .contentHtml(sanitizedContent)
+            .editorType(REVIEW_EDITOR_TYPE)
+            .status(normalizeReviewStatus(request.getStatus()))
+            .testData(true)
+            .build();
+
+        if (existing == null) {
+            requireInserted(readingSessionReviewMapper.insert(record), "Reading session review could not be saved");
+        } else {
+            requireUpdated(readingSessionReviewMapper.update(record), "Reading session review not found");
+        }
+
+        return findTimeline(sessionId);
+    }
+
     public ReadingSessionTimelineResponse createHighlight(Long sessionId, CreateSessionHighlightRequest request) {
         ReadingSessionRecord session = requireSession(sessionId);
 
@@ -294,6 +331,7 @@ public class ReadingSessionBusiness {
             .stream()
             .map(this::toInsightDto)
             .toList();
+        ReadingSessionReviewDto review = toReviewDto(readingSessionReviewMapper.findBySessionId(session.getId(), DEFAULT_USER_ID));
         List<QuestionDto> questions = questionMapper.findBySessionId(session.getId())
             .stream()
             .map(this::toQuestionDto)
@@ -317,6 +355,7 @@ public class ReadingSessionBusiness {
             .progressPercent(progressPercent)
             .progressNote(session.getProgressNote())
             .summary(session.getSummary())
+            .review(review)
             .stats(stats)
             .nextActions(toNextActions(session, progressPercent, windows, questions, messages, highlights, stats))
             .windows(windows)
@@ -537,6 +576,22 @@ public class ReadingSessionBusiness {
         return trimmed == null ? "takeaway" : trimmed;
     }
 
+    private String normalizeReviewStatus(String value) {
+        String trimmed = trimToNull(value);
+        if ("published".equals(trimmed)) {
+            return "published";
+        }
+        return REVIEW_DRAFT_STATUS;
+    }
+
+    private String sanitizeReviewHtml(String value) {
+        String cleaned = Jsoup.clean(value == null ? "" : value.trim(), REVIEW_HTML_SAFELIST).trim();
+        if (cleaned.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Reading session review content is empty");
+        }
+        return cleaned;
+    }
+
     private String trimToNull(String value) {
         if (value == null || value.trim().isEmpty()) {
             return null;
@@ -601,6 +656,23 @@ public class ReadingSessionBusiness {
             .content(record.getContent())
             .evidence(record.getEvidence())
             .insightOrder(record.getInsightOrder())
+            .build();
+    }
+
+    private ReadingSessionReviewDto toReviewDto(ReadingSessionReviewRecord record) {
+        if (record == null) {
+            return null;
+        }
+
+        return ReadingSessionReviewDto.builder()
+            .reviewId(record.getId())
+            .sessionId(record.getSessionId())
+            .title(record.getTitle())
+            .contentHtml(record.getContentHtml())
+            .editorType(record.getEditorType())
+            .status(record.getStatus())
+            .createdAt(record.getCreatedAt())
+            .updatedAt(record.getUpdatedAt())
             .build();
     }
 
