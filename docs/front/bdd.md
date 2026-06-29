@@ -118,6 +118,8 @@ Given the user opened a registered book detail page
 When the user starts the reflection page and writes a personal note
 Then the frontend creates or uses a reading session for that book
 And stores the note as a persisted session insight
+And the reflection body is written in a large post-style editor area
+And selected-question answers and debate messages keep their compact composer layout
 
 ### Scenario: User generates questions from a book detail
 

@@ -3,8 +3,9 @@ import { expect, test, type Page } from '@playwright/test';
 test.setTimeout(60000);
 
 const backendUrl = process.env.MARGINS_BACKEND_URL || 'http://localhost:8080';
-const e2eUsername = process.env.MARGINS_E2E_USERNAME || 'peacepiece';
-const e2ePassword = process.env.MARGINS_E2E_PASSWORD || 'reader';
+const e2eUsername = process.env.MARGINS_E2E_USERNAME || process.env.MARGINS_SINGLE_USER_USERNAME || 'peacepiece';
+const e2eDisplayName = process.env.MARGINS_E2E_DISPLAY_NAME || process.env.MARGINS_SINGLE_USER_DISPLAY_NAME || e2eUsername;
+const e2ePassword = process.env.MARGINS_E2E_PASSWORD || process.env.MARGINS_SINGLE_USER_PASSWORD || 'reader';
 
 async function login(page: Page) {
   await expect(page.getByTestId('login-form')).toBeVisible();
@@ -31,7 +32,7 @@ test('follows the owner replan page flow from book registration to reflection an
 
   await page.goto('/');
   await login(page);
-  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eUsername);
+  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eDisplayName);
   await expect(page.getByTestId('reading-portal')).toBeVisible();
 
   await page.getByTestId('book-search-input').fill('Dune');
@@ -39,16 +40,17 @@ test('follows the owner replan page flow from book registration to reflection an
     page.waitForResponse((response) => response.url().endsWith('/api/books/search-candidates') && response.request().method() === 'POST'),
     page.getByTestId('book-search-submit').click(),
   ]);
-  await expect(page.getByTestId('book-candidate-list')).toContainText('Dune');
+  await expect(page.getByTestId('book-candidate-list')).toContainText(/dune|듄/i);
   await expect(page.getByTestId('book-candidate-id').first()).toContainText('고유번호');
+  const savedCandidateTitle = await page.getByTestId('book-candidate-title').first().innerText();
 
   await Promise.all([
     page.waitForResponse((response) => response.url().endsWith('/api/books') && response.request().method() === 'POST' && response.status() === 200),
     page.getByTestId('book-candidate-save').first().click(),
   ]);
-  await expect(page.getByTestId('book-list-page')).toContainText('Dune');
+  await expect(page.getByTestId('book-list-page')).toContainText(savedCandidateTitle);
 
-  await page.getByTestId('saved-book-detail-link').filter({ hasText: 'Dune' }).click();
+  await page.getByTestId('saved-book-detail-link').filter({ hasText: savedCandidateTitle }).click();
   await expect(page.getByTestId('book-detail-page')).toContainText('등록 책 상세');
   await page.getByTestId('book-edit-title-input').fill('Dune: Edited');
   await Promise.all([
@@ -100,6 +102,8 @@ test('follows the owner replan page flow from book registration to reflection an
 
   await page.getByTestId('book-start-review').click();
   await expect(page.getByTestId('review-page')).toBeVisible();
+  const reflectionEditorBox = await page.getByTestId('reflection-content-input').boundingBox();
+  expect(reflectionEditorBox?.height).toBeGreaterThanOrEqual(300);
   await page.getByTestId('reflection-content-input').fill('The opening ritual makes power feel intimate and dangerous.');
   await page.getByTestId('reflection-evidence-input').fill('Gom Jabbar scene');
   await Promise.all([
@@ -126,7 +130,7 @@ test('follows the owner replan page flow from book registration to reflection an
   await expect(page.getByTestId('debate-message-list')).toContainText('성직자 세렌', { timeout: 20000 });
 
   await page.reload();
-  await expect(page.getByTestId('auth-session-bar')).toContainText('Test Reader');
+  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eDisplayName);
   await expect(page.getByTestId('portal-sidebar')).toContainText('Dune: Edited');
   await page.getByTestId('portal-nav-debate').click();
   await expect(page.getByTestId('debate-message-list')).toContainText('How does ritual shape political authority?');
@@ -146,7 +150,7 @@ test('supports manual registration and saved-book deletion from the page shell',
 
   await page.goto('/');
   await login(page);
-  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eUsername);
+  await expect(page.getByTestId('auth-session-bar')).toContainText(e2eDisplayName);
 
   await page.getByTestId('manual-book-title-input').fill('Manual Margins Book');
   await page.getByTestId('manual-book-author-input').fill('Reader Author');

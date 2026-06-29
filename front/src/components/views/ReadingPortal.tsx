@@ -504,7 +504,7 @@ export function ReadingPortal() {
                 {flow.state.candidates.map((candidate) => (
                   <article className="grid gap-3 rounded border border-stone-300 bg-white p-4" key={candidate.candidateId} {...testAttr('book-candidate-card')}>
                     <div>
-                      <div className="text-lg font-semibold">{candidate.title}</div>
+                      <div className="text-lg font-semibold" {...testAttr('book-candidate-title')}>{candidate.title}</div>
                       <div className="text-sm text-stone-600">{candidate.author}</div>
                       <div className="mt-2 text-xs font-medium text-stone-500" {...testAttr('book-candidate-id')}>
                         고유번호 {candidate.candidateId}
@@ -714,15 +714,28 @@ export function ReadingPortal() {
           )}
 
           {page === 'review' && (
-            <section className="grid gap-5" {...testAttr('review-page')}>
-              <form className="grid gap-3 rounded border border-stone-300 bg-white p-5" onSubmit={submitReflection} {...testAttr('reflection-form')}>
-                <h2 className="text-xl font-semibold">독후감 페이지</h2>
-                <textarea className="min-h-36 rounded border border-stone-300 px-3 py-2 text-sm" onChange={(event) => setReflectionContent(event.target.value)} placeholder="독후감, 좋았던 점, 개인 의견을 기록하세요." value={reflectionContent} {...testAttr('reflection-content-input')} />
-                <SpeechDraftControl disabled={flow.state.loading} label="reflection-content" onChange={setReflectionContent} value={reflectionContent} />
-                <input className="rounded border border-stone-300 px-3 py-2 text-sm" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder="관련 구절이나 근거" value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
-                <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={!flow.state.session || flow.state.loading || !reflectionContent.trim()} type="submit" {...testAttr('reflection-submit')}>
-                  기록 저장
-                </button>
+            <section className="grid gap-6" {...testAttr('review-page')}>
+              <form className="grid min-h-[calc(100vh-220px)] gap-4 rounded border border-stone-300 bg-white p-5" onSubmit={submitReflection} {...testAttr('reflection-form')}>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="text-xl font-semibold">독후감 페이지</h2>
+                  <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={!flow.state.session || flow.state.loading || !reflectionContent.trim()} type="submit" {...testAttr('reflection-submit')}>
+                    기록 저장
+                  </button>
+                </div>
+                <div className="grid min-h-[52vh] grid-rows-[auto_minmax(0,1fr)_auto] rounded border border-stone-300 bg-stone-50" {...testAttr('reflection-editor-shell')}>
+                  <input className="min-w-0 border-b border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder="관련 구절이나 근거" value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
+                  <textarea
+                    aria-label="독후감 본문"
+                    className="min-h-[52vh] resize-y border-0 bg-white px-4 py-4 text-base leading-7 outline-none placeholder:text-stone-400 focus:ring-0"
+                    onChange={(event) => setReflectionContent(event.target.value)}
+                    placeholder="독후감, 좋았던 점, 개인 의견을 기록하세요."
+                    value={reflectionContent}
+                    {...testAttr('reflection-content-input')}
+                  />
+                  <div className="flex justify-end border-t border-stone-200 bg-stone-50 px-4 py-2">
+                    <SpeechDraftControl disabled={flow.state.loading} label="reflection-content" onChange={setReflectionContent} value={reflectionContent} />
+                  </div>
+                </div>
               </form>
 
               <form className="grid gap-3 rounded border border-stone-300 bg-white p-5" onSubmit={submitAnswer} {...testAttr('question-answer-form')}>
