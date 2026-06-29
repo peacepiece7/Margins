@@ -1,4 +1,17 @@
 import { FormEvent, useEffect, useState } from 'react';
+import { CKEditor } from '@ckeditor/ckeditor5-react';
+import {
+  BlockQuote,
+  Bold,
+  ClassicEditor,
+  Essentials,
+  Heading,
+  Italic,
+  Link,
+  List,
+  Paragraph,
+} from 'ckeditor5';
+import 'ckeditor5/ckeditor5.css';
 import { LoadingSpinner } from '../atoms/LoadingSpinner';
 import { Skeleton } from '../atoms/Skeleton';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
@@ -41,6 +54,52 @@ function messageName(message: SessionDisplayMessage) {
     return '나';
   }
   return message.personaDisplayName || 'AI';
+}
+
+function htmlToText(value: string) {
+  if (typeof document === 'undefined') {
+    return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  const container = document.createElement('div');
+  container.innerHTML = value;
+  return (container.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function sanitizeReflectionHtml(value: string) {
+  if (typeof document === 'undefined') {
+    return value;
+  }
+
+  const allowedTags = new Set(['A', 'BLOCKQUOTE', 'BR', 'EM', 'H2', 'H3', 'I', 'LI', 'OL', 'P', 'STRONG', 'UL']);
+  const container = document.createElement('div');
+  container.innerHTML = value;
+
+  Array.from(container.querySelectorAll('script, style')).forEach((node) => node.remove());
+
+  Array.from(container.querySelectorAll('*')).forEach((element) => {
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(...Array.from(element.childNodes));
+      return;
+    }
+
+    Array.from(element.attributes).forEach((attribute) => {
+      if (element.tagName !== 'A' || attribute.name !== 'href') {
+        element.removeAttribute(attribute.name);
+      }
+    });
+
+    if (element.tagName === 'A') {
+      const href = element.getAttribute('href') || '';
+      if (!/^(https?:|mailto:)/i.test(href)) {
+        element.removeAttribute('href');
+      }
+      element.setAttribute('rel', 'noreferrer');
+      element.setAttribute('target', '_blank');
+    }
+  });
+
+  return container.innerHTML.trim();
 }
 
 function BookCandidateSkeleton() {
@@ -169,6 +228,8 @@ export function ReadingPortal() {
     : [];
   const showQuestionSkeleton = pendingQuestionGeneration || questionGenerationPending;
   const showDebateReplySkeleton = flow.state.loading && page === 'debate' && flow.state.window?.windowType === 'debate';
+  const reflectionDraftHtml = sanitizeReflectionHtml(reflectionContent);
+  const reflectionDraftText = htmlToText(reflectionContent);
 
   useEffect(() => {
     if (!flow.state.hydrated && !flow.state.loading) {
@@ -318,14 +379,14 @@ export function ReadingPortal() {
 
   function submitReflection(event: FormEvent) {
     event.preventDefault();
-    if (!reflectionContent.trim()) {
+    if (!reflectionDraftText) {
       return;
     }
 
     void flow.createSessionInsight({
       insightType: 'reflection',
       title: selectedBook ? `${selectedBook.title} 독후감` : '독후감',
-      content: reflectionContent.trim(),
+      content: reflectionDraftHtml,
       evidence: reflectionEvidence.trim() || undefined,
     }).then((saved) => {
       if (saved) {
@@ -718,21 +779,26 @@ export function ReadingPortal() {
               <form className="grid min-h-[calc(100vh-220px)] gap-4 rounded border border-stone-300 bg-white p-5" onSubmit={submitReflection} {...testAttr('reflection-form')}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-xl font-semibold">독후감 페이지</h2>
-                  <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={!flow.state.session || flow.state.loading || !reflectionContent.trim()} type="submit" {...testAttr('reflection-submit')}>
+                  <button className="rounded bg-stone-950 px-4 py-2 text-sm font-medium text-white disabled:opacity-50" disabled={!flow.state.session || flow.state.loading || !reflectionDraftText} type="submit" {...testAttr('reflection-submit')}>
                     기록 저장
                   </button>
                 </div>
-                <div className="grid min-h-[52vh] grid-rows-[auto_minmax(0,1fr)_auto] rounded border border-stone-300 bg-stone-50" {...testAttr('reflection-editor-shell')}>
-                  <input className="min-w-0 border-b border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder="관련 구절이나 근거" value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
-                  <textarea
-                    aria-label="독후감 본문"
-                    className="min-h-[52vh] resize-y border-0 bg-white px-4 py-4 text-base leading-7 outline-none placeholder:text-stone-400 focus:ring-0"
-                    onChange={(event) => setReflectionContent(event.target.value)}
-                    placeholder="독후감, 좋았던 점, 개인 의견을 기록하세요."
-                    value={reflectionContent}
-                    {...testAttr('reflection-content-input')}
-                  />
-                  <div className="flex justify-end border-t border-stone-200 bg-stone-50 px-4 py-2">
+                <div className="grid min-h-[62vh] gap-3 rounded border border-stone-300 bg-stone-100 p-4" {...testAttr('reflection-editor-shell')}>
+                  <input className="min-w-0 rounded border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder="관련 구절이나 근거" value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
+                  <div className="reflection-rich-editor min-h-[54vh] rounded border border-stone-200 bg-white shadow-sm" {...testAttr('reflection-content-input')}>
+                    <CKEditor
+                      config={{
+                        licenseKey: 'GPL',
+                        plugins: [Essentials, Paragraph, Heading, Bold, Italic, Link, List, BlockQuote],
+                        toolbar: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'link', '|', 'bulletedList', 'numberedList', 'blockQuote'],
+                        placeholder: '독후감, 좋았던 점, 개인 의견을 기록하세요.',
+                      }}
+                      data={reflectionContent}
+                      editor={ClassicEditor}
+                      onChange={(_, editor) => setReflectionContent(editor.getData())}
+                    />
+                  </div>
+                  <div className="flex justify-end">
                     <SpeechDraftControl disabled={flow.state.loading} label="reflection-content" onChange={setReflectionContent} value={reflectionContent} />
                   </div>
                 </div>
@@ -781,7 +847,7 @@ export function ReadingPortal() {
                 {flow.state.insights.map((insight) => (
                   <article className="rounded border border-stone-200 p-3" key={insight.insightId}>
                     <div className="text-xs font-semibold uppercase text-stone-500">{insight.insightType}</div>
-                    <div className="mt-1 text-sm leading-6">{insight.content}</div>
+                    <div className="mt-1 text-sm leading-6 [&_blockquote]:border-l-2 [&_blockquote]:border-stone-300 [&_blockquote]:pl-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5" dangerouslySetInnerHTML={{ __html: sanitizeReflectionHtml(insight.content) }} />
                     {insight.evidence && <div className="mt-1 text-xs text-stone-600">{insight.evidence}</div>}
                   </article>
                 ))}

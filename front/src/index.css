@@ -15,3 +15,25 @@ input,
 textarea {
   font: inherit;
 }
+
+.reflection-rich-editor .ck-editor,
+.reflection-rich-editor .ck-editor__main {
+  min-height: 54vh;
+}
+
+.reflection-rich-editor .ck-editor__editable {
+  min-height: 54vh;
+  padding: 2rem 2.25rem;
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.reflection-rich-editor .ck-content h2,
+.reflection-rich-editor .ck-content h3 {
+  font-weight: 700;
+  margin: 1rem 0 0.5rem;
+}
+
+.reflection-rich-editor .ck-content p {
+  margin-bottom: 0.9rem;
+}
