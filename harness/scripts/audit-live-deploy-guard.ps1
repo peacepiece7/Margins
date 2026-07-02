@@ -3,6 +3,16 @@ $ErrorActionPreference = "Stop"
 $previousHealthUrl = [Environment]::GetEnvironmentVariable("MARGINS_DEPLOY_HEALTH_URL", "Process")
 [Environment]::SetEnvironmentVariable("MARGINS_DEPLOY_HEALTH_URL", $null, "Process")
 
+function Get-PowerShellExecutable {
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh) { return $pwsh.Source }
+
+  $windowsPowerShell = Get-Command powershell -ErrorAction SilentlyContinue
+  if ($windowsPowerShell) { return $windowsPowerShell.Source }
+
+  throw "PowerShell executable not found. On macOS, use the Node npm commands documented in README.md; this legacy script is optional."
+}
+
 function Invoke-ExpectedFailure {
   param(
     [string] $Name,
@@ -13,7 +23,15 @@ function Invoke-ExpectedFailure {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $output = & powershell -NoProfile -ExecutionPolicy Bypass -File "harness\scripts\verify-local-quality.ps1" @Arguments 2>&1
+    $powerShell = Get-PowerShellExecutable
+    $powerShellArgs = @("-NoProfile")
+    if ((Split-Path -Leaf $powerShell) -ieq "powershell.exe" -or (Split-Path -Leaf $powerShell) -ieq "powershell") {
+      $powerShellArgs += @("-ExecutionPolicy", "Bypass")
+    }
+    $powerShellArgs += @("-File", "harness/scripts/verify-local-quality.ps1")
+    $powerShellArgs += $Arguments
+
+    $output = & $powerShell @powerShellArgs 2>&1
     $exitCode = $LASTEXITCODE
   }
   finally {
@@ -39,7 +57,7 @@ try {
   Invoke-ExpectedFailure `
     -Name "LiveDeploySmoke without health URL" `
     -Arguments @("-DeploymentPreflight", "-SshPreflight", "-LiveDeploySmoke", "-SkipBackend", "-SkipFrontendBuild") `
-    -ExpectedText "-LiveDeploySmoke requires -DeploySmokeHealthUrl or MARGINS_DEPLOY_HEALTH_URL."
+    -ExpectedText "-LiveDeploySmoke requires -DeploySmokeHealthUrl"
 
   Write-Output "# Live Deploy Guard Audit"
   Write-Output ""

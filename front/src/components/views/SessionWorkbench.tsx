@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { LoadingSpinner } from '../atoms/LoadingSpinner';
 import { Skeleton } from '../atoms/Skeleton';
+import { useI18n } from '../../i18n';
 import { useSessionFlow } from '../../hooks/useSessionFlow';
 import type { ComposerMode } from '../../types/view-models/sessionFlow';
 import { confirmDelete } from '../../utils/deleteConfirmation';
@@ -40,6 +41,7 @@ function MessageListSkeleton() {
 }
 
 export function SessionWorkbench() {
+  const { t } = useI18n();
   const flow = useSessionFlow();
   const [message, setMessage] = useState('');
   const [debate, setDebate] = useState('');
@@ -683,14 +685,14 @@ export function SessionWorkbench() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-6">
-      <header className="flex items-center justify-between border-b border-stone-300 pb-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-6 px-5 py-6 text-stone-950">
+      <header className="flex items-center justify-between border-b border-stone-300/80 bg-stone-50/70 px-4 py-4 backdrop-blur">
         <div>
-          <h1 className="text-2xl font-semibold">Margins</h1>
-          <p className="text-sm text-stone-600">Reading session workbench</p>
+          <h1 className="font-display text-4xl font-semibold tracking-normal">Margins</h1>
+          <p className="text-sm text-stone-600">{t('workbenchSubtitle')}</p>
         </div>
         <div className="text-right text-sm text-stone-600">
-          {flow.state.session ? `Session #${flow.state.session.sessionId}` : 'Single-user mode'}
+          {flow.state.session ? `${t('workbenchSessionLabel')} #${flow.state.session.sessionId}` : t('workbenchSingleUser')}
         </div>
       </header>
 
@@ -700,7 +702,7 @@ export function SessionWorkbench() {
             <input
               className="min-w-0 flex-1 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
               onChange={(event) => flow.setQuery(event.target.value)}
-              placeholder="Search a book"
+              placeholder={t('searchPlaceholder')}
               value={flow.state.query}
               {...testAttr('book-search-input')}
             />
@@ -731,33 +733,33 @@ export function SessionWorkbench() {
           )}
 
           {(flow.state.sessionSummaries.length > 0 || readerStats) && (
-            <section className="grid grid-cols-2 gap-2 rounded border border-stone-300 bg-white p-3" {...testAttr('library-dashboard')}>
+            <section className="grid grid-cols-2 gap-2 rounded border border-stone-300 bg-stone-50/95 p-3 shadow-[0_18px_50px_rgba(23,23,23,0.06)]" {...testAttr('library-dashboard')}>
               <div className="col-span-2 flex items-center justify-between">
-                <div className="text-sm font-semibold">Library dashboard</div>
-                <div className="text-xs text-stone-500" {...testAttr('reader-session-count')}>{readerStats?.sessionCount ?? libraryStats.total} sessions</div>
+                <div className="text-sm font-semibold">{t('workbenchLibraryDashboard')}</div>
+                <div className="text-xs text-stone-500" {...testAttr('reader-session-count')}>{readerStats?.sessionCount ?? libraryStats.total} {t('workbenchSessions')}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Completed</div>
+                <div className="text-xs text-stone-500">{t('workbenchCompleted')}</div>
                 <div className="text-sm font-semibold" {...testAttr('reader-completed-count')}>{readerStats?.completedSessionCount ?? libraryStats.completed}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Active</div>
+                <div className="text-xs text-stone-500">{t('workbenchActive')}</div>
                 <div className="text-sm font-semibold" {...testAttr('reader-active-count')}>{readerStats?.activeSessionCount ?? libraryStats.active}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Quotes</div>
+                <div className="text-xs text-stone-500">{t('workbenchQuotes')}</div>
                 <div className="text-sm font-semibold" {...testAttr('reader-highlight-count')}>{readerStats?.highlightCount ?? libraryStats.highlights}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Answers</div>
+                <div className="text-xs text-stone-500">{t('workbenchAnswers')}</div>
                 <div className="text-sm font-semibold" {...testAttr('reader-answer-count')}>{readerStats?.answeredQuestionCount ?? libraryStats.answers}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Books</div>
+                <div className="text-xs text-stone-500">{t('workbenchBooks')}</div>
                 <div className="text-sm font-semibold" {...testAttr('reader-book-count')}>{readerStats?.distinctBookCount ?? flow.state.savedBooks.length}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Avg progress</div>
+                <div className="text-xs text-stone-500">{t('workbenchAvgProgress')}</div>
                 <div className="text-sm font-semibold" {...testAttr('reader-average-progress')}>
                   {readerStats?.averageProgressPercent != null ? `${readerStats.averageProgressPercent}%` : '-'}
                 </div>
@@ -766,18 +768,18 @@ export function SessionWorkbench() {
           )}
 
           {flow.state.sessionSummaries.length > 0 && (
-            <section className="flex flex-col gap-2 rounded border border-stone-300 bg-white p-3" {...testAttr('memory-search')}>
+            <section className="flex flex-col gap-2 rounded border border-stone-300 bg-stone-50/95 p-3 shadow-[0_18px_50px_rgba(23,23,23,0.06)]" {...testAttr('memory-search')}>
               <div>
-                <div className="text-sm font-semibold">Reading memory</div>
+                <div className="text-sm font-semibold">{t('workbenchMemory')}</div>
                 <div className="text-xs text-stone-500">
-                  {flow.state.memorySearchResults.length} matches
+                  {flow.state.memorySearchResults.length} {t('workbenchMatches')}
                 </div>
               </div>
               <form className="flex gap-2" onSubmit={submitMemorySearch} {...testAttr('memory-search-form')}>
                 <input
                   className="min-w-0 flex-1 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                   onChange={(event) => setMemorySearchQuery(event.target.value)}
-                  placeholder="Search notes, debate, quotes"
+                  placeholder={t('workbenchMemoryPlaceholder')}
                   value={memorySearchQuery}
                   {...testAttr('memory-search-input')}
                 />
@@ -788,7 +790,7 @@ export function SessionWorkbench() {
                   {...testAttr('memory-search-submit')}
                 >
                   {memorySearchPending && <LoadingSpinner />}
-                  {memorySearchPending ? 'Finding' : 'Find'}
+                  {memorySearchPending ? t('workbenchFinding') : t('workbenchFind')}
                 </button>
               </form>
               {memorySearchPending && (
@@ -822,19 +824,19 @@ export function SessionWorkbench() {
           )}
 
           {flow.state.savedBooks.length > 0 && (
-            <section className="flex flex-col gap-2 rounded border border-stone-300 bg-white p-3" {...testAttr('saved-book-library')}>
+            <section className="flex flex-col gap-2 rounded border border-stone-300 bg-stone-50/95 p-3 shadow-[0_18px_50px_rgba(23,23,23,0.06)]" {...testAttr('saved-book-library')}>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold">Saved books</div>
+                  <div className="text-sm font-semibold">{t('workbenchSavedBooks')}</div>
                   <div className="text-xs text-stone-500">
-                    {filteredSavedBooks.length}/{flow.state.savedBooks.length} available
+                    {filteredSavedBooks.length}/{flow.state.savedBooks.length} {t('workbenchAvailable')}
                   </div>
                 </div>
               </div>
               <input
                 className="min-w-0 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                 onChange={(event) => setSavedBookQuery(event.target.value)}
-                placeholder="Filter saved books"
+                placeholder={t('workbenchFilterSavedBooks')}
                 value={savedBookQuery}
                 {...testAttr('saved-book-search')}
               />
@@ -844,7 +846,7 @@ export function SessionWorkbench() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium">{book.title}</div>
-                        <div className="truncate text-xs text-stone-500">{book.author || 'Unknown author'}</div>
+                        <div className="truncate text-xs text-stone-500">{book.author || t('workbenchUnknownAuthor')}</div>
                       </div>
                       <button
                         className="shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
@@ -853,14 +855,14 @@ export function SessionWorkbench() {
                         type="button"
                         {...testAttr('saved-book-start-session')}
                       >
-                        Start
+                        {t('workbenchStart')}
                       </button>
                     </div>
                   </article>
                 ))}
                 {filteredSavedBooks.length === 0 && (
                   <div className="rounded border border-stone-200 bg-stone-50 px-3 py-4 text-sm text-stone-500" {...testAttr('saved-book-empty')}>
-                    No saved books match the current filter.
+                    {t('workbenchNoSavedBookMatches')}
                   </div>
                 )}
               </div>
@@ -868,12 +870,12 @@ export function SessionWorkbench() {
           )}
 
           {flow.state.sessionSummaries.length > 0 && (
-            <section className="flex flex-col gap-2 rounded border border-stone-300 bg-white p-3" {...testAttr('session-library')}>
+            <section className="flex flex-col gap-2 rounded border border-stone-300 bg-stone-50/95 p-3 shadow-[0_18px_50px_rgba(23,23,23,0.06)]" {...testAttr('session-library')}>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-semibold">Reading sessions</div>
+                  <div className="text-sm font-semibold">{t('workbenchReadingSessions')}</div>
                   <div className="text-xs text-stone-500">
-                    {filteredSessionSummaries.length}/{flow.state.sessionSummaries.length} saved
+                    {filteredSessionSummaries.length}/{flow.state.sessionSummaries.length} {t('workbenchSavedSessions')}
                   </div>
                 </div>
               </div>
@@ -881,7 +883,7 @@ export function SessionWorkbench() {
                 <input
                   className="min-w-0 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                   onChange={(event) => setLibraryQuery(event.target.value)}
-                  placeholder="Filter sessions"
+                  placeholder={t('workbenchFilterSessions')}
                   value={libraryQuery}
                   {...testAttr('session-library-search')}
                 />
@@ -891,9 +893,9 @@ export function SessionWorkbench() {
                   value={libraryStatus}
                   {...testAttr('session-library-status')}
                 >
-                  <option value="all">All</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
+                  <option value="all">{t('workbenchQuestionAll')}</option>
+                  <option value="active">{t('workbenchActive')}</option>
+                  <option value="completed">{t('workbenchCompleted')}</option>
                 </select>
               </div>
               <div className="flex flex-col gap-2">
@@ -967,7 +969,7 @@ export function SessionWorkbench() {
                             }`}
                             disabled={flow.state.loading}
                             onClick={() => {
-                              if (confirmDelete()) {
+                              if (confirmDelete(t('deleteConfirm'))) {
                                 void flow.archiveSession(summary.sessionId);
                               }
                             }}
@@ -983,7 +985,7 @@ export function SessionWorkbench() {
                 })}
                 {filteredSessionSummaries.length === 0 && (
                   <div className="rounded border border-stone-200 bg-stone-50 px-3 py-4 text-sm text-stone-500" {...testAttr('session-library-empty')}>
-                    No sessions match the current filters.
+                    {t('workbenchNoSessionMatches')}
                   </div>
                 )}
               </div>
@@ -1017,7 +1019,7 @@ export function SessionWorkbench() {
             >
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold">Reflection questions</div>
+                  <div className="text-sm font-semibold">{t('questionPanelTitle')}</div>
                   <div className="text-xs text-stone-500">
                     {activeQuestionWindow?.title || 'No reflection window'} - {answeredReflectionCount}/{reflectionQuestions.length} answered
                   </div>
@@ -1040,16 +1042,16 @@ export function SessionWorkbench() {
                 value={questionFilter}
                 {...testAttr('question-filter')}
               >
-                <option value="all">All questions</option>
-                <option value="unanswered">Unanswered</option>
-                <option value="answered">Answered</option>
+                <option value="all">{t('workbenchQuestionAll')}</option>
+                <option value="unanswered">{t('workbenchQuestionOpen')}</option>
+                <option value="answered">{t('workbenchQuestionAnswered')}</option>
               </select>
 
               <form className="grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={submitCustomQuestion} {...testAttr('question-create-form')}>
                 <input
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                   onChange={(event) => setCustomQuestionText(event.target.value)}
-                  placeholder="Add your own question"
+                  placeholder={t('workbenchQuestionAddPlaceholder')}
                   value={customQuestionText}
                   {...testAttr('question-create-input')}
                 />
@@ -1107,7 +1109,7 @@ export function SessionWorkbench() {
                             className={`rounded border px-2 py-1 text-xs font-medium disabled:opacity-50 ${active ? 'border-white bg-stone-800 text-white' : 'border-stone-300 bg-white text-stone-600'}`}
                             disabled={flow.state.loading}
                             onClick={() => {
-                              if (confirmDelete()) {
+                              if (confirmDelete(t('deleteConfirm'))) {
                                 void flow.deleteQuestion(question.questionId);
                               }
                             }}
@@ -1133,9 +1135,9 @@ export function SessionWorkbench() {
 
         <section className="flex min-h-[640px] flex-col rounded border border-stone-300 bg-white">
           <div className="border-b border-stone-200 px-4 py-3" {...testAttr('session-summary')}>
-            <div className="text-sm text-stone-500">Current book</div>
+            <div className="text-sm text-stone-500">{t('workbenchCurrentBook')}</div>
             <div className="text-lg font-semibold">
-              {flow.state.selectedBook ? flow.state.selectedBook.title : 'No book selected'}
+              {flow.state.selectedBook ? flow.state.selectedBook.title : t('noBookSelected')}
             </div>
             {flow.state.session && (
               <div className="mt-3" {...testAttr('session-title-panel')}>
@@ -1154,7 +1156,7 @@ export function SessionWorkbench() {
                       type="submit"
                       {...testAttr('session-title-save')}
                     >
-                      Save
+                      {t('workbenchSave')}
                     </button>
                     <button
                       className="rounded border border-stone-300 px-3 py-2 text-xs font-medium text-stone-600"
@@ -1165,7 +1167,7 @@ export function SessionWorkbench() {
                       type="button"
                       {...testAttr('session-title-cancel')}
                     >
-                      Cancel
+                      {t('workbenchCancel')}
                     </button>
                   </form>
                 ) : (
@@ -1178,7 +1180,7 @@ export function SessionWorkbench() {
                         type="button"
                         {...testAttr('session-title-edit')}
                       >
-                        Edit title
+                        {t('workbenchEditTitle')}
                       </button>
                       <button
                         className="rounded border border-stone-900 px-2 py-1 text-xs font-medium text-stone-700 disabled:opacity-50"
@@ -1187,7 +1189,7 @@ export function SessionWorkbench() {
                         type="button"
                         {...testAttr('session-transcript-export-submit')}
                       >
-                        Export transcript
+                        {t('workbenchExportTranscript')}
                       </button>
                     </div>
                     <div className="flex flex-wrap items-center gap-2" {...testAttr('session-tag-list')}>
@@ -1198,7 +1200,7 @@ export function SessionWorkbench() {
                             className="font-semibold text-stone-500 disabled:opacity-50"
                             disabled={flow.state.loading}
                             onClick={() => {
-                              if (confirmDelete()) {
+                              if (confirmDelete(t('deleteConfirm'))) {
                                 void flow.deleteSessionTag(tag.tagId);
                               }
                             }}
@@ -1215,7 +1217,7 @@ export function SessionWorkbench() {
                         className="min-w-0 flex-1 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                         maxLength={inputLimits.sessionTag}
                         onChange={(event) => setSessionTagDraft(event.target.value)}
-                        placeholder="Add tag"
+                        placeholder={t('workbenchAddTag')}
                         value={sessionTagDraft}
                         {...testAttr('session-tag-input')}
                       />
@@ -1225,7 +1227,7 @@ export function SessionWorkbench() {
                         type="submit"
                         {...testAttr('session-tag-submit')}
                       >
-                        Add
+                        {t('workbenchAdd')}
                       </button>
                     </form>
                   </div>
@@ -1298,7 +1300,7 @@ export function SessionWorkbench() {
                       ) : (
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div>
-                            <div className="text-xs font-medium uppercase text-stone-500">Active window</div>
+                            <div className="text-xs font-medium uppercase text-stone-500">{t('workbenchActiveWindow')}</div>
                             <div className="text-sm font-medium" {...testAttr('window-title-current')}>{flow.state.window.title}</div>
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -1309,20 +1311,20 @@ export function SessionWorkbench() {
                               type="button"
                               {...testAttr('window-title-edit')}
                             >
-                              Edit window
+                              {t('workbenchEditWindow')}
                             </button>
                             <button
                               className="rounded border border-stone-300 bg-white px-3 py-2 text-xs font-medium text-stone-600 disabled:opacity-50"
                               disabled={flow.state.loading || flow.state.windows.length <= 1}
                               onClick={() => {
-                                if (confirmDelete()) {
+                                if (confirmDelete(t('deleteConfirm'))) {
                                   void flow.archiveWindow();
                                 }
                               }}
                               type="button"
                               {...testAttr('window-archive-submit')}
                             >
-                              Archive window
+                              {t('workbenchWindowArchive')}
                             </button>
                           </div>
                         </div>
@@ -1334,7 +1336,7 @@ export function SessionWorkbench() {
                       className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                       maxLength={inputLimits.sessionWindowTitle}
                       onChange={(event) => setNewWindowTitle(event.target.value)}
-                      placeholder="New reflection window"
+                      placeholder={t('workbenchNewWindowPlaceholder')}
                       value={newWindowTitle}
                       {...testAttr('window-title-input')}
                     />
@@ -1344,7 +1346,7 @@ export function SessionWorkbench() {
                       type="submit"
                       {...testAttr('window-create-submit')}
                     >
-                      Add window
+                      {t('workbenchAddWindow')}
                     </button>
                   </form>
                 </div>
@@ -1353,14 +1355,14 @@ export function SessionWorkbench() {
           )}
 
           {flow.state.session && (
-            <nav className="border-b border-stone-200 bg-white px-4 py-3" aria-label="Session areas" {...testAttr('session-jump-nav')}>
+            <nav className="border-b border-stone-200 bg-white px-4 py-3" aria-label={t('workbenchSessionAreas')} {...testAttr('session-jump-nav')}>
               <div className="grid grid-cols-3 gap-1 sm:grid-cols-5">
                 {[
-                  { id: 'questions', label: 'Questions' },
-                  { id: 'progress', label: 'Progress' },
-                  { id: 'quotes', label: 'Quotes' },
-                  { id: 'messages', label: 'Messages' },
-                  { id: 'review', label: 'Review' },
+                  { id: 'questions', label: t('workbenchQuestions') },
+                  { id: 'progress', label: t('workbenchProgress') },
+                  { id: 'quotes', label: t('workbenchQuotes') },
+                  { id: 'messages', label: t('messageCount') },
+                  { id: 'review', label: t('review') },
                 ].map((area) => (
                   <button
                     className="min-h-9 rounded border border-stone-300 bg-white px-2 py-2 text-xs font-medium text-stone-700 hover:border-stone-700 focus:border-stone-900 focus:outline-none"
@@ -1379,27 +1381,27 @@ export function SessionWorkbench() {
           {flow.state.stats && (
             <div className="grid gap-2 border-b border-stone-200 px-4 py-3 sm:grid-cols-4" {...testAttr('session-stats')}>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Questions</div>
+                <div className="text-xs text-stone-500">{t('workbenchQuestions')}</div>
                 <div className="text-sm font-semibold">
                   {flow.state.stats.answeredQuestionCount}/{flow.state.stats.questionCount} answered
                 </div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Messages</div>
+                <div className="text-xs text-stone-500">{t('messageCount')}</div>
                 <div className="text-sm font-semibold">{flow.state.stats.messageCount}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Debate</div>
-                <div className="text-sm font-semibold">{flow.state.stats.personaResponseCount} persona replies</div>
+                <div className="text-xs text-stone-500">{t('workbenchDebateStat')}</div>
+                <div className="text-sm font-semibold">{flow.state.stats.personaResponseCount} {t('workbenchPersonaReplies')}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2">
-                <div className="text-xs text-stone-500">Windows</div>
+                <div className="text-xs text-stone-500">{t('workbenchWindows')}</div>
                 <div className="text-sm font-semibold">{flow.state.stats.windowCount}</div>
               </div>
               <div className="rounded border border-stone-200 bg-stone-50 px-3 py-2 sm:col-span-4" {...testAttr('session-progress-percent')}>
                 <div className="flex items-center justify-between text-xs text-stone-500">
-                  <span>Progress</span>
-                  <span>{flow.state.progressPercent !== undefined ? `${flow.state.progressPercent}%` : 'Not set'}</span>
+                  <span>{t('workbenchProgress')}</span>
+                  <span>{flow.state.progressPercent !== undefined ? `${flow.state.progressPercent}%` : t('workbenchNotSet')}</span>
                 </div>
                 <div className="mt-2 h-2 overflow-hidden rounded bg-stone-200">
                   <div
@@ -1413,7 +1415,7 @@ export function SessionWorkbench() {
 
           {flow.state.nextActions.length > 0 && (
             <section className="border-b border-stone-200 px-4 py-3" {...testAttr('next-actions')}>
-              <div className="mb-2 text-xs font-semibold uppercase text-stone-500">Next actions</div>
+              <div className="mb-2 text-xs font-semibold uppercase text-stone-500">{t('workbenchNextActions')}</div>
               <div className="grid gap-2 md:grid-cols-2">
                 {flow.state.nextActions.map((action) => (
                   <button
@@ -1442,7 +1444,7 @@ export function SessionWorkbench() {
             >
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="text-xs font-semibold uppercase text-stone-500">Review readiness</div>
+                  <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchReviewReadiness')}</div>
                   <div className="mt-1 text-sm font-semibold text-stone-900" {...testAttr('review-readiness-score')}>
                     {sessionReadiness.completedCount}/{sessionReadiness.totalCount} ready
                   </div>
@@ -1475,14 +1477,14 @@ export function SessionWorkbench() {
             <section className="border-b border-stone-200 bg-white px-4 py-3" {...testAttr('session-brief')}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <div className="text-xs font-semibold uppercase text-stone-500">Session brief</div>
+                  <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchSessionBrief')}</div>
                   <div className="mt-1 text-sm font-semibold text-stone-900" {...testAttr('session-brief-headline')}>
                     {sessionBrief.headline}
                   </div>
                 </div>
                 {flow.state.session.status === 'completed' && (
                   <div className="rounded border border-stone-300 px-2 py-1 text-xs font-medium text-stone-700">
-                    Review locked
+                    {t('workbenchReviewLocked')}
                   </div>
                 )}
               </div>
@@ -1514,7 +1516,7 @@ export function SessionWorkbench() {
                 <input
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                   onChange={(event) => setSessionSearchQuery(event.target.value)}
-                  placeholder="Search messages and quotes"
+                  placeholder={t('workbenchSearchMessagesPlaceholder')}
                   value={sessionSearchQuery}
                   {...testAttr('session-search-input')}
                 />
@@ -1525,7 +1527,7 @@ export function SessionWorkbench() {
                     type="button"
                     {...testAttr('session-search-clear')}
                   >
-                    Clear
+                    {t('workbenchClear')}
                   </button>
                 )}
               </div>
@@ -1545,7 +1547,7 @@ export function SessionWorkbench() {
                     className="rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     maxLength={inputLimits.readingGoal}
                     onChange={(event) => setReadingGoal(event.target.value)}
-                    placeholder="Reading goal for this session"
+                    placeholder={t('workbenchReadingGoalPlaceholder')}
                     ref={readingGoalInputRef}
                     value={readingGoal}
                     {...testAttr('reading-goal-input')}
@@ -1554,7 +1556,7 @@ export function SessionWorkbench() {
                     className="min-h-16 resize-y rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     maxLength={inputLimits.progressNote}
                     onChange={(event) => setProgressNote(event.target.value)}
-                    placeholder="Progress note"
+                    placeholder={t('workbenchProgressNotePlaceholder')}
                     value={progressNote}
                     {...testAttr('progress-note-input')}
                   />
@@ -1564,7 +1566,7 @@ export function SessionWorkbench() {
                     className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     min="0"
                     onChange={(event) => setStartPage(event.target.value)}
-                    placeholder="Start"
+                    placeholder={t('workbenchStartPage')}
                     step="1"
                     type="number"
                     value={startPage}
@@ -1574,7 +1576,7 @@ export function SessionWorkbench() {
                     className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     min="0"
                     onChange={(event) => setCurrentPage(event.target.value)}
-                    placeholder="Current"
+                    placeholder={t('workbenchCurrentPage')}
                     step="1"
                     type="number"
                     value={currentPage}
@@ -1584,7 +1586,7 @@ export function SessionWorkbench() {
                     className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     min="0"
                     onChange={(event) => setTargetPage(event.target.value)}
-                    placeholder="Target"
+                    placeholder={t('workbenchTargetPage')}
                     step="1"
                     type="number"
                     value={targetPage}
@@ -1596,7 +1598,7 @@ export function SessionWorkbench() {
                     type="submit"
                     {...testAttr('progress-save-submit')}
                   >
-                    Save progress
+                    {t('workbenchSaveProgress')}
                   </button>
                 </div>
               </div>
@@ -1610,7 +1612,7 @@ export function SessionWorkbench() {
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                   min="0"
                   onChange={(event) => setHighlightPage(event.target.value)}
-                  placeholder="Page"
+                  placeholder={t('workbenchPagePlaceholder')}
                   step="1"
                   type="number"
                   value={highlightPage}
@@ -1620,7 +1622,7 @@ export function SessionWorkbench() {
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                   maxLength={inputLimits.highlightLocation}
                   onChange={(event) => setHighlightLocation(event.target.value)}
-                  placeholder="Location"
+                  placeholder={t('workbenchLocationPlaceholder')}
                   value={highlightLocation}
                   {...testAttr('highlight-location-input')}
                 />
@@ -1628,7 +1630,7 @@ export function SessionWorkbench() {
                     className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     maxLength={inputLimits.highlightQuote}
                     onChange={(event) => setHighlightQuote(event.target.value)}
-                    placeholder="Quote or passage"
+                    placeholder={t('workbenchQuotePlaceholder')}
                     ref={highlightQuoteInputRef}
                     value={highlightQuote}
                     {...testAttr('highlight-quote-input')}
@@ -1639,13 +1641,13 @@ export function SessionWorkbench() {
                   type="submit"
                   {...testAttr('highlight-save-submit')}
                 >
-                  Save quote
+                  {t('workbenchSaveQuote')}
                 </button>
                 <textarea
                   className="min-h-14 resize-y rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700 lg:col-span-4"
                   maxLength={inputLimits.highlightNote}
                   onChange={(event) => setHighlightNote(event.target.value)}
-                  placeholder="Why this passage matters"
+                  placeholder={t('workbenchQuoteReasonPlaceholder')}
                   value={highlightNote}
                   {...testAttr('highlight-note-input')}
                 />
@@ -1662,7 +1664,7 @@ export function SessionWorkbench() {
                               className="min-w-0 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                               min="0"
                               onChange={(event) => setEditHighlightPage(event.target.value)}
-                              placeholder="Page"
+                              placeholder={t('workbenchPagePlaceholder')}
                               step="1"
                               type="number"
                               value={editHighlightPage}
@@ -1672,7 +1674,7 @@ export function SessionWorkbench() {
                               className="min-w-0 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                               maxLength={inputLimits.highlightLocation}
                               onChange={(event) => setEditHighlightLocation(event.target.value)}
-                              placeholder="Location"
+                              placeholder={t('workbenchLocationPlaceholder')}
                               value={editHighlightLocation}
                               {...testAttr('highlight-edit-location-input')}
                             />
@@ -1680,7 +1682,7 @@ export function SessionWorkbench() {
                               className="min-w-0 rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                               maxLength={inputLimits.highlightQuote}
                               onChange={(event) => setEditHighlightQuote(event.target.value)}
-                              placeholder="Quote or passage"
+                              placeholder={t('workbenchQuotePlaceholder')}
                               value={editHighlightQuote}
                               {...testAttr('highlight-edit-quote-input')}
                             />
@@ -1689,7 +1691,7 @@ export function SessionWorkbench() {
                             className="min-h-14 resize-y rounded border border-stone-300 bg-white px-3 py-2 text-sm outline-none focus:border-stone-700"
                             maxLength={inputLimits.highlightNote}
                             onChange={(event) => setEditHighlightNote(event.target.value)}
-                            placeholder="Why this passage matters"
+                            placeholder={t('workbenchQuoteReasonPlaceholder')}
                             value={editHighlightNote}
                             {...testAttr('highlight-edit-note-input')}
                           />
@@ -1734,7 +1736,7 @@ export function SessionWorkbench() {
                                 className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
                                 disabled={flow.state.loading}
                                 onClick={() => {
-                                  if (confirmDelete()) {
+                                  if (confirmDelete(t('deleteConfirm'))) {
                                     void flow.deleteHighlight(highlight.highlightId);
                                   }
                                 }}
@@ -1766,7 +1768,7 @@ export function SessionWorkbench() {
               <textarea
                 className="min-h-20 resize-y rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700 read-only:bg-stone-50 read-only:text-stone-700"
                 onChange={(event) => setCloseoutSummary(event.target.value)}
-                placeholder="Summarize what this reading session resolved"
+                placeholder={t('workbenchSummaryPlaceholder')}
                 readOnly={flow.state.session.status === 'completed'}
                 ref={closeoutSummaryRef}
                 value={closeoutSummary}
@@ -1782,7 +1784,7 @@ export function SessionWorkbench() {
                   type="submit"
                   {...testAttr('session-complete-submit')}
                 >
-                  {flow.state.session.status === 'completed' ? 'Completed' : 'Complete'}
+                  {flow.state.session.status === 'completed' ? t('workbenchCompletedAction') : t('workbenchComplete')}
                 </button>
               </div>
             </form>
@@ -1792,7 +1794,7 @@ export function SessionWorkbench() {
             <section className="grid gap-3 border-b border-stone-200 bg-stone-50 px-4 py-4" {...testAttr('session-review')}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold">Session review</div>
+                  <div className="text-sm font-semibold">{t('workbenchReviewSession')}</div>
                   <div className="text-xs text-stone-500">
                     {flow.state.stats?.answeredQuestionCount || 0} answers - {flow.state.highlights.length} quotes - {flow.state.stats?.personaResponseCount || 0} persona replies
                   </div>
@@ -1827,21 +1829,21 @@ export function SessionWorkbench() {
               <section className="grid gap-2 md:grid-cols-2" {...testAttr('review-overview')}>
                 {flow.state.sessionSummary && (
                   <div className="rounded border border-stone-200 bg-white px-3 py-2 md:col-span-2" {...testAttr('review-summary')}>
-                    <div className="text-xs font-medium uppercase text-stone-500">Closeout</div>
+                    <div className="text-xs font-medium uppercase text-stone-500">{t('workbenchCloseout')}</div>
                     <div className="mt-1 text-sm leading-6">{flow.state.sessionSummary}</div>
                   </div>
                 )}
 
                 {flow.state.readingGoal && (
                   <div className="rounded border border-stone-200 bg-white px-3 py-2" {...testAttr('review-goal')}>
-                    <div className="text-xs font-medium uppercase text-stone-500">Reading goal</div>
+                    <div className="text-xs font-medium uppercase text-stone-500">{t('workbenchReadingGoal')}</div>
                     <div className="mt-1 text-sm leading-6">{flow.state.readingGoal}</div>
                   </div>
                 )}
 
                 {flow.state.tags.length > 0 && (
                   <div className="rounded border border-stone-200 bg-white px-3 py-2" {...testAttr('review-tags')}>
-                    <div className="text-xs font-medium uppercase text-stone-500">Tags</div>
+                    <div className="text-xs font-medium uppercase text-stone-500">{t('workbenchTags')}</div>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {flow.state.tags.map((tag) => (
                         <span className="rounded border border-stone-300 bg-stone-50 px-2 py-1 text-xs text-stone-700" key={tag.tagId}>
@@ -1855,8 +1857,8 @@ export function SessionWorkbench() {
 
               <section className="grid gap-2 rounded border border-stone-200 bg-white p-3" {...testAttr('review-insight-panel')}>
                 <div>
-                  <div className="text-xs font-semibold uppercase text-stone-500">Review insights</div>
-                  <div className="mt-1 text-sm font-medium text-stone-900">Save the conclusions worth carrying forward</div>
+                  <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchReviewInsights')}</div>
+                  <div className="mt-1 text-sm font-medium text-stone-900">{t('workbenchReviewInsightSubtitle')}</div>
                 </div>
                 <form className="grid gap-2" onSubmit={submitSessionInsight} {...testAttr('review-insight-form')}>
                   <div className="grid gap-2 sm:grid-cols-[130px_1fr]">
@@ -1866,16 +1868,16 @@ export function SessionWorkbench() {
                       value={insightType}
                       {...testAttr('review-insight-type')}
                     >
-                      <option value="takeaway">Takeaway</option>
-                      <option value="theme">Theme</option>
-                      <option value="question">Question</option>
-                      <option value="debate">Debate</option>
+                      <option value="takeaway">{t('workbenchTakeaway')}</option>
+                      <option value="theme">{t('workbenchTheme')}</option>
+                      <option value="question">{t('workbenchQuestions')}</option>
+                      <option value="debate">{t('debate')}</option>
                     </select>
                     <input
                       className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                       maxLength={inputLimits.insightTitle}
                       onChange={(event) => setInsightTitle(event.target.value)}
-                      placeholder="Insight title"
+                      placeholder={t('workbenchInsightTitlePlaceholder')}
                       value={insightTitle}
                       {...testAttr('review-insight-title')}
                     />
@@ -1883,7 +1885,7 @@ export function SessionWorkbench() {
                   <textarea
                     className="min-h-20 resize-y rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                     onChange={(event) => setInsightContent(event.target.value)}
-                    placeholder="What should be remembered from this reading or debate?"
+                    placeholder={t('workbenchInsightContentPlaceholder')}
                     value={insightContent}
                     {...testAttr('review-insight-content')}
                   />
@@ -1891,7 +1893,7 @@ export function SessionWorkbench() {
                     <input
                       className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                       onChange={(event) => setInsightEvidence(event.target.value)}
-                      placeholder="Evidence or passage"
+                      placeholder={t('workbenchEvidencePlaceholder')}
                       value={insightEvidence}
                       {...testAttr('review-insight-evidence')}
                     />
@@ -1901,7 +1903,7 @@ export function SessionWorkbench() {
                       type="submit"
                       {...testAttr('review-insight-submit')}
                     >
-                      Save insight
+                      {t('workbenchSaveInsight')}
                     </button>
                   </div>
                 </form>
@@ -1919,7 +1921,7 @@ export function SessionWorkbench() {
                             className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
                             disabled={flow.state.loading}
                             onClick={() => {
-                              if (confirmDelete()) {
+                              if (confirmDelete(t('deleteConfirm'))) {
                                 void flow.deleteSessionInsight(insight.insightId);
                               }
                             }}
@@ -1957,7 +1959,7 @@ export function SessionWorkbench() {
               <section className="grid gap-3 lg:grid-cols-3" {...testAttr('review-evidence-grid')}>
                 {flow.state.highlights.length > 0 && (
                   <div className="grid content-start gap-2" {...testAttr('review-highlights')}>
-                    <div className="text-xs font-semibold uppercase text-stone-500">Saved quotes</div>
+                    <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchSavedQuotes')}</div>
                     {flow.state.highlights.slice(0, 3).map((highlight) => (
                       <div className="rounded border border-stone-200 bg-white px-3 py-2" key={highlight.highlightId}>
                         <div className="text-xs font-medium uppercase text-stone-500">
@@ -1972,10 +1974,10 @@ export function SessionWorkbench() {
 
                 {answeredQuestions.length > 0 && (
                   <div className="grid content-start gap-2" {...testAttr('review-answers')}>
-                    <div className="text-xs font-semibold uppercase text-stone-500">Answered prompts</div>
+                    <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchAnsweredPrompts')}</div>
                     {answeredQuestions.slice(0, 3).map(({ question, answer }) => (
                       <div className="rounded border border-stone-200 bg-white px-3 py-2" key={question.questionId}>
-                        <div className="text-xs font-medium uppercase text-stone-500">Answered question</div>
+                        <div className="text-xs font-medium uppercase text-stone-500">{t('workbenchAnsweredQuestion')}</div>
                         <div className="mt-1 text-sm font-medium leading-6">{question.questionText}</div>
                         <div className="mt-1 text-sm leading-6 text-stone-700">{answer?.content}</div>
                       </div>
@@ -1985,7 +1987,7 @@ export function SessionWorkbench() {
 
                 {personaResponses.length > 0 && (
                   <div className="grid content-start gap-2" {...testAttr('review-personas')}>
-                    <div className="text-xs font-semibold uppercase text-stone-500">Persona responses</div>
+                    <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchPersonaResponses')}</div>
                     {personaResponses.slice(0, 2).map((response) => (
                       <div className="rounded border border-stone-200 bg-white px-3 py-2" key={response.id}>
                         <div className="text-xs font-medium uppercase text-stone-500">{response.personaDisplayName || 'Persona response'}</div>
@@ -2003,7 +2005,7 @@ export function SessionWorkbench() {
               <MessageListSkeleton />
             )}
             {!flow.state.loading && activeMessagesWithStream.length === 0 && (
-              <div className="py-16 text-center text-sm text-stone-500">Create a session from a candidate, then write inside the window.</div>
+              <div className="py-16 text-center text-sm text-stone-500">{t('workbenchNoSessionPrompt')}</div>
             )}
             {!flow.state.loading && activeMessagesWithStream.length > 0 && filteredActiveMessages.length === 0 && (
               <div className="py-16 text-center text-sm text-stone-500" {...testAttr('message-search-empty')}>
@@ -2063,7 +2065,7 @@ export function SessionWorkbench() {
                             className="rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-600 disabled:opacity-50"
                             disabled={flow.state.loading}
                             onClick={() => {
-                              if (confirmDelete()) {
+                              if (confirmDelete(t('deleteConfirm'))) {
                                 void flow.deleteMessage(item.persistedMessageId as number);
                               }
                             }}
@@ -2085,10 +2087,10 @@ export function SessionWorkbench() {
           </div>
 
           <div className="grid gap-3 border-t border-stone-200 bg-stone-50 p-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]" {...testAttr('session-composers')}>
-            <div className="grid grid-cols-2 gap-1 rounded border border-stone-300 bg-white p-1 xl:hidden" role="tablist" aria-label="Composer mode" {...testAttr('composer-mode-tabs')}>
+            <div className="grid grid-cols-2 gap-1 rounded border border-stone-300 bg-white p-1 xl:hidden" role="tablist" aria-label={t('workbenchComposerMode')} {...testAttr('composer-mode-tabs')}>
               {[
-                { id: 'message' as ComposerMode, label: 'Message' },
-                { id: 'persona' as ComposerMode, label: 'Persona' },
+                { id: 'message' as ComposerMode, label: t('messageCount') },
+                { id: 'persona' as ComposerMode, label: t('workbenchPersonaDebate') },
               ].map((mode) => (
                 <button
                   aria-controls={`${mode.id}-composer-panel`}
@@ -2117,7 +2119,7 @@ export function SessionWorkbench() {
               {...testAttr('message-composer')}
             >
               <div>
-                <div className="text-xs font-semibold uppercase text-stone-500">Window message</div>
+                <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchWindowMessage')}</div>
                 <div className="mt-1 text-sm font-medium text-stone-900">
                   {selectedQuestion ? 'Answer the selected prompt' : 'Add to the active window'}
                 </div>
@@ -2150,7 +2152,7 @@ export function SessionWorkbench() {
               {...testAttr('persona-composer')}
             >
               <div>
-                <div className="text-xs font-semibold uppercase text-stone-500">Persona debate</div>
+                <div className="text-xs font-semibold uppercase text-stone-500">{t('workbenchPersonaDebate')}</div>
                 <div className="mt-1 text-sm font-medium text-stone-900">
                   Create a voice or challenge the current interpretation
                 </div>
@@ -2160,7 +2162,7 @@ export function SessionWorkbench() {
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                   maxLength={inputLimits.personaDisplayName}
                   onChange={(event) => setPersonaName(event.target.value)}
-                  placeholder="Persona name"
+                  placeholder={t('workbenchPersonaNamePlaceholder')}
                   value={personaName}
                   {...testAttr('persona-create-name-input')}
                 />
@@ -2168,21 +2170,21 @@ export function SessionWorkbench() {
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700"
                   maxLength={inputLimits.personaTone}
                   onChange={(event) => setPersonaTone(event.target.value)}
-                  placeholder="Tone"
+                  placeholder={t('workbenchPersonaTonePlaceholder')}
                   value={personaTone}
                   {...testAttr('persona-create-tone-input')}
                 />
                 <input
                   className="min-w-0 rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700 md:col-span-2"
                   onChange={(event) => setPersonaDescription(event.target.value)}
-                  placeholder="What this voice watches for"
+                  placeholder={t('workbenchPersonaDescriptionPlaceholder')}
                   value={personaDescription}
                   {...testAttr('persona-create-description-input')}
                 />
                 <textarea
                   className="min-h-16 resize-y rounded border border-stone-300 px-3 py-2 text-sm outline-none focus:border-stone-700 md:col-span-2"
                   onChange={(event) => setPersonaInstructions(event.target.value)}
-                  placeholder="Instructions for how this persona should respond"
+                  placeholder={t('workbenchPersonaInstructionsPlaceholder')}
                   value={personaInstructions}
                   {...testAttr('persona-create-instructions-input')}
                 />

@@ -17,6 +17,33 @@ $nginxDir = Join-Path $runtimeDir "nginx"
 
 New-Item -ItemType Directory -Force -Path $artifactRoot | Out-Null
 
+function Get-PowerShellExecutable {
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh) { return $pwsh.Source }
+
+  $windowsPowerShell = Get-Command powershell -ErrorAction SilentlyContinue
+  if ($windowsPowerShell) { return $windowsPowerShell.Source }
+
+  throw "PowerShell executable not found. On macOS, use the Node npm commands documented in README.md; this legacy script is optional."
+}
+
+function Invoke-PowerShellFile {
+  param(
+    [string] $Path,
+    [string[]] $Arguments = @()
+  )
+
+  $powerShell = Get-PowerShellExecutable
+  $powerShellArgs = @("-NoProfile")
+  if ((Split-Path -Leaf $powerShell) -ieq "powershell.exe" -or (Split-Path -Leaf $powerShell) -ieq "powershell") {
+    $powerShellArgs += @("-ExecutionPolicy", "Bypass")
+  }
+  $powerShellArgs += @("-File", $Path)
+  $powerShellArgs += $Arguments
+
+  & $powerShell @powerShellArgs
+}
+
 if (Test-Path -LiteralPath $releaseDir) {
   Remove-Item -LiteralPath $releaseDir -Recurse -Force
 }
@@ -30,10 +57,10 @@ New-Item -ItemType Directory -Force -Path $nginxDir | Out-Null
 Push-Location $repoRoot
 try {
   if ($SkipTests) {
-    powershell -NoProfile -ExecutionPolicy Bypass -File back/scripts/test.ps1 -Task bootJar
+    Invoke-PowerShellFile -Path "back/scripts/test.ps1" -Arguments @("-Task", "bootJar")
   } else {
-    powershell -NoProfile -ExecutionPolicy Bypass -File back/scripts/test.ps1
-    powershell -NoProfile -ExecutionPolicy Bypass -File back/scripts/test.ps1 -Task bootJar
+    Invoke-PowerShellFile -Path "back/scripts/test.ps1"
+    Invoke-PowerShellFile -Path "back/scripts/test.ps1" -Arguments @("-Task", "bootJar")
   }
   if ($LASTEXITCODE -ne 0) {
     throw "Backend build failed with exit code $LASTEXITCODE"
@@ -174,12 +201,12 @@ try {
   $manifest | Set-Content -LiteralPath (Join-Path $releaseDir "manifest.txt") -Encoding UTF8
 
   $releaseRootPath = (Resolve-Path -LiteralPath $releaseDir).Path.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-  $releaseRootUri = [Uri]$releaseRootPath
-  $checksumLines = Get-ChildItem -LiteralPath $releaseDir -Recurse -File |
+  $releaseRootUri = [Uri]::new($releaseRootPath)
+  $checksumLines = Get-ChildItem -LiteralPath $releaseDir -Recurse -File -Force |
     Where-Object { $_.Name -ne "checksums.sha256" } |
     Sort-Object FullName |
     ForEach-Object {
-      $relative = [Uri]::UnescapeDataString($releaseRootUri.MakeRelativeUri([Uri]$_.FullName).ToString())
+      $relative = [Uri]::UnescapeDataString($releaseRootUri.MakeRelativeUri([Uri]::new($_.FullName)).ToString())
       $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
       "$($hash.Hash.ToLowerInvariant())  $($relative -replace '\\', '/')"
     }
@@ -194,10 +221,10 @@ try {
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
   try {
-    Get-ChildItem -LiteralPath $releaseDir -Recurse -File |
+    Get-ChildItem -LiteralPath $releaseDir -Recurse -File -Force |
       Sort-Object FullName |
       ForEach-Object {
-        $relative = [Uri]::UnescapeDataString($releaseRootUri.MakeRelativeUri([Uri]$_.FullName).ToString()) -replace '\\', '/'
+        $relative = [Uri]::UnescapeDataString($releaseRootUri.MakeRelativeUri([Uri]::new($_.FullName)).ToString()) -replace '\\', '/'
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
           $zip,
           $_.FullName,

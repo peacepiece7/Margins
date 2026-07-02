@@ -37,27 +37,12 @@ foreach ($needle in @(
   "pull_request:",
   "branches:",
   "- main",
-  "Project readiness audit",
-  "Documentation consistency audit",
-  "DB contract audit",
-  "Live deploy guard audit",
-  "./harness/scripts/audit-live-deploy-guard.ps1",
-  "Artifact secret guard audit",
-  "./harness/scripts/audit-artifact-secret-guard.ps1",
-  "CI workflow audit",
-  "./harness/scripts/audit-ci-workflow.ps1",
-  "Completion command audit",
-  "./harness/scripts/audit-completion-command.ps1",
-  "Quality gate composition audit",
-  "./harness/scripts/audit-quality-gate-composition.ps1",
-  "Acceptance traceability audit",
-  "./harness/scripts/audit-acceptance-traceability.ps1",
-  "Final acceptance boundary audit",
-  "./harness/scripts/audit-final-acceptance.ps1",
+  "Node harness quality audit",
+  "npm run quality:full -- -SkipBackend -SkipFrontendBuild",
   "Build release artifact",
-  "./infra/scripts/build-artifacts.ps1 -SkipTests",
+  "npm run deploy:build -- --skip-tests",
   "Verify release artifact",
-  "./infra/scripts/verify-artifacts.ps1",
+  "npm run deploy:verify",
   "Upload release artifact",
   "actions/upload-artifact@v4"
 )) {
@@ -65,13 +50,7 @@ foreach ($needle in @(
 }
 
 $orderedNeedles = @(
-  "Live deploy guard audit",
-  "Artifact secret guard audit",
-  "CI workflow audit",
-  "Completion command audit",
-  "Quality gate composition audit",
-  "Acceptance traceability audit",
-  "Final acceptance boundary audit",
+  "Node harness quality audit",
   "Build release artifact",
   "Verify release artifact",
   "Upload release artifact"
@@ -117,8 +96,8 @@ for ($index = 0; $index -lt $lines.Count; $index++) {
 
 Write-Output "# CI Workflow Audit"
 Write-Output ""
-Write-Output "Checked: CI runs readiness, docs, DB, live-deploy guard, artifact-secret guard, CI workflow, completion command, quality composition, acceptance traceability, and final acceptance audits."
+Write-Output "Checked: CI runs the consolidated Node harness quality audit before artifact build and verification."
 Write-Output "Checked: CI builds, verifies, and uploads the release artifact."
 Write-Output "Checked: CI workflow does not run SSH/SCP, SSH actions, deploy env vars, or Raspberry Pi deploy commands."
 Write-Output ""
-Write-Output "PASS: CI workflow gates are explicit and do not perform live Raspberry Pi deployment."
+Write-Output "PASS: CI workflow gates use the Node harness and do not perform live Raspberry Pi deployment."

@@ -9,6 +9,33 @@ $repoRoot = Resolve-Path (Join-Path $scriptRoot "..\..")
 $resolvedArtifactPath = Join-Path $repoRoot $ArtifactPath
 $artifactDir = Split-Path -Parent $resolvedArtifactPath
 
+function Get-PowerShellExecutable {
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh) { return $pwsh.Source }
+
+  $windowsPowerShell = Get-Command powershell -ErrorAction SilentlyContinue
+  if ($windowsPowerShell) { return $windowsPowerShell.Source }
+
+  throw "PowerShell executable not found. On macOS, use the Node npm commands documented in README.md; this legacy script is optional."
+}
+
+function Invoke-PowerShellFile {
+  param(
+    [string] $Path,
+    [string[]] $Arguments = @()
+  )
+
+  $powerShell = Get-PowerShellExecutable
+  $powerShellArgs = @("-NoProfile")
+  if ((Split-Path -Leaf $powerShell) -ieq "powershell.exe" -or (Split-Path -Leaf $powerShell) -ieq "powershell") {
+    $powerShellArgs += @("-ExecutionPolicy", "Bypass")
+  }
+  $powerShellArgs += @("-File", $Path)
+  $powerShellArgs += $Arguments
+
+  & $powerShell @powerShellArgs
+}
+
 New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
 if (-not (Test-Path -LiteralPath $resolvedArtifactPath)) {
   Set-Content -LiteralPath $resolvedArtifactPath -Value "dry-run-placeholder" -Encoding ASCII
@@ -41,13 +68,14 @@ try {
   $env:MARGINS_DEPLOY_SSH_KEY = Join-Path $repoRoot "harness\artifacts\deploy-dry-run\dry-run-key"
   Set-Content -LiteralPath $env:MARGINS_DEPLOY_SSH_KEY -Value "dry-run-placeholder-key" -Encoding ASCII
 
-  $output = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
-    -EnvPath ".env.does-not-exist" `
-    -ArtifactPath $ArtifactPath `
-    -SmokeAttempts 3 `
-    -SmokeDelaySeconds 1 `
-    -ReleaseRetainCount 4 `
-    -DryRun
+  $output = Invoke-PowerShellFile -Path "infra/scripts/deploy-raspberry-pi.ps1" -Arguments @(
+    "-EnvPath", ".env.does-not-exist",
+    "-ArtifactPath", $ArtifactPath,
+    "-SmokeAttempts", "3",
+    "-SmokeDelaySeconds", "1",
+    "-ReleaseRetainCount", "4",
+    "-DryRun"
+  )
 
   if ($LASTEXITCODE -ne 0) {
     throw "Deploy dry-run failed with exit code $LASTEXITCODE"
@@ -98,10 +126,11 @@ try {
     }
   }
 
-  $rollbackOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
-    -EnvPath ".env.does-not-exist" `
-    -Rollback `
-    -DryRun
+  $rollbackOutput = Invoke-PowerShellFile -Path "infra/scripts/deploy-raspberry-pi.ps1" -Arguments @(
+    "-EnvPath", ".env.does-not-exist",
+    "-Rollback",
+    "-DryRun"
+  )
 
   if ($LASTEXITCODE -ne 0) {
     throw "Rollback dry-run failed with exit code $LASTEXITCODE"
@@ -150,11 +179,12 @@ try {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $invalidRollbackOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
-      -EnvPath ".env.does-not-exist" `
-      -Rollback `
-      -RollbackReleaseId "bad" `
-      -DryRun 2>&1
+    $invalidRollbackOutput = Invoke-PowerShellFile -Path "infra/scripts/deploy-raspberry-pi.ps1" -Arguments @(
+      "-EnvPath", ".env.does-not-exist",
+      "-Rollback",
+      "-RollbackReleaseId", "bad",
+      "-DryRun"
+    ) 2>&1
   }
   finally {
     $ErrorActionPreference = $previousErrorActionPreference
@@ -172,9 +202,10 @@ try {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $invalidDirOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
-      -EnvPath ".env.does-not-exist" `
-      -DryRun 2>&1
+    $invalidDirOutput = Invoke-PowerShellFile -Path "infra/scripts/deploy-raspberry-pi.ps1" -Arguments @(
+      "-EnvPath", ".env.does-not-exist",
+      "-DryRun"
+    ) 2>&1
   }
   finally {
     $ErrorActionPreference = $previousErrorActionPreference
@@ -193,10 +224,11 @@ try {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $invalidServiceOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
-      -EnvPath ".env.does-not-exist" `
-      -ArtifactPath $ArtifactPath `
-      -DryRun 2>&1
+    $invalidServiceOutput = Invoke-PowerShellFile -Path "infra/scripts/deploy-raspberry-pi.ps1" -Arguments @(
+      "-EnvPath", ".env.does-not-exist",
+      "-ArtifactPath", $ArtifactPath,
+      "-DryRun"
+    ) 2>&1
   }
   finally {
     $ErrorActionPreference = $previousErrorActionPreference
@@ -215,10 +247,11 @@ try {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $invalidSshKeyOutput = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\deploy-raspberry-pi.ps1" `
-      -EnvPath ".env.does-not-exist" `
-      -ArtifactPath $ArtifactPath `
-      -DryRun 2>&1
+    $invalidSshKeyOutput = Invoke-PowerShellFile -Path "infra/scripts/deploy-raspberry-pi.ps1" -Arguments @(
+      "-EnvPath", ".env.does-not-exist",
+      "-ArtifactPath", $ArtifactPath,
+      "-DryRun"
+    ) 2>&1
   }
   finally {
     $ErrorActionPreference = $previousErrorActionPreference

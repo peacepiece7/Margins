@@ -17,6 +17,37 @@ $stdoutPath = Join-Path $smokeRoot "backend.out.log"
 $stderrPath = Join-Path $smokeRoot "backend.err.log"
 $backendProcess = $null
 
+function Test-IsWindows {
+  return [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+}
+
+function Get-PowerShellExecutable {
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh) { return $pwsh.Source }
+
+  $windowsPowerShell = Get-Command powershell -ErrorAction SilentlyContinue
+  if ($windowsPowerShell) { return $windowsPowerShell.Source }
+
+  throw "PowerShell executable not found. On macOS, use the Node npm commands documented in README.md; this legacy script is optional."
+}
+
+function Invoke-PowerShellFile {
+  param(
+    [string] $Path,
+    [string[]] $Arguments = @()
+  )
+
+  $powerShell = Get-PowerShellExecutable
+  $powerShellArgs = @("-NoProfile")
+  if ((Split-Path -Leaf $powerShell) -ieq "powershell.exe" -or (Split-Path -Leaf $powerShell) -ieq "powershell") {
+    $powerShellArgs += @("-ExecutionPolicy", "Bypass")
+  }
+  $powerShellArgs += @("-File", $Path)
+  $powerShellArgs += $Arguments
+
+  & $powerShell @powerShellArgs
+}
+
 function Test-HttpOk {
   param([string] $Url)
 
@@ -32,10 +63,24 @@ function Test-HttpOk {
 function Get-ChildProcessIds {
   param([int] $ParentProcessId)
 
-  $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$ParentProcessId" -ErrorAction SilentlyContinue)
-  foreach ($child in $children) {
-    Get-ChildProcessIds -ParentProcessId $child.ProcessId
-    $child.ProcessId
+  if (Test-IsWindows) {
+    $children = @(Get-CimInstance Win32_Process -Filter "ParentProcessId=$ParentProcessId" -ErrorAction SilentlyContinue)
+    foreach ($child in $children) {
+      Get-ChildProcessIds -ParentProcessId $child.ProcessId
+      $child.ProcessId
+    }
+    return
+  }
+
+  $pgrep = Get-Command pgrep -ErrorAction SilentlyContinue
+  if (-not $pgrep) {
+    return
+  }
+
+  $childIds = @(& $pgrep.Source -P $ParentProcessId 2>$null | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
+  foreach ($childId in $childIds) {
+    Get-ChildProcessIds -ParentProcessId $childId
+    $childId
   }
 }
 
@@ -94,7 +139,7 @@ $oldEnv = @{
 Push-Location $repoRoot
 try {
   if (-not $SkipArtifactVerify) {
-    powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\verify-artifacts.ps1" -ArtifactPath $ArtifactPath
+    Invoke-PowerShellFile -Path "infra/scripts/verify-artifacts.ps1" -Arguments @("-ArtifactPath", $ArtifactPath)
     if ($LASTEXITCODE -ne 0) {
       throw "Release artifact verification failed with exit code $LASTEXITCODE"
     }
@@ -102,7 +147,7 @@ try {
 
   if (-not $SkipMysqlBootstrap) {
     $env:MARGINS_MYSQL_PORT = "$MysqlPort"
-    powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\mysql-up.ps1" -ApplySchema -TimeoutSeconds $TimeoutSeconds
+    Invoke-PowerShellFile -Path "infra/scripts/mysql-up.ps1" -Arguments @("-ApplySchema", "-TimeoutSeconds", "$TimeoutSeconds")
     if ($LASTEXITCODE -ne 0) {
       throw "MySQL bootstrap failed with exit code $LASTEXITCODE"
     }
@@ -132,13 +177,19 @@ try {
   $env:SERVER_PORT = "$BackendPort"
   $env:OPENAI_API_KEY = ""
 
-  $backendProcess = Start-Process -FilePath $java.Source `
-    -ArgumentList @("-jar", $jarPath) `
-    -WorkingDirectory $smokeRoot `
-    -WindowStyle Hidden `
-    -RedirectStandardOutput $stdoutPath `
-    -RedirectStandardError $stderrPath `
-    -PassThru
+  $startArgs = @{
+    FilePath = $java.Source
+    ArgumentList = @("-jar", $jarPath)
+    WorkingDirectory = $smokeRoot
+    RedirectStandardOutput = $stdoutPath
+    RedirectStandardError = $stderrPath
+    PassThru = $true
+  }
+  if (Test-IsWindows) {
+    $startArgs.WindowStyle = "Hidden"
+  }
+
+  $backendProcess = Start-Process @startArgs
 
   Wait-Health -Url $healthUrl -Process $backendProcess -Timeout $TimeoutSeconds
 

@@ -150,7 +150,7 @@ function questionFocus(bookTitle?: string, bookAuthor?: string, bookId?: number,
 }
 
 function debateWindowTitle(topic: string) {
-  return fitTextWithSuffix(`토론: ${topic.trim()}`, '', inputLimits.sessionWindowTitle);
+  return fitTextWithSuffix(`Debate: ${topic.trim()}`, '', inputLimits.sessionWindowTitle);
 }
 
 async function restoreStoredOrLatestTimeline(storedSessionId?: number) {

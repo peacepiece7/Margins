@@ -15,7 +15,7 @@ This document maps MVP requirements to implementation evidence, remaining gaps, 
 - Backend validation and domain errors now use the common `ApiResponse` failure envelope, so frontend and E2E tooling can parse `success=false` and `message` consistently.
 - Frontend repository helpers now preserve backend `ApiResponse.message` for JSON failures, so visible workbench and login errors can show domain reasons instead of generic HTTP status text.
 - Raspberry Pi live transfer/restart and post-deploy health smoke are verified against the configured target. The deploy runner now uses a generated SSH key through `MARGINS_DEPLOY_SSH_KEY`; the full completion gate transferred `infra/artifacts/margins-release.zip`, switched `/opt/margins/current`, restarted `margins-back`, and received HTTP 200 from `http://172.30.1.21/api/health`.
-- The current Raspberry Pi runtime env path is `/opt/margins/.env`. `infra/scripts/upload-prod-env.ps1` and `infra/scripts/upload-prod-env.sh` upload ignored runtime env files to that path, back up any existing remote env, set mode `600`, and print only key names and permissions.
+- The current Raspberry Pi runtime env path is `/opt/margins/.env`. `npm run deploy:upload-env` uses the Node deployment runner to upload ignored runtime env files to that path, back up any existing remote env, set mode `600`, and print only key names and permissions. Legacy `.ps1` and `.sh` uploaders remain for operator compatibility, but PowerShell is not required on macOS.
 
 ## MVP Requirement Map
 
@@ -40,8 +40,8 @@ Reader session brief polish is implemented and verified:
 - The brief summarizes active focus, page progress, latest quote evidence, answer count, persona reply count, and next action.
 - Vitest covers empty-session defaults and developed-session priority rules.
 - E2E asserts the brief updates after question selection, progress save, quote edit, answer persistence, and persona replies.
-- Playwright screenshots capture desktop and mobile workbench layouts through `npm run screenshots:workbench` or `harness/scripts/verify-local-quality.ps1 -VisualScreenshots`, with the brief using a readable two-column desktop layout.
-- Full-stack Playwright verification can now be run from a cold local process state with `harness/scripts/run-fullstack-e2e.ps1`; it uses isolated default backend/frontend ports, starts MySQL with schema, starts backend and Vite, runs E2E, cleans up processes it started, and refuses accidental reuse of occupied service ports unless `-ReuseExistingServices` is explicit and the existing service answers the expected HTTP 2xx check.
+- Playwright screenshots capture desktop and mobile workbench layouts through `npm run screenshots:workbench`, with the brief using a readable two-column desktop layout.
+- Full-stack Playwright verification can now be run from a cold local process state with `npm run e2e:fullstack`; it uses isolated default backend/frontend ports, starts MySQL with schema, starts backend and Vite, runs E2E, cleans up processes it started, and refuses accidental reuse of occupied service ports unless `--reuse-existing-services` is explicit and the existing service answers the expected HTTP 2xx check.
 - Lower workbench controls are grouped into `message-composer` and `persona-composer` regions so message answering, persona creation, and debate actions remain readable in long sessions.
 - Completed review screenshots are captured by the same script, and the review panel is grouped into overview, insight, and evidence regions.
 - Reflection prompts now use compact full-row selection with inline answered/open status and a separated delete action for unanswered prompts.
@@ -92,32 +92,48 @@ Reader session brief polish is implemented and verified:
 
 ## Verification Commands
 
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/run-fullstack-e2e.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -FullStackE2E`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -VisualScreenshots` with MySQL ready, backend running with `SPRING_PROFILES_ACTIVE=local`, and Vite running
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -DeploymentPreflight`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke` when Docker/MySQL is available and release artifact runtime boot should be verified before Raspberry Pi transfer.
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -DeploymentPreflight -ArtifactFrontendSmoke` when the packaged frontend artifact should be rendered and selector-stripping verified before Raspberry Pi transfer.
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -DeploymentPreflight -SshPreflight` to re-check Raspberry Pi SSH authentication without transfer/restart.
-- `powershell -NoProfile -ExecutionPolicy Bypass -File infra/scripts/upload-prod-env.ps1 -RuntimeEnvPath .env.production` to upload production runtime environment variables before a deploy.
-- `DEPLOY_ENV_PATH=.env RUNTIME_ENV_PATH=.env.production infra/scripts/upload-prod-env.sh` for the Unix shell equivalent of the production runtime env upload.
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke -ArtifactFrontendSmoke -SshPreflight -LiveDeploySmoke -DeploySmokeHealthUrl <health-url>` for the final release artifact smoke plus Raspberry Pi transfer/restart health smoke.
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-mvp-readiness.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-doc-consistency.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-db-contract.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-deploy-dry-run.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-release-artifact-runtime.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-release-artifact-frontend.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-quality-gate-composition.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-acceptance-traceability.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-fullstack-e2e-runner.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File harness/scripts/audit-final-acceptance.ps1`
-- `powershell -NoProfile -ExecutionPolicy Bypass -File back/scripts/test.ps1`
+- `npm run local:doctor`
+- `npm run local:install`
+- `npm run local:db:up`
+- `npm run local:dev`
+- `npm run local:quality`
+- `npm run quality:full`
+- `npm run e2e:fullstack`
+- `npm run deploy:build`
+- `npm run deploy:verify`
+- `npm run deploy:dry-run`
+- `npm run deploy:upload-env -- --runtime-env-path .env.production`
+- `npm run deploy:pi -- --ssh-preflight`
+- `npm run deploy:pi -- --smoke-health-url <health-url>`
+- `npm run deploy:apply-schema -- --apply-seed`
+- `npm run audit:scripts`
+- `npm run deploy:build -- --skip-tests` when only packaging should be rechecked after backend tests already passed.
+- `npm run quality:full -- --skip-backend --skip-frontend-build` for the fast Node harness audit subset used by CI.
+- `npm run e2e:fullstack -- --reuse-existing-services` only when the currently running backend/frontend services are intentional and pass the runner health checks.
 - `npm run build` from `front/`
-- `npm test` from `front/` when MySQL, backend, and Vite are already running; otherwise prefer `harness/scripts/run-fullstack-e2e.ps1`.
+- `npm test` from `front/` when MySQL, backend, and Vite are already running; otherwise prefer `npm run e2e:fullstack`.
+
+PowerShell is not required on macOS for the supported deployment, harness, or full-stack E2E paths. Legacy `.ps1` scripts remain available for Windows operators and historical audit reproduction.
 
 ## Last Local Verification
+
+Verified on 2026-07-02:
+
+- Node syntax check: `node --check scripts/deploy.mjs`, `node --check scripts/harness.mjs`, `node --check scripts/e2e.mjs`, `node --check scripts/local.mjs`, and `node --check harness/scripts/audit-cross-platform-scripts.mjs` passed.
+- Node cross-platform script audit: `npm run audit:scripts` passed and confirmed root npm entry points are Node-first and do not require PowerShell on macOS.
+- Node harness quality gate: `npm run quality:full -- -SkipBackend -SkipFrontendBuild` passed, including script audit, CI workflow audit, docs audit, deploy dry-run audit, and frontend unit tests.
+- Node backend test gate: `npm run back:test` passed through `scripts/local.mjs back-test`.
+- Node deploy dry-run: `npm run deploy:dry-run` passed without opening SSH or printing SSH key or health URL values.
+- Node release build: `npm run deploy:build -- --skip-tests` produced `infra/artifacts/margins-release.zip`; Vite emitted only the existing large-chunk warning.
+- Node release verification: `npm run deploy:verify` passed after validating artifact structure, runtime placeholders, forbidden secret markers, and checksum coverage.
+- Node runtime env upload dry-run: `MARGINS_DEPLOY_HOST=dry-run.local MARGINS_DEPLOY_USER=margins npm run deploy:upload-env -- --runtime-env-path infra/artifacts/margins-release/runtime/env.example --dry-run` passed without SSH transfer or secret value output.
+- Node schema apply dry-run: `MARGINS_DEPLOY_HOST=dry-run.local MARGINS_DEPLOY_USER=margins npm run deploy:apply-schema -- --dry-run` passed without opening SSH or printing password values.
+- Node harness coverage regression fix: `npm run quality:full -- -SkipBackend -SkipFrontendBuild` passed after adding Node DB contract, artifact secret verifier, and acceptance traceability audits.
+- Node E2E stale-service guard: occupied-port smoke passed and confirmed `scripts/e2e.mjs` rejects occupied backend/frontend ports before startup unless `--reuse-existing-services` is explicit.
+- Node schema apply redaction guard: explicit-password SSH failure smoke passed and confirmed failure output does not print the provided password.
+- CI matrix artifact naming: `.github/workflows/ci.yml` now uploads `margins-release-${{ matrix.os }}` so Windows and macOS artifact uploads do not collide.
+- Legacy PowerShell script hints no longer tell macOS users to install PowerShell; they direct macOS users to the Node npm commands instead.
+- Diff hygiene: `git diff --check` passed.
 
 Verified on 2026-06-13:
 
@@ -191,7 +207,8 @@ Verified on 2026-06-13:
 
 ## Final Acceptance Boundary
 
-- `harness/scripts/audit-final-acceptance.ps1` is the lightweight completion-boundary check after context reset. It runs readiness, docs, DB, deploy dry-run, deploy safety, artifact safety, CI, completion-command, quality-composition, acceptance-traceability, and full-stack E2E runner audits together, then prints each sub-audit result before the acceptance boundary summary.
+- `npm run quality:full` is the supported Node completion-boundary check after context reset. It runs the cross-platform script audit, CI workflow audit, documentation audit, deploy dry-run audit, backend tests, frontend unit tests, and optional frontend build/selector checks without requiring PowerShell on macOS.
+- `harness/scripts/audit-final-acceptance.ps1` remains a legacy Windows-compatible lightweight completion-boundary check. It runs readiness, docs, DB, deploy dry-run, deploy safety, artifact safety, CI, completion-command, quality-composition, acceptance-traceability, and full-stack E2E runner audits together, then prints each sub-audit result before the acceptance boundary summary.
 - `harness/scripts/audit-live-deploy-guard.ps1` is part of the local quality gate and proves `-LiveDeploySmoke` cannot run from partial flag combinations.
 - `harness/scripts/audit-artifact-secret-guard.ps1` is part of the local quality gate and proves release artifact verification rejects `.env` files and private-key markers before deployment.
 - `harness/scripts/audit-ci-workflow.ps1` is part of the local quality gate and proves CI verifies artifacts without running live Raspberry Pi deploy commands.
@@ -199,14 +216,17 @@ Verified on 2026-06-13:
 - `harness/scripts/audit-quality-gate-composition.ps1` is part of the local quality gate and proves quality gate composition stays aligned across local quality, CI, final acceptance, and deployment docs.
 - `harness/scripts/audit-acceptance-traceability.ps1` is part of the local quality gate and proves MVP requirements connect planning, design, BDD, implementation, and test evidence before final acceptance passes.
 - `harness/scripts/audit-fullstack-e2e-runner.ps1` is part of the local quality gate and final acceptance audit. It proves the self-starting E2E runner uses isolated default ports, rejects accidental stale-service reuse, and documents the explicit `-ReuseExistingServices` escape hatch.
+- `harness/scripts/audit-cross-platform-scripts.mjs` is part of the Node local quality gate and CI. It proves root npm script entry points are Node-first, reject `pwsh`, `powershell`, and `.ps1` commands in `package.json`, avoid hard-coded Windows-only invocation in project scripts, retain macOS/Windows npm aliases, and keep `.sh` scripts paired with Windows PowerShell peers when an OS-neutral path is not used.
 - `harness/scripts/audit-release-artifact-runtime.ps1` is an optional deployment preflight smoke that launches the packaged backend jar from the release zip and polls `/api/health` before Raspberry Pi transfer.
 - `harness/scripts/audit-release-artifact-frontend.ps1` is an optional deployment preflight smoke that renders packaged `front/dist`, checks referenced assets, and verifies production selectors are stripped before Raspberry Pi transfer.
-- `infra/scripts/upload-prod-env.ps1` and `infra/scripts/upload-prod-env.sh` are the standard production runtime env upload commands. They should be run before live deploy when OpenAI, Kakao, DB, JWT, or Spring profile values change.
+- `npm run deploy:upload-env -- --runtime-env-path .env.production` is the standard production runtime env upload command. It should be run before live deploy when OpenAI, Kakao, DB, JWT, or Spring profile values change.
+- Legacy Windows operators can run `verify-local-quality.ps1 -DeploymentPreflight -ArtifactFrontendSmoke` for the frontend-only packaged artifact smoke, and `upload-prod-env.ps1 -RuntimeEnvPath .env.production` for the equivalent production runtime env upload path.
 - The final acceptance audit requires the latest current full-stack E2E gate evidence to be recorded in this document.
 - The final acceptance audit requires the latest current deployment preflight gate evidence to be recorded in this document.
 - The final acceptance audit fails if this document contains `pending verification`, `weak evidence`, `Missing or weak`, or `unverified` evidence text; every current evidence line must point to a command or external blocker.
 - The final acceptance audit fails if MVP readiness reports any blocked requirement after the live Raspberry Pi deploy smoke has passed.
-- Live Raspberry Pi completion evidence should use `verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke -ArtifactFrontendSmoke -SshPreflight -LiveDeploySmoke -DeploySmokeHealthUrl <health-url>` so artifact verification, dry-run audit, backend artifact runtime smoke, frontend artifact render smoke, SSH auth, full transfer/restart, and health smoke are captured by one command.
-- `harness/scripts/verify-local-quality.ps1` and `.github/workflows/ci.yml` run the final acceptance boundary audit so routine local and CI gates expose readiness regressions.
+- Live Raspberry Pi completion evidence should use `npm run deploy:build`, `npm run deploy:verify`, `npm run deploy:dry-run`, `npm run deploy:pi -- --ssh-preflight`, and `npm run deploy:pi -- --smoke-health-url <health-url>` so artifact verification, dry-run audit, SSH auth, full transfer/restart, and health smoke are captured through Node entry points.
+- Legacy PowerShell completion evidence remains accepted through `verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke -ArtifactFrontendSmoke -SshPreflight -LiveDeploySmoke -DeploySmokeHealthUrl <url>` so artifact verification, dry-run audit, backend artifact runtime smoke, frontend artifact render smoke, SSH auth, full transfer/restart, and health smoke are captured by one command.
+- `npm run quality:full` and `.github/workflows/ci.yml` run the Node acceptance boundary audit so routine local and CI gates expose readiness regressions.
 - The audit is expected to pass with no blocked MVP requirements.
 - Full project completion can be claimed after the final local quality gate with live Raspberry Pi build-transfer-restart smoke succeeds.

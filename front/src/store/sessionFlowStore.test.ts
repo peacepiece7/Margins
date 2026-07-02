@@ -160,7 +160,7 @@ describe('createDefaultSessionPatch', () => {
       windowId: 31,
       sessionId: 11,
       windowType: 'debate',
-      title: '토론: How does ritual shape political authority?',
+      title: 'Debate: How does ritual shape political authority?',
       status: 'open',
     };
     const timeline = timelineFor();
@@ -171,7 +171,7 @@ describe('createDefaultSessionPatch', () => {
         windowId: 31,
         sessionId: 11,
         windowType: 'debate',
-        title: '토론: How does ritual shape political authority?',
+        title: 'Debate: How does ritual shape political authority?',
         position: 2,
         status: 'open',
       },
@@ -187,7 +187,7 @@ describe('createDefaultSessionPatch', () => {
     expect(marginsRepository.createWindow).toHaveBeenCalledWith(
       session,
       'debate',
-      '토론: How does ritual shape political authority?',
+      'Debate: How does ritual shape political authority?',
     );
     expect(patch.window?.windowId).toBe(31);
     expect(patch.windows).toHaveLength(2);

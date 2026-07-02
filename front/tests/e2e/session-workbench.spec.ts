@@ -25,7 +25,7 @@ test('follows the owner replan page flow from book registration to reflection an
   let deleteDialogCount = 0;
   page.on('dialog', async (dialog) => {
     expect(dialog.type()).toBe('confirm');
-    expect(dialog.message()).toBe('삭제하시겠습니까?');
+    expect(dialog.message()).toBe('Delete this item?');
     deleteDialogCount += 1;
     await dialog.accept();
   });
@@ -41,7 +41,7 @@ test('follows the owner replan page flow from book registration to reflection an
     page.getByTestId('book-search-submit').click(),
   ]);
   await expect(page.getByTestId('book-candidate-list')).toContainText(/dune|듄/i);
-  await expect(page.getByTestId('book-candidate-id').first()).toContainText('고유번호');
+  await expect(page.getByTestId('book-candidate-id').first()).toContainText('Book ID');
   const savedCandidateTitle = await page.getByTestId('book-candidate-title').first().innerText();
 
   await Promise.all([
@@ -51,7 +51,7 @@ test('follows the owner replan page flow from book registration to reflection an
   await expect(page.getByTestId('book-list-page')).toContainText(savedCandidateTitle);
 
   await page.getByTestId('saved-book-detail-link').filter({ hasText: savedCandidateTitle }).click();
-  await expect(page.getByTestId('book-detail-page')).toContainText('등록 책 상세');
+  await expect(page.getByTestId('book-detail-page')).toContainText('Book Detail');
   await page.getByTestId('book-edit-title-input').fill('Dune: Edited');
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/api/books/') && response.request().method() === 'PATCH' && response.status() === 200),
@@ -92,7 +92,7 @@ test('follows the owner replan page flow from book registration to reflection an
     page.waitForResponse((response) => response.url().includes('/api/session-windows/') && response.url().includes('/messages/stream') && response.request().method() === 'POST' && response.status() === 200),
     page.getByTestId('question-answer-submit').click(),
   ]);
-  await expect(page.getByTestId('question-answer-history')).toContainText('내 답변');
+  await expect(page.getByTestId('question-answer-history')).toContainText('My answer');
   await expect(page.getByTestId('question-answer-history')).toContainText(selectedAnswerText);
   await page.getByTestId('question-answer-back').click();
   await page.getByTestId('book-question-link').first().click();
@@ -143,7 +143,7 @@ test('supports manual registration and saved-book deletion from the page shell',
   let deleteDialogCount = 0;
   page.on('dialog', async (dialog) => {
     expect(dialog.type()).toBe('confirm');
-    expect(dialog.message()).toBe('삭제하시겠습니까?');
+    expect(dialog.message()).toBe('Delete this item?');
     deleteDialogCount += 1;
     await dialog.accept();
   });
@@ -162,7 +162,7 @@ test('supports manual registration and saved-book deletion from the page shell',
 
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/api/books/') && response.request().method() === 'DELETE' && response.status() === 200),
-    page.getByTestId('saved-book-delete').filter({ hasText: '삭제' }).first().click(),
+    page.getByTestId('saved-book-delete').filter({ hasText: 'Delete' }).first().click(),
   ]);
   expect(deleteDialogCount).toBe(1);
   await expect(page.getByTestId('book-list-page')).not.toContainText('Manual Margins Book');

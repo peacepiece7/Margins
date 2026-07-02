@@ -88,6 +88,7 @@ $coreAudits = @(
   "audit-quality-gate-composition.ps1",
   "audit-acceptance-traceability.ps1",
   "audit-fullstack-e2e-runner.ps1",
+  "audit-cross-platform-scripts.mjs",
   "audit-final-acceptance.ps1"
 )
 
@@ -108,7 +109,7 @@ Assert-Contains "verify-local-quality" $localQuality ($coreAudits + $deployPrefl
   "-ArtifactFrontendSmoke requires -DeploymentPreflight",
   "audit-release-artifact-runtime.ps1",
   "audit-release-artifact-frontend.ps1",
-  "-SmokeHealthUrl $DeploySmokeHealthUrl"
+  '"-SmokeHealthUrl", $DeploySmokeHealthUrl'
 ))
 
 Assert-Order "verify-local-quality default audits" $localQuality @(
@@ -122,6 +123,7 @@ Assert-Order "verify-local-quality default audits" $localQuality @(
   "Quality gate composition audit",
   "Acceptance traceability audit",
   "Full-stack E2E runner audit",
+  "Cross-platform script audit",
   "Final acceptance boundary audit"
 )
 
@@ -141,47 +143,25 @@ Assert-Contains "final acceptance" $finalAcceptance ($coreAudits + @(
 ))
 
 Assert-Contains "ci workflow" $ciWorkflow @(
-  "Project readiness audit",
-  "Documentation consistency audit",
-  "DB contract audit",
-  "Live deploy guard audit",
-  "./harness/scripts/audit-live-deploy-guard.ps1",
-  "Artifact secret guard audit",
-  "./harness/scripts/audit-artifact-secret-guard.ps1",
-  "CI workflow audit",
-  "./harness/scripts/audit-ci-workflow.ps1",
-  "Completion command audit",
-  "./harness/scripts/audit-completion-command.ps1",
-  "Quality gate composition audit",
-  "./harness/scripts/audit-quality-gate-composition.ps1",
-  "Acceptance traceability audit",
-  "./harness/scripts/audit-acceptance-traceability.ps1",
-  "Final acceptance boundary audit",
-  "./harness/scripts/audit-final-acceptance.ps1",
+  "Node harness quality audit",
+  "npm run quality:full -- -SkipBackend -SkipFrontendBuild",
   "Build release artifact",
+  "npm run deploy:build -- --skip-tests",
   "Verify release artifact",
+  "npm run deploy:verify",
   "Upload release artifact"
 )
 
 Assert-Order "ci workflow gates" $ciWorkflow @(
-  "Project readiness audit",
-  "Documentation consistency audit",
-  "DB contract audit",
-  "Live deploy guard audit",
-  "Artifact secret guard audit",
-  "CI workflow audit",
-  "Completion command audit",
-  "Quality gate composition audit",
-  "Acceptance traceability audit",
-  "Final acceptance boundary audit",
+  "Node harness quality audit",
   "Build release artifact",
   "Verify release artifact",
   "Upload release artifact"
 )
 
 Assert-Contains "ci workflow audit" $ciAudit @(
-  "Quality gate composition audit",
-  "./harness/scripts/audit-quality-gate-composition.ps1",
+  "Node harness quality audit",
+  "npm run quality:full -- -SkipBackend -SkipFrontendBuild",
   "does not run SSH/SCP, SSH actions, deploy env vars"
 )
 
@@ -196,6 +176,7 @@ Assert-Contains "readiness audit" $readinessAudit @(
 
 Assert-Contains "development readiness doc" $readinessDoc @(
   "harness/scripts/audit-fullstack-e2e-runner.ps1",
+  "harness/scripts/audit-cross-platform-scripts.mjs",
   "harness/scripts/audit-quality-gate-composition.ps1",
   "harness/scripts/audit-acceptance-traceability.ps1",
   "harness/scripts/audit-release-artifact-runtime.ps1",
@@ -205,15 +186,17 @@ Assert-Contains "development readiness doc" $readinessDoc @(
 )
 
 Assert-Contains "infra sdd" $infraSdd @(
-  "harness/scripts/audit-quality-gate-composition.ps1",
-  "local quality gate, CI workflow, final acceptance audit, and deployment documentation",
-  "upload-prod-env.ps1",
+  "scripts/harness.mjs",
+  "npm run quality:full",
+  "local quality gate, CI workflow, documentation pairs, MVP DB contract, artifact secret verifier contract, acceptance traceability, and deployment documentation",
+  "npm run deploy:upload-env",
   "/opt/margins/.env"
 )
 
 Assert-Contains "infra bdd" $infraBdd @(
   "Quality gate composition stays aligned",
-  "harness/scripts/audit-quality-gate-composition.ps1",
+  "npm run quality:full -- --skip-backend --skip-frontend-build",
+  "Node quality gate executes",
   "Production runtime env is uploaded before deploy"
 )
 
@@ -246,6 +229,7 @@ Write-Output ""
 Write-Output "Checked: local quality gate, CI workflow, final acceptance audit, and docs share the same required audit set."
 Write-Output "Checked: deployment preflight remains ordered before SSH preflight and live deploy smoke."
 Write-Output "Checked: full-stack E2E runner safety audit is part of the local quality gate."
+Write-Output "Checked: cross-platform script audit is part of the local quality gate and CI."
 Write-Output "Checked: CI exposes quality composition directly without live Raspberry Pi deploy text."
 
 if ($failures.Count -gt 0) {

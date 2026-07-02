@@ -30,9 +30,9 @@ New-Item -ItemType Directory -Force -Path $verifyRoot | Out-Null
 
 try {
   Expand-Archive -LiteralPath $artifact.Path -DestinationPath $verifyRoot -Force
-  $artifactFiles = @(Get-ChildItem -LiteralPath $verifyRoot -Recurse -File)
+  $artifactFiles = @(Get-ChildItem -LiteralPath $verifyRoot -Recurse -File -Force)
   $verifyRootPath = (Resolve-Path -LiteralPath $verifyRoot).Path.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-  $verifyRootUri = [Uri]$verifyRootPath
+  $verifyRootUri = [Uri]::new($verifyRootPath)
 
   $required = @(
     "back/margins-back.jar",
@@ -63,7 +63,7 @@ try {
   )
 
   foreach ($file in $artifactFiles) {
-    $relative = [Uri]::UnescapeDataString($verifyRootUri.MakeRelativeUri([Uri]$file.FullName).ToString()) -replace '\\', '/'
+    $relative = [Uri]::UnescapeDataString($verifyRootUri.MakeRelativeUri([Uri]::new($file.FullName)).ToString()) -replace '\\', '/'
     foreach ($pattern in $forbiddenNamePatterns) {
       if ($relative -match $pattern) {
         throw "Artifact contains forbidden secret-like file: $relative"
@@ -76,7 +76,7 @@ try {
     throw "Backend jar is empty: back/margins-back.jar"
   }
 
-  $frontendAssets = @(Get-ChildItem -LiteralPath (Join-Path $verifyRoot "front\dist\assets") -File -ErrorAction SilentlyContinue)
+  $frontendAssets = @(Get-ChildItem -LiteralPath (Join-Path $verifyRoot "front\dist\assets") -File -Force -ErrorAction SilentlyContinue)
   if ($frontendAssets.Count -eq 0) {
     throw "Frontend dist assets are missing under front/dist/assets"
   }
@@ -137,7 +137,7 @@ try {
       continue
     }
 
-    $relative = [Uri]::UnescapeDataString($verifyRootUri.MakeRelativeUri([Uri]$file.FullName).ToString()) -replace '\\', '/'
+    $relative = [Uri]::UnescapeDataString($verifyRootUri.MakeRelativeUri([Uri]::new($file.FullName)).ToString()) -replace '\\', '/'
     $fileText = Get-Content -LiteralPath $file.FullName -Raw -Encoding UTF8
     foreach ($marker in $secretMarkers) {
       if ($fileText.Contains($marker)) {

@@ -40,7 +40,7 @@ Assert-Text "verify-local-quality" $qualityGate @(
   "Raspberry Pi SSH preflight",
   "-SshPreflight",
   "Raspberry Pi live deploy smoke",
-  "-SmokeHealthUrl `$DeploySmokeHealthUrl"
+  '"-SmokeHealthUrl", $DeploySmokeHealthUrl'
 )
 
 Assert-Text "deploy-raspberry-pi" $deployScript @(

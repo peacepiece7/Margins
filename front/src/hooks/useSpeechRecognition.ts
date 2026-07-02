@@ -8,12 +8,26 @@ import {
 
 interface UseSpeechRecognitionOptions {
   language?: string;
+  messages?: {
+    permissionDenied: string;
+    retry: string;
+    startFailed: string;
+    unsupported: string;
+  };
   onTranscript: (value: string) => void;
   value: string;
 }
 
+const defaultMessages = {
+  permissionDenied: 'Microphone permission is required.',
+  retry: 'Please try dictation again.',
+  startFailed: 'Could not start dictation.',
+  unsupported: 'Speech input is not supported in this browser.',
+};
+
 export function useSpeechRecognition({
-  language = 'ko-KR',
+  language = 'en-US',
+  messages = defaultMessages,
   onTranscript,
   value,
 }: UseSpeechRecognitionOptions) {
@@ -47,7 +61,7 @@ export function useSpeechRecognition({
 
   function start() {
     if (!Recognition) {
-      setError('이 브라우저는 음성 입력을 지원하지 않습니다.');
+      setError(messages.unsupported);
       return;
     }
 
@@ -71,7 +85,7 @@ export function useSpeechRecognition({
       onTranscriptRef.current(nextValue);
     };
     recognition.onerror = (event) => {
-      setError(event.error === 'not-allowed' ? '마이크 권한이 필요합니다.' : '음성 입력을 다시 시도해 주세요.');
+      setError(event.error === 'not-allowed' ? messages.permissionDenied : messages.retry);
       stop();
     };
     recognition.onend = () => {
@@ -87,7 +101,7 @@ export function useSpeechRecognition({
     } catch {
       recognitionRef.current = null;
       setListening(false);
-      setError('음성 입력을 시작하지 못했습니다.');
+      setError(messages.startFailed);
     }
   }
 

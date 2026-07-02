@@ -8,8 +8,14 @@ on:
 
 jobs:
   build-test-package:
-    name: Build, test, and package
-    runs-on: windows-latest
+    name: Build, test, and package (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - macos-latest
 
     steps:
       - name: Checkout
@@ -36,49 +42,11 @@ jobs:
         working-directory: front
         run: npx playwright install chromium
 
-      - name: Project readiness audit
-        shell: powershell
-        run: ./harness/scripts/audit-mvp-readiness.ps1
-
-      - name: Documentation consistency audit
-        shell: powershell
-        run: ./harness/scripts/audit-doc-consistency.ps1
-
-      - name: DB contract audit
-        shell: powershell
-        run: ./harness/scripts/audit-db-contract.ps1
-
-      - name: Live deploy guard audit
-        shell: powershell
-        run: ./harness/scripts/audit-live-deploy-guard.ps1
-
-      - name: Artifact secret guard audit
-        shell: powershell
-        run: ./harness/scripts/audit-artifact-secret-guard.ps1
-
-      - name: CI workflow audit
-        shell: powershell
-        run: ./harness/scripts/audit-ci-workflow.ps1
-
-      - name: Completion command audit
-        shell: powershell
-        run: ./harness/scripts/audit-completion-command.ps1
-
-      - name: Quality gate composition audit
-        shell: powershell
-        run: ./harness/scripts/audit-quality-gate-composition.ps1
-
-      - name: Acceptance traceability audit
-        shell: powershell
-        run: ./harness/scripts/audit-acceptance-traceability.ps1
-
-      - name: Final acceptance boundary audit
-        shell: powershell
-        run: ./harness/scripts/audit-final-acceptance.ps1
+      - name: Node harness quality audit
+        run: npm run quality:full -- -SkipBackend -SkipFrontendBuild
 
       - name: Backend tests
-        shell: powershell
-        run: ./back/scripts/test.ps1
+        run: npm run back:test
 
       - name: Frontend unit tests
         working-directory: front
@@ -93,16 +61,14 @@ jobs:
         run: npm run verify:production-selectors
 
       - name: Build release artifact
-        shell: powershell
-        run: ./infra/scripts/build-artifacts.ps1 -SkipTests
+        run: npm run deploy:build -- --skip-tests
 
       - name: Verify release artifact
-        shell: powershell
-        run: ./infra/scripts/verify-artifacts.ps1
+        run: npm run deploy:verify
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: margins-release
+          name: margins-release-${{ matrix.os }}
           path: infra/artifacts/margins-release.zip
           if-no-files-found: error

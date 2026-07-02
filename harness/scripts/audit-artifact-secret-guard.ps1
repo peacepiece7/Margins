@@ -1,5 +1,15 @@
 $ErrorActionPreference = "Stop"
 
+function Get-PowerShellExecutable {
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh) { return $pwsh.Source }
+
+  $windowsPowerShell = Get-Command powershell -ErrorAction SilentlyContinue
+  if ($windowsPowerShell) { return $windowsPowerShell.Source }
+
+  throw "PowerShell executable not found. On macOS, use the Node npm commands documented in README.md; this legacy script is optional."
+}
+
 function New-MinimalRelease {
   param(
     [string] $Root
@@ -60,12 +70,12 @@ function Update-Checksums {
   )
 
   $rootPath = (Resolve-Path -LiteralPath $Root).Path.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-  $rootUri = [Uri]$rootPath
-  $lines = Get-ChildItem -LiteralPath $Root -Recurse -File |
+  $rootUri = [Uri]::new($rootPath)
+  $lines = Get-ChildItem -LiteralPath $Root -Recurse -File -Force |
     Where-Object { $_.Name -ne "checksums.sha256" } |
     Sort-Object FullName |
     ForEach-Object {
-      $relative = [Uri]::UnescapeDataString($rootUri.MakeRelativeUri([Uri]$_.FullName).ToString())
+      $relative = [Uri]::UnescapeDataString($rootUri.MakeRelativeUri([Uri]::new($_.FullName)).ToString())
       $hash = Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256
       "$($hash.Hash.ToLowerInvariant())  $($relative -replace '\\', '/')"
     }
@@ -85,13 +95,13 @@ function New-TestZip {
   Add-Type -AssemblyName System.IO.Compression
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $sourceRootPath = (Resolve-Path -LiteralPath $SourceRoot).Path.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-  $sourceRootUri = [Uri]$sourceRootPath
+  $sourceRootUri = [Uri]::new($sourceRootPath)
   $zip = [System.IO.Compression.ZipFile]::Open($ZipPath, [System.IO.Compression.ZipArchiveMode]::Create)
   try {
-    Get-ChildItem -LiteralPath $SourceRoot -Recurse -File |
+    Get-ChildItem -LiteralPath $SourceRoot -Recurse -File -Force |
       Sort-Object FullName |
       ForEach-Object {
-        $relative = [Uri]::UnescapeDataString($sourceRootUri.MakeRelativeUri([Uri]$_.FullName).ToString()) -replace '\\', '/'
+        $relative = [Uri]::UnescapeDataString($sourceRootUri.MakeRelativeUri([Uri]::new($_.FullName)).ToString()) -replace '\\', '/'
         [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
           $zip,
           $_.FullName,
@@ -115,7 +125,14 @@ function Invoke-ExpectedArtifactFailure {
   $previousErrorActionPreference = $ErrorActionPreference
   $ErrorActionPreference = "Continue"
   try {
-    $output = & powershell -NoProfile -ExecutionPolicy Bypass -File "infra\scripts\verify-artifacts.ps1" -ArtifactPath $ZipPath 2>&1
+    $powerShell = Get-PowerShellExecutable
+    $powerShellArgs = @("-NoProfile")
+    if ((Split-Path -Leaf $powerShell) -ieq "powershell.exe" -or (Split-Path -Leaf $powerShell) -ieq "powershell") {
+      $powerShellArgs += @("-ExecutionPolicy", "Bypass")
+    }
+    $powerShellArgs += @("-File", "infra/scripts/verify-artifacts.ps1", "-ArtifactPath", $ZipPath)
+
+    $output = & $powerShell @powerShellArgs 2>&1
     $exitCode = $LASTEXITCODE
   }
   finally {
@@ -128,7 +145,7 @@ function Invoke-ExpectedArtifactFailure {
   }
 
   if (-not $text.Contains($ExpectedText)) {
-    throw "$Name did not include expected guard text: $ExpectedText"
+    throw "$Name did not include expected guard text: $ExpectedText. Actual output: $text"
   }
 }
 
@@ -138,8 +155,8 @@ function Get-RepoRelativePath {
   )
 
   $repoRootPath = (Resolve-Path -LiteralPath $repoRoot).Path.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
-  $repoRootUri = [Uri]$repoRootPath
-  return [Uri]::UnescapeDataString($repoRootUri.MakeRelativeUri([Uri](Resolve-Path -LiteralPath $Path).Path).ToString()) -replace '\\', '/'
+  $repoRootUri = [Uri]::new($repoRootPath)
+  return [Uri]::UnescapeDataString($repoRootUri.MakeRelativeUri([Uri]::new((Resolve-Path -LiteralPath $Path).Path)).ToString()) -replace '\\', '/'
 }
 
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path

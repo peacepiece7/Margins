@@ -31,7 +31,16 @@ And the password input is empty
 Given the user opens the login or portal entry surface
 When the brand header is visible
 Then the UI shows `Margins`
-And no Korean tagline is rendered under the title
+And the primary supporting copy follows the selected UI language
+
+### Scenario: User switches the interface language
+
+Given the user opens Margins
+When the user chooses `EN` or `KO` from the language control
+Then the frontend stores the selected locale as `margins.locale`
+And the login, portal navigation, book discovery, saved-book list, book-detail, question, review, and debate workflow controls render in that language
+And the legacy workbench header, dashboard, memory search, saved-book library, and session-library labels follow the same selected language
+And persisted reader content is not translated or rewritten
 
 ### Scenario: Browser receives Margins icon assets
 
@@ -134,7 +143,7 @@ And selecting a question opens the reflection page for answering
 Given the user opened a registered book detail page
 When the user enters a debate topic and activates debate entry
 Then the frontend creates or uses a reading session for that book
-And creates a new `debate` session window titled with that topic
+And creates a new `debate` session window titled `Debate: {topic}`
 And opens the debate page with that debate room selected
 And keeps the topic ready as the first message draft for all personas
 
@@ -706,7 +715,8 @@ And both user messages and AI responses remain visible
 Given the user has a saved book with a reading session
 And generated questions are visible in `book-question-panel`
 When the user clicks `book-question-delete` on an unanswered question
-Then the browser asks `삭제하시겠습니까?`
+Then the browser asks `Delete this item?` in the default English locale
+And asks `삭제하시겠습니까?` when the Korean locale is selected
 And accepting the dialog lets the frontend call `DELETE /api/questions/{id}`
 And the deleted question row disappears after the refreshed timeline loads
 And answered questions show a completed state instead of a delete action
@@ -715,7 +725,8 @@ And answered questions show a completed state instead of a delete action
 
 Given a delete or archive control is visible
 When the user clicks it
-Then the browser asks `삭제하시겠습니까?`
+Then the browser asks `Delete this item?` in the default English locale
+And asks `삭제하시겠습니까?` when the Korean locale is selected
 And canceling the dialog prevents the delete or archive API request
 
 ### Scenario: User returns from selected-question answer area to the question list
@@ -730,7 +741,7 @@ And the question list remains visible without changing the selected session time
 
 Given the user selected a generated question
 When the user submits an answer from `question-answer-form`
-Then the persisted user answer appears in `question-answer-history` as `내 답변`
+Then the persisted user answer appears in `question-answer-history` with the localized reader label
 And returning to the question list and opening the same question shows the saved answer again
 
 ## Feature: Persona Debate

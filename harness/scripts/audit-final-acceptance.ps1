@@ -1,5 +1,15 @@
 $ErrorActionPreference = "Stop"
 
+function Get-PowerShellExecutable {
+  $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
+  if ($pwsh) { return $pwsh.Source }
+
+  $windowsPowerShell = Get-Command powershell -ErrorAction SilentlyContinue
+  if ($windowsPowerShell) { return $windowsPowerShell.Source }
+
+  throw "PowerShell executable not found. On macOS, use the Node npm commands documented in README.md; this legacy script is optional."
+}
+
 function Invoke-Audit {
   param(
     [string] $Name,
@@ -8,7 +18,31 @@ function Invoke-Audit {
 
   Write-Host ""
   Write-Host "## $Name"
-  $output = & powershell -NoProfile -ExecutionPolicy Bypass -File $Path
+  $powerShell = Get-PowerShellExecutable
+  $powerShellArgs = @("-NoProfile")
+  if ((Split-Path -Leaf $powerShell) -ieq "powershell.exe" -or (Split-Path -Leaf $powerShell) -ieq "powershell") {
+    $powerShellArgs += @("-ExecutionPolicy", "Bypass")
+  }
+  $powerShellArgs += @("-File", $Path)
+
+  $output = & $powerShell @powerShellArgs
+  if ($LASTEXITCODE -ne 0) {
+    $output | ForEach-Object { Write-Host $_ }
+    throw "$Name failed with exit code $LASTEXITCODE"
+  }
+  $output | ForEach-Object { Write-Host $_ }
+  return ,$output
+}
+
+function Invoke-NodeAudit {
+  param(
+    [string] $Name,
+    [string] $Path
+  )
+
+  Write-Host ""
+  Write-Host "## $Name"
+  $output = & node $Path
   if ($LASTEXITCODE -ne 0) {
     $output | ForEach-Object { Write-Host $_ }
     throw "$Name failed with exit code $LASTEXITCODE"
@@ -49,6 +83,7 @@ $completionCommandOutput = Invoke-Audit -Name "Completion command audit" -Path "
 $qualityGateCompositionOutput = Invoke-Audit -Name "Quality gate composition audit" -Path "harness\scripts\audit-quality-gate-composition.ps1"
 $acceptanceTraceabilityOutput = Invoke-Audit -Name "Acceptance traceability audit" -Path "harness\scripts\audit-acceptance-traceability.ps1"
 $fullStackE2eRunnerOutput = Invoke-Audit -Name "Full-stack E2E runner audit" -Path "harness\scripts\audit-fullstack-e2e-runner.ps1"
+$crossPlatformScriptOutput = Invoke-NodeAudit -Name "Cross-platform script audit" -Path "harness/scripts/audit-cross-platform-scripts.mjs"
 
 $readinessText = $readinessOutput -join "`n"
 $docText = $docOutput -join "`n"
@@ -61,6 +96,7 @@ $completionCommandText = $completionCommandOutput -join "`n"
 $qualityGateCompositionText = $qualityGateCompositionOutput -join "`n"
 $acceptanceTraceabilityText = $acceptanceTraceabilityOutput -join "`n"
 $fullStackE2eRunnerText = $fullStackE2eRunnerOutput -join "`n"
+$crossPlatformScriptText = $crossPlatformScriptOutput -join "`n"
 
 Assert-Text $failures "MVP readiness audit" $readinessText @(
   "PASS: MVP readiness evidence paths and required text are present.",
@@ -85,7 +121,7 @@ Assert-Text $failures "Artifact secret guard audit" $artifactSecretGuardText @(
 Assert-Text $failures "CI workflow audit" $ciWorkflowText @(
   "SSH actions",
   "deploy env vars",
-  "PASS: CI workflow gates are explicit and do not perform live Raspberry Pi deployment."
+  "PASS: CI workflow gates use the Node harness and do not perform live Raspberry Pi deployment."
 )
 Assert-Text $failures "Completion command audit" $completionCommandText @(
   "PASS: final deployment completion command is consistent across docs and scripts."
@@ -98,6 +134,9 @@ Assert-Text $failures "Acceptance traceability audit" $acceptanceTraceabilityTex
 )
 Assert-Text $failures "Full-stack E2E runner audit" $fullStackE2eRunnerText @(
   "PASS: full-stack E2E runner safety contract is documented and enforced."
+)
+Assert-Text $failures "Cross-platform script audit" $crossPlatformScriptText @(
+  "PASS: shell script entry points are Node-first and do not require PowerShell on macOS."
 )
 
 if ($readinessText.Contains("- Status: partial") -or $readinessText.Contains("- Status: planned")) {
@@ -140,6 +179,7 @@ foreach ($requiredPath in @(
   "harness/scripts/audit-quality-gate-composition.ps1",
   "harness/scripts/audit-acceptance-traceability.ps1",
   "harness/scripts/audit-fullstack-e2e-runner.ps1",
+  "harness/scripts/audit-cross-platform-scripts.mjs",
   "harness/scripts/audit-release-artifact-runtime.ps1",
   "harness/scripts/audit-release-artifact-frontend.ps1",
   "harness/scripts/audit-live-deploy-guard.ps1",
@@ -193,6 +233,7 @@ Write-Output "- The final Raspberry Pi completion command is consistent across d
 Write-Output "- Local, CI, final acceptance, and documentation quality-gate composition stays aligned."
 Write-Output "- MVP acceptance traceability connects planning, design, BDD, implementation, and tests."
 Write-Output "- Full-stack E2E runner safety is audited so stale local services cannot silently verify the wrong build."
+Write-Output "- Shell script entry points are audited for macOS/Windows compatibility and OS-neutral npm aliases."
 Write-Output "- Development readiness evidence cannot contain pending, weak, or unverified verification claims."
 Write-Output "- MVP readiness has no blocked requirements after the live Raspberry Pi deploy smoke passed."
 Write-Output "- Final completion can be claimed when this audit and the full live deploy quality gate pass."

@@ -1,6 +1,7 @@
 $ErrorActionPreference = "Stop"
 
 $scriptPath = "harness/scripts/run-fullstack-e2e.ps1"
+$nodeRunnerPath = "scripts/e2e.mjs"
 $frontSddPath = "docs/front/sdd.md"
 $frontBddPath = "docs/front/bdd.md"
 $readinessPath = "docs/project/development-readiness.md"
@@ -33,6 +34,7 @@ function Assert-Contains {
 }
 
 $runner = Read-Text $scriptPath
+$nodeRunner = Read-Text $nodeRunnerPath
 $frontSdd = Read-Text $frontSddPath
 $frontBdd = Read-Text $frontBddPath
 $readiness = Read-Text $readinessPath
@@ -48,6 +50,14 @@ Assert-Contains "run-fullstack-e2e" $runner @(
   'Test-HttpOk -Url $backendHealthUrl',
   'Test-HttpOk -Url $frontendUrl',
   'PASS: full-stack E2E completed.'
+)
+
+Assert-Contains "scripts/e2e.mjs" $nodeRunner @(
+  "detached: process.platform !== 'win32'",
+  "process.kill(-child.pid, 'SIGTERM')",
+  "process.kill(-child.pid, 'SIGKILL')",
+  "taskkill",
+  "await stop(child)"
 )
 
 Assert-Contains "front SDD" $frontSdd @(
@@ -70,7 +80,7 @@ Assert-Contains "development readiness" $readiness @(
 
 Write-Output "# Full-Stack E2E Runner Audit"
 Write-Output ""
-Write-Output "Checked: isolated default ports, explicit reuse flag, occupied-port rejection, reuse health checks, and docs."
+Write-Output "Checked: isolated default ports, explicit reuse flag, occupied-port rejection, reuse health checks, process-tree cleanup, and docs."
 
 if ($failures.Count -gt 0) {
   Write-Output ""

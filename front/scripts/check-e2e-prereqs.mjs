@@ -5,7 +5,7 @@ async function checkJson(url, options = {}) {
     return await fetch(url, options);
   } catch (error) {
     throw new Error(
-      `${url} is not reachable. Start the backend before running E2E, or run harness/scripts/run-fullstack-e2e.ps1 from the repository root. ${error.message}`,
+      `${url} is not reachable. Start the backend before running E2E, or run npm run local:dev from the repository root. ${error.message}`,
     );
   }
 }
@@ -18,7 +18,7 @@ if (!healthResponse.ok) {
 const resetResponse = await checkJson(`${backendUrl}/api/test/reset`, { method: 'POST' });
 if (!resetResponse.ok) {
   throw new Error(
-    `E2E reset endpoint failed with HTTP ${resetResponse.status}. Start the backend with SPRING_PROFILES_ACTIVE=local or test, or run harness/scripts/run-fullstack-e2e.ps1 from the repository root.`,
+    `E2E reset endpoint failed with HTTP ${resetResponse.status}. Start the backend with SPRING_PROFILES_ACTIVE=local or test, or run npm run local:dev from the repository root.`,
   );
 }
 

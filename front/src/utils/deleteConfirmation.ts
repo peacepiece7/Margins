@@ -1,9 +1,9 @@
-export const deleteConfirmationMessage = '삭제하시겠습니까?';
+export const deleteConfirmationMessage = 'Delete this item?';
 
-export function confirmDelete() {
+export function confirmDelete(message = deleteConfirmationMessage) {
   if (typeof window === 'undefined') {
     return true;
   }
 
-  return window.confirm(deleteConfirmationMessage);
+  return window.confirm(message);
 }

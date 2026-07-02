@@ -1,0 +1,27 @@
+{
+  "name": "margins",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "local:doctor": "node scripts/local.mjs doctor",
+    "local:install": "node scripts/local.mjs install",
+    "local:db:up": "node scripts/local.mjs db-up --apply-schema",
+    "local:db:down": "node scripts/local.mjs db-down",
+    "local:back:test": "node scripts/local.mjs back-test",
+    "local:back:dev": "node scripts/local.mjs back-dev",
+    "local:front:dev": "node scripts/local.mjs front-dev",
+    "local:dev": "node scripts/local.mjs dev",
+    "local:quality": "node scripts/local.mjs quality",
+    "back:test": "node scripts/local.mjs back-test",
+    "e2e:fullstack": "node scripts/e2e.mjs",
+    "quality:full": "node scripts/harness.mjs quality",
+    "deploy:build": "node scripts/deploy.mjs build",
+    "deploy:verify": "node scripts/deploy.mjs verify",
+    "deploy:dry-run": "node scripts/deploy.mjs dry-run",
+    "deploy:upload-env": "node scripts/deploy.mjs upload-env",
+    "deploy:pi": "node scripts/deploy.mjs pi",
+    "deploy:apply-schema": "node scripts/deploy.mjs apply-schema",
+    "audit:scripts": "node harness/scripts/audit-cross-platform-scripts.mjs"
+  }
+}
