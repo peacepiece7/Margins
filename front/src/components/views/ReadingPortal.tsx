@@ -1,17 +1,4 @@
-import { FormEvent, useEffect, useState } from 'react';
-import { CKEditor } from '@ckeditor/ckeditor5-react';
-import {
-  BlockQuote,
-  Bold,
-  ClassicEditor,
-  Essentials,
-  Heading,
-  Italic,
-  Link,
-  List,
-  Paragraph,
-} from 'ckeditor5';
-import 'ckeditor5/ckeditor5.css';
+import { FormEvent, lazy, Suspense, useEffect, useState } from 'react';
 import { LoadingSpinner } from '../atoms/LoadingSpinner';
 import { Skeleton } from '../atoms/Skeleton';
 import { useI18n } from '../../i18n';
@@ -25,6 +12,8 @@ import { confirmDelete } from '../../utils/deleteConfirmation';
 import { debateTopicFromWindowTitle, personaIcon } from '../../utils/debateDisplay';
 import { selectNextDebatePersona } from '../../utils/personaSelection';
 import { testAttr } from '../../utils/testAttrs';
+
+const ReflectionRichEditor = lazy(() => import('../molecules/ReflectionRichEditor').then((module) => ({ default: module.ReflectionRichEditor })));
 
 function messageName(message: SessionDisplayMessage, userLabel: string) {
   if (message.role === 'user') {
@@ -780,17 +769,9 @@ export function ReadingPortal() {
                 <div className="grid min-h-[62vh] gap-3 rounded border border-stone-300 bg-stone-100 p-4" {...testAttr('reflection-editor-shell')}>
                   <input className="min-w-0 rounded border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder={t('reviewEvidencePlaceholder')} value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
                   <div className="reflection-rich-editor min-h-[54vh] rounded border border-stone-200 bg-white shadow-sm" {...testAttr('reflection-content-input')}>
-                    <CKEditor
-                      config={{
-                        licenseKey: 'GPL',
-                        plugins: [Essentials, Paragraph, Heading, Bold, Italic, Link, List, BlockQuote],
-                        toolbar: ['undo', 'redo', '|', 'heading', '|', 'bold', 'italic', 'link', '|', 'bulletedList', 'numberedList', 'blockQuote'],
-                        placeholder: t('reviewPlaceholder'),
-                      }}
-                      data={reflectionContent}
-                      editor={ClassicEditor}
-                      onChange={(_, editor) => setReflectionContent(editor.getData())}
-                    />
+                    <Suspense fallback={<div className="p-4 text-sm text-stone-500">{t('editorLoading')}</div>}>
+                      <ReflectionRichEditor onChange={setReflectionContent} placeholder={t('reviewPlaceholder')} value={reflectionContent} />
+                    </Suspense>
                   </div>
                   <div className="flex justify-end">
                     <SpeechDraftControl disabled={flow.state.loading} label="reflection-content" onChange={setReflectionContent} value={reflectionContent} />

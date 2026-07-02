@@ -746,6 +746,26 @@ And returning to the question list and opening the same question shows the saved
 
 ## Feature: Persona Debate
 
+## Feature: Production Frontend Smoke
+
+### Scenario: Production shell matches the current frontend build
+
+Given the frontend has been built locally
+When `npm --prefix front run verify:production-ui -- --url <front-url>` runs
+Then production `index.html` references the same Vite asset filenames as local `front/dist/index.html`
+And each deployed asset has the same hash as the local built asset
+And the login shell renders `Margins`, `EN`, `KO`, and `Login`
+And no browser console error or framework overlay is present
+
+### Scenario: Production smoke exercises login and saved-book cleanup
+
+Given production smoke credentials are provided through environment variables
+When `npm --prefix front run verify:production-flow -- --url <front-url> --allow-mutation` runs
+Then the smoke logs in
+And creates one uniquely named manual book
+And verifies the book appears in the saved-book list
+And deletes the smoke book before completing
+
 ### Scenario: User debates with a persona
 
 Given a debate window exists with personas

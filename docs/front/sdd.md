@@ -47,15 +47,19 @@ Implemented skeleton:
 - `public/favicon.png`, `public/apple-touch-icon.png`, `public/icon-192.png`, `public/icon-512.png`, and `public/site.webmanifest`: compressed app icon assets generated from the owner-provided book/bookmark image and linked from `index.html`.
 - `playwright.config.ts`: full-stack smoke test configuration.
 - `tests/e2e/session-workbench.spec.ts`: book/session/window/message/debate smoke flow.
+- `scripts/verify-production-ui.mjs`: production frontend smoke that compares deployed HTML asset references and asset hashes against the current local `dist`, then verifies the login shell, editorial fonts, and browser console state with Playwright.
+- `scripts/verify-production-flow.mjs`: explicit production mutation smoke that logs in, creates one uniquely named manual book, verifies it appears in the saved-book list, and deletes it before exit.
 - The visible product brand uses `Margins` as the standalone title on login and portal entry surfaces.
 - The current visual direction is a restrained neutral editorial interface: warm gray page background with a subtle paper grid, near-white reading surfaces, black primary actions, subtle borders/shadows, Inter/Noto Sans KR for interface text, and Newsreader for brand/display headings and long-form review writing.
 - `tailwind.config.js` exposes the shared `margins` color tokens, `font-display`/`font-sans` stacks, and editorial shadows so future surfaces can use the same neutral visual language instead of ad hoc color values.
 - Primary navigation, login, book discovery, saved-book list, book-detail, question, review, and debate workflow copy in `ReadingPortal` are routed through the locale provider, including assistive labels such as the primary page navigation name. `SessionWorkbench` now shares the same provider for its fixed chrome across the header, dashboard, memory search, saved-book library, session-library, active-window, review, quote, closeout, and composer controls.
+- The rich reflection editor is lazy-loaded through `ReflectionRichEditor`, and Vite splits React, CKEditor, and the app shell into separate chunks so the initial production app bundle is not dominated by CKEditor.
 
 ## Localization And Visual Language
 
 - English is the default locale because the owner wants the major product phrases to move toward English-first copy.
 - Korean remains available from an in-app EN/KO segmented language control on the login gate and authenticated session bar.
+- Login placeholders and action labels are language-correct in both catalogs: English renders `Username`, `Password`, and `Logout`; Korean renders `사용자 이름`, `비밀번호`, and `로그아웃`.
 - The selected locale is stored in browser `localStorage` as `margins.locale`, and the provider updates `document.documentElement.lang` whenever it changes.
 - The locale layer is frontend-only and does not mutate persisted reading records, generated AI content, saved book metadata, or backend validation messages.
 - Debate windows created from the frontend now use the persisted title prefix `Debate: {topic}`. Existing windows with the older `토론: {topic}` prefix still open correctly when selected.

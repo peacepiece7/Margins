@@ -209,10 +209,22 @@ And the non-mutating SSH preflight runs before any artifact transfer or service 
 Given a release artifact exists
 And Raspberry Pi SSH authentication is configured
 And `MARGINS_DEPLOY_HEALTH_URL` points to the deployed service health endpoint
-When `npm run deploy:pi -- --smoke-health-url <url>` completes artifact transfer and service restart
+When `npm run deploy:pi -- --smoke-health-url <url> --ui-smoke-url <front-url>` completes artifact transfer and service restart
 Then the script polls the configured health endpoint for an HTTP 2xx or 3xx response
+And verifies the production HTML references the current built Vite asset filenames
+And verifies the deployed asset content matches local `front/dist`
+And verifies the login shell renders without browser console errors
 And reports deploy smoke success without printing the health URL in dry-run output
 And reports deploy smoke failure without printing the health URL value
+
+### Scenario: Production reader flow smoke is explicit and self-cleaning
+
+Given production smoke credentials are configured outside the repository
+When `npm --prefix front run verify:production-flow -- --url <front-url> --allow-mutation` runs
+Then the smoke logs in through the production login gate
+And creates one uniquely named manual smoke book
+And verifies the saved-book list shows that book
+And deletes the smoke book before exiting
 
 ### Scenario: Production runtime env is uploaded before deploy
 

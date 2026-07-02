@@ -6,6 +6,21 @@ const frontendPort = Number(process.env.MARGINS_FRONTEND_PORT || '5173');
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/ckeditor5') || id.includes('node_modules/@ckeditor')) {
+            return 'ckeditor';
+          }
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'react-vendor';
+          }
+        },
+      },
+    },
+  },
   server: {
     port: frontendPort,
     proxy: {

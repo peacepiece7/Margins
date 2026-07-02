@@ -13,6 +13,8 @@
     "e2e": "playwright test",
     "screenshots:workbench": "node scripts/capture-workbench-screenshots.mjs",
     "verify:production-selectors": "node scripts/verify-production-selectors.mjs",
+    "verify:production-ui": "node scripts/verify-production-ui.mjs",
+    "verify:production-flow": "node scripts/verify-production-flow.mjs",
     "openapi:pull": "node scripts/pull-openapi.mjs"
   },
   "dependencies": {

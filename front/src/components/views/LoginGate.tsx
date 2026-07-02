@@ -47,7 +47,7 @@ export function LoginGate() {
       window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(result));
       setAuthSession(result);
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : 'Login failed');
+      setError(loginError instanceof Error ? loginError.message : t('loginFailed'));
     } finally {
       setLoading(false);
     }

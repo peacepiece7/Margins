@@ -61,7 +61,9 @@ Release, Raspberry Pi deployment, and harness gates are also exposed through roo
 | `npm run deploy:upload-env -- --runtime-env-path .env.production` | Upload production runtime env before deploy. |
 | `npm run deploy:upload-env -- --runtime-env-path .env.production --dry-run` | Validate production runtime env upload inputs without SSH transfer. |
 | `npm run deploy:pi -- --ssh-preflight` | Run Raspberry Pi SSH preflight. |
-| `npm run deploy:pi -- --smoke-health-url <health-url>` | Transfer/restart and run deploy health smoke. |
+| `npm run deploy:pi -- --smoke-health-url <health-url> --ui-smoke-url <front-url>` | Transfer/restart and run backend health plus production UI smoke. |
+| `npm --prefix front run verify:production-ui -- --url <front-url>` | Verify production HTML assets match the current local build and render the login shell. |
+| `npm --prefix front run verify:production-flow -- --url <front-url> --allow-mutation` | Log in, create one smoke book, verify it appears, and delete it. Requires production smoke credentials in env. |
 | `npm run deploy:apply-schema -- --apply-seed` | Apply Raspberry Pi MySQL schema, optionally with seed data. |
 | `npm run deploy:apply-schema -- --dry-run` | Validate Raspberry Pi schema apply inputs without opening SSH. |
 | `npm run audit:scripts` | Check the macOS/Windows script contract without requiring PowerShell. |

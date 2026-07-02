@@ -509,6 +509,7 @@ async function deployPi() {
   const dryRun = hasFlag('--dry-run', '-DryRun');
   const sshPreflight = hasFlag('--ssh-preflight', '-SshPreflight');
   const smokeHealthUrl = readArg(['--smoke-health-url', '-SmokeHealthUrl'], process.env.MARGINS_DEPLOY_HEALTH_URL || '');
+  const uiSmokeUrl = readArg(['--ui-smoke-url', '-UiSmokeUrl'], process.env.MARGINS_DEPLOY_UI_URL || '');
   const artifactPath = resolve(repoRoot, readArg(['--artifact-path', '-ArtifactPath'], 'infra/artifacts/margins-release.zip'));
   const rollbackReleaseId = readArg(['--rollback-release-id', '-RollbackReleaseId'], '');
   if (rollbackReleaseId && !/^\d{14}$/.test(rollbackReleaseId)) throw new Error('RollbackReleaseId must be a 14 digit release timestamp');
@@ -533,6 +534,7 @@ async function deployPi() {
     if (rollback) console.log(`Rollback release: ${rollbackReleaseId || 'previous'}`);
     else console.log(`Release retain count: ${releaseRetainCount}`);
     console.log(`Smoke health URL: ${smokeHealthUrl ? 'configured' : 'not configured'}`);
+    console.log(`UI smoke URL: ${uiSmokeUrl ? 'configured' : 'not configured'}`);
     console.log('Remote command:');
     console.log(remoteCommand);
     return;
@@ -550,6 +552,12 @@ async function deployPi() {
   if (smokeHealthUrl) {
     await smokeHealth(smokeHealthUrl, Number(readArg(['--smoke-attempts', '-SmokeAttempts'], '12')), Number(readArg(['--smoke-delay-seconds', '-SmokeDelaySeconds'], '5')));
     console.log('Deploy smoke passed for configured health URL.');
+  }
+  if (uiSmokeUrl) {
+    await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'verify:production-ui', '--', '--url', uiSmokeUrl], {
+      cwd: join(repoRoot, 'front'),
+      label: 'production UI smoke',
+    });
   }
 }
 
@@ -585,7 +593,7 @@ async function auditDeployDryRun() {
     const result = await capture('node', ['scripts/deploy.mjs', 'pi', '--env-path', '.env.does-not-exist', '--artifact-path', artifactPath, '--smoke-attempts', '3', '--smoke-delay-seconds', '1', '--release-retain-count', '4', '--dry-run']);
     if (!result.ok) throw new Error(`Deploy dry-run failed: ${result.stdout}${result.stderr}`);
     const text = result.stdout;
-    for (const needle of ['Dry run passed.', 'Target: margins@dry-run.local', 'SSH key: configured', 'Remote zip: /opt/margins/margins-release.zip', 'Service manager: systemd', 'Backend service: margins-back', 'Frontend service: margins-front', 'Release retain count: 4', 'Smoke health URL: configured', 'release_dir="releases/$release_id"', 'ln -sfn "$release_dir" current', "sudo systemctl restart 'margins-back'", "sudo systemctl restart 'margins-front'"]) {
+    for (const needle of ['Dry run passed.', 'Target: margins@dry-run.local', 'SSH key: configured', 'Remote zip: /opt/margins/margins-release.zip', 'Service manager: systemd', 'Backend service: margins-back', 'Frontend service: margins-front', 'Release retain count: 4', 'Smoke health URL: configured', 'UI smoke URL: not configured', 'release_dir="releases/$release_id"', 'ln -sfn "$release_dir" current', "sudo systemctl restart 'margins-back'", "sudo systemctl restart 'margins-front'"]) {
       if (!text.includes(needle)) throw new Error(`Deploy dry-run output missing required text: ${needle}`);
     }
     if (text.includes(process.env.MARGINS_DEPLOY_HEALTH_URL) || text.includes(process.env.MARGINS_DEPLOY_SSH_KEY)) throw new Error('Deploy dry-run leaked sensitive local value');
