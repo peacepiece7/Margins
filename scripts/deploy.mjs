@@ -79,7 +79,7 @@ async function run(cmd, cmdArgs = [], options = {}) {
     const child = spawn(cmd, cmdArgs, {
       cwd: options.cwd || repoRoot,
       env: { ...process.env, ...options.env },
-      stdio: options.stdio || 'inherit',
+      stdio: options.stdio || (options.input ? ['pipe', 'inherit', 'inherit'] : 'inherit'),
       shell: false,
     });
     if (options.input) {
@@ -662,6 +662,16 @@ printf '\\n'`;
   await run('ssh', [...options, target, remoteCommand]);
 }
 
+function remoteMysqlCommand(container, database, mysqlUser, mysqlPassword) {
+  return mysqlPassword
+    ? `sh -c 'IFS= read -r mysql_password; docker exec -i -e MYSQL_PWD="$mysql_password" ${shellSingleQuote(container)} mysql --default-character-set=utf8mb4 -u ${shellSingleQuote(mysqlUser)} ${shellSingleQuote(database)}'`
+    : `docker exec -i ${shellSingleQuote(container)} sh -c 'test -n "$MYSQL_USER" && test -n "$MYSQL_PASSWORD" && test -n "$MYSQL_DATABASE" && mysql --default-character-set=utf8mb4 -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'`;
+}
+
+function mysqlInput(sql, mysqlPassword) {
+  return mysqlPassword ? `${mysqlPassword}\n${sql}` : sql;
+}
+
 async function applySchema() {
   await loadEnv(readArg(['--env-path', '-EnvPath'], '.env'));
   const dryRun = hasFlag('--dry-run', '-DryRun');
@@ -688,23 +698,56 @@ async function applySchema() {
     console.log(`SSH key: ${process.env.MARGINS_DEPLOY_SSH_KEY ? 'configured' : 'default agent or SSH config'}`);
     return;
   }
-  const remoteCommand = mysqlPassword
-    ? `sh -c 'IFS= read -r mysql_password; docker exec -i -e MYSQL_PWD="$mysql_password" ${shellSingleQuote(container)} mysql --default-character-set=utf8mb4 -u ${shellSingleQuote(mysqlUser)} ${shellSingleQuote(database)}'`
-    : `docker exec -i ${shellSingleQuote(container)} sh -c 'test -n "$MYSQL_USER" && test -n "$MYSQL_PASSWORD" && test -n "$MYSQL_DATABASE" && mysql --default-character-set=utf8mb4 -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'`;
+  const remoteCommand = remoteMysqlCommand(container, database, mysqlUser, mysqlPassword);
   for (const file of schemaFiles) {
     console.log(`Applying ${relative(repoRoot, file)} to Raspberry Pi MySQL container ${container}`);
     const sql = await readFile(file);
     await run('ssh', [...options, target, remoteCommand], {
-      input: mysqlPassword ? `${mysqlPassword}\n${sql}` : sql,
+      input: mysqlInput(sql, mysqlPassword),
       label: `ssh schema apply ${relative(repoRoot, file).replaceAll('\\', '/')}`,
     });
   }
   console.log('Raspberry Pi schema apply completed.');
 }
 
+async function cleanupSmokeData() {
+  await loadEnv(readArg(['--env-path', '-EnvPath'], '.env'));
+  const dryRun = hasFlag('--dry-run', '-DryRun');
+  const { host, user } = sshTargetEnv();
+  const container = readArg(['--remote-mysql-container', '-RemoteMysqlContainer'], process.env.MARGINS_REMOTE_MYSQL_CONTAINER || 'margins-mysql');
+  const database = readArg(['--mysql-database', '-MysqlDatabase'], process.env.MARGINS_REMOTE_MYSQL_DATABASE || process.env.MARGINS_MYSQL_DATABASE || 'margins');
+  const mysqlUser = readArg(['--mysql-user', '-MysqlUser'], process.env.MARGINS_REMOTE_MYSQL_USER || process.env.MARGINS_MYSQL_USER || 'margins');
+  const mysqlPassword = readArg(['--mysql-password', '-MysqlPassword'], process.env.MARGINS_REMOTE_MYSQL_PASSWORD || process.env.MARGINS_MYSQL_PASSWORD || '');
+  const sqlFile = join(repoRoot, 'db/ops/001_cleanup_production_smoke_data.sql');
+  safeName(container, /^[A-Za-z0-9_.-]+$/, 'RemoteMysqlContainer');
+  safeName(database, /^[A-Za-z0-9_.-]+$/, 'MysqlDatabase');
+  safeName(mysqlUser, /^[A-Za-z0-9_.-]+$/, 'MysqlUser');
+  const options = await sshOptions();
+  const target = `${user}@${host}`;
+  if (dryRun) {
+    console.log('Raspberry Pi smoke data cleanup dry run passed.');
+    console.log(`Target: ${target}`);
+    console.log(`Container: ${container}`);
+    console.log(`Database: ${database}`);
+    console.log(`MySQL user: ${mysqlUser}`);
+    console.log(`Password source: ${mysqlPassword ? 'provided environment' : 'remote container environment'}`);
+    console.log(`SQL file: ${relative(repoRoot, sqlFile).replaceAll('\\', '/')}`);
+    console.log('Cleanup scope: books.title LIKE "Margins Smoke %" and dependent session records');
+    console.log(`SSH key: ${process.env.MARGINS_DEPLOY_SSH_KEY ? 'configured' : 'default agent or SSH config'}`);
+    return;
+  }
+  console.log(`Cleaning production smoke data through Raspberry Pi MySQL container ${container}`);
+  const sql = await readFile(sqlFile);
+  await run('ssh', [...options, target, remoteMysqlCommand(container, database, mysqlUser, mysqlPassword)], {
+    input: mysqlInput(sql, mysqlPassword),
+    label: 'ssh production smoke cleanup',
+  });
+  console.log('Raspberry Pi smoke data cleanup completed.');
+}
+
 async function main() {
   if (command === 'help') {
-    console.log('Commands: build, verify, dry-run, pi, upload-env, apply-schema');
+    console.log('Commands: build, verify, dry-run, pi, upload-env, apply-schema, cleanup-smoke-data');
     return;
   }
   if (command === 'build') return buildArtifacts();
@@ -713,6 +756,7 @@ async function main() {
   if (command === 'pi') return deployPi();
   if (command === 'upload-env') return uploadProdEnv();
   if (command === 'apply-schema') return applySchema();
+  if (command === 'cleanup-smoke-data') return cleanupSmokeData();
   throw new Error(`Unknown command: ${command}`);
 }
 

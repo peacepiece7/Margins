@@ -226,6 +226,23 @@ And creates one uniquely named manual smoke book
 And verifies the saved-book list shows that book
 And deletes the smoke book before exiting
 
+### Scenario: Production smoke cleanup removes interrupted smoke residue
+
+Given Raspberry Pi SSH authentication is configured
+And a previous mutable production smoke run was interrupted after creating a `Margins Smoke ` book
+When `npm run deploy:cleanup-smoke` runs
+Then the script applies the smoke cleanup SQL through the Raspberry Pi MySQL container
+And the SQL scope is limited to smoke-prefixed books and their dependent session records
+And the script does not print the MySQL password
+
+### Scenario: Production smoke cleanup can be dry-run through Node
+
+Given Raspberry Pi host and user are configured
+When `npm run deploy:cleanup-smoke -- --dry-run` runs
+Then the script validates the remote container, database, user, and SQL file
+And reports the smoke prefix scope
+And does not open SSH or print password values
+
 ### Scenario: Production runtime env is uploaded before deploy
 
 Given Raspberry Pi SSH authentication is configured

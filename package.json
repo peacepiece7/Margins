@@ -22,6 +22,7 @@
     "deploy:upload-env": "node scripts/deploy.mjs upload-env",
     "deploy:pi": "node scripts/deploy.mjs pi",
     "deploy:apply-schema": "node scripts/deploy.mjs apply-schema",
+    "deploy:cleanup-smoke": "node scripts/deploy.mjs cleanup-smoke-data",
     "audit:scripts": "node harness/scripts/audit-cross-platform-scripts.mjs"
   }
 }

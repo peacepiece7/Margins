@@ -66,6 +66,8 @@ Release, Raspberry Pi deployment, and harness gates are also exposed through roo
 | `npm --prefix front run verify:production-flow -- --url <front-url> --allow-mutation` | Log in, create one smoke book, verify it appears, and delete it. Requires production smoke credentials in env. |
 | `npm run deploy:apply-schema -- --apply-seed` | Apply Raspberry Pi MySQL schema, optionally with seed data. |
 | `npm run deploy:apply-schema -- --dry-run` | Validate Raspberry Pi schema apply inputs without opening SSH. |
+| `npm run deploy:cleanup-smoke` | Soft-delete production smoke books whose title starts with `Margins Smoke ` and their dependent session records. |
+| `npm run deploy:cleanup-smoke -- --dry-run` | Validate smoke cleanup target inputs without opening SSH. |
 | `npm run audit:scripts` | Check the macOS/Windows script contract without requiring PowerShell. |
 
 Legacy `.ps1` scripts remain in the repository for Windows operator compatibility, but the supported macOS path is the Node-based `npm run ...` commands above.

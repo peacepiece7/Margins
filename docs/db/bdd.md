@@ -242,6 +242,15 @@ When `db/reset/001_reset_test_data.sql` runs
 Then only test-owned rows are deleted and reseeded
 And non-test rows remain available
 
+### Scenario: Production smoke cleanup is prefix-scoped
+
+Given a mutable production smoke run left a book whose title starts with `Margins Smoke `
+And other production books do not use that smoke prefix
+When `db/ops/001_cleanup_production_smoke_data.sql` runs
+Then only the smoke-prefixed book and its dependent session records are soft-deleted
+And derived metrics tied to those smoke entities are removed
+And unrelated production books remain available
+
 ### Scenario: Reset removes test session tags
 
 Given test-owned session tags exist with `is_test_data = TRUE`
