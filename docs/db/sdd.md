@@ -116,6 +116,7 @@ db/
   schema/006_create_session_insights.sql
   schema/007_backfill_book_ai_profiles.sql
   schema/008_remove_temporary_fantasy_personas.sql
+  schema/009_archive_empty_default_debate_rooms.sql
   seed/001_seed_mvp_data.sql
   queries/001_session_timeline.sql
   queries/002_window_messages.sql
@@ -141,6 +142,7 @@ db/
   - two reflection messages
   - one sample session metric
 - `db/schema/008_remove_temporary_fantasy_personas.sql` deactivates and soft-deletes the temporary fantasy personas (`warrior-ardan`, `wizard-lyra`, `cleric-seren`, `rogue-nox`) and archives the seed-only default debate room/message residue.
+- `db/schema/009_archive_empty_default_debate_rooms.sql` archives empty legacy `Persona Debate` windows left by the removed default debate-room creation path while preserving any debate window that already has active messages.
 - Reset deletes rows where `is_test_data = TRUE`, including session tags and insights, and reloads seed data through the MySQL client `SOURCE` command. The backend JDBC reset executor mirrors the deletion list and re-enables `FOREIGN_KEY_CHECKS` in a `finally` path if cleanup fails.
 - Seed upserts refresh the seed book's provider columns and `raw_metadata.aiProfile` on duplicate rows, so rerunning seed scripts upgrades existing local/E2E rows to the latest AI context payload.
 - Non-test rows are not deleted by reset scripts.

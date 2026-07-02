@@ -152,6 +152,14 @@ When `db/schema/008_remove_temporary_fantasy_personas.sql` runs
 Then those fantasy personas are inactive and soft-deleted
 And the seed-only `Persona Debate` window and seed debate messages are soft-deleted
 
+### Scenario: Schema archives empty legacy default debate rooms
+
+Given a database still has an active `Persona Debate` window from the removed default creation path
+And that window has no active messages
+When `db/schema/009_archive_empty_default_debate_rooms.sql` runs
+Then the empty default debate window is soft-deleted
+And topic-specific debate rooms or non-empty debate windows remain available
+
 ### Scenario: Persona trace query returns persona prompt context
 
 Given a persona debate message is stored
