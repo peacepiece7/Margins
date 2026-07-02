@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 public class ExternalBookSearchProperties {
     private boolean enabled = true;
     private boolean aiFallbackEnabled = false;
-    private String provider = "openlibrary";
+    private String provider = "google";
     private String baseUrl = "https://openlibrary.org";
-    private String kakaoBaseUrl = "https://dapi.kakao.com";
-    private String kakaoRestApiKey = "";
+    private String googleBaseUrl = "https://www.googleapis.com";
+    private String googleApiKey = "";
     private int timeoutSeconds = 5;
     private int limit = 5;
 }

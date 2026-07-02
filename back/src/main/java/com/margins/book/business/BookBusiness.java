@@ -179,9 +179,22 @@ public class BookBusiness {
         return BookCandidateDto.builder()
             .candidateId(candidateId)
             .isbn(isbn)
+            .isbn10(trimIsbn(candidate.getIsbn10()))
+            .isbn13(trimIsbn(candidate.getIsbn13()))
             .title(title)
+            .subtitle(trimOptionalToLimit(candidate.getSubtitle()))
             .author(author)
+            .authors(candidate.getAuthors() == null ? List.of() : candidate.getAuthors().stream()
+                .map(this::trimToLimit)
+                .filter((value) -> !value.isBlank())
+                .toList())
+            .publisher(trimOptionalToLimit(candidate.getPublisher()))
+            .publishedDate(trimOptionalToLimit(candidate.getPublishedDate()))
             .publishedYear(candidate.getPublishedYear())
+            .description(trimOptionalToLimit(candidate.getDescription()))
+            .thumbnail(trimOptionalToLimit(candidate.getThumbnail()))
+            .language(trimOptionalToLimit(candidate.getLanguage()))
+            .pageCount(candidate.getPageCount())
             .reason(candidate.getReason())
             .build();
     }
@@ -220,6 +233,11 @@ public class BookBusiness {
             return trimmed;
         }
         return trimmed.substring(0, ISBN_TEXT_LIMIT);
+    }
+
+    private String trimOptionalToLimit(String value) {
+        String trimmed = trimToLimit(value);
+        return trimmed.isBlank() ? null : trimmed;
     }
 
     private String sourceFromCandidateId(String candidateId) {

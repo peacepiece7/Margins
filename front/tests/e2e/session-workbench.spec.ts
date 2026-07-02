@@ -104,7 +104,7 @@ test('follows the owner replan page flow from book registration to reflection an
   await expect(page.getByTestId('review-page')).toBeVisible();
   const reflectionEditorBox = await page.getByTestId('reflection-content-input').boundingBox();
   expect(reflectionEditorBox?.height).toBeGreaterThanOrEqual(300);
-  await page.getByTestId('reflection-content-input').locator('.ck-content[contenteditable="true"]').fill('The opening ritual makes power feel intimate and dangerous.');
+  await page.getByTestId('reflection-content-textarea').fill('The opening ritual makes power feel intimate and dangerous.');
   await page.getByTestId('reflection-evidence-input').fill('Gom Jabbar scene');
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/api/reading-sessions/') && response.url().includes('/insights') && response.request().method() === 'POST' && response.status() === 200),

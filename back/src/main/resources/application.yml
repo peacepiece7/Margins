@@ -36,9 +36,9 @@ margins:
   book-search:
     enabled: ${MARGINS_BOOK_SEARCH_ENABLED:true}
     ai-fallback-enabled: ${MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED:false}
-    provider: ${MARGINS_BOOK_SEARCH_PROVIDER:openlibrary}
+    provider: ${MARGINS_BOOK_SEARCH_PROVIDER:google}
     base-url: ${MARGINS_BOOK_SEARCH_BASE_URL:https://openlibrary.org}
-    kakao-base-url: ${KAKAO_BOOK_SEARCH_BASE_URL:https://dapi.kakao.com}
-    kakao-rest-api-key: ${KAKAO_REST_API_KEY:}
+    google-base-url: ${GOOGLE_BOOKS_BASE_URL:https://www.googleapis.com}
+    google-api-key: ${GOOGLE_BOOKS_API_KEY:}
     timeout-seconds: ${MARGINS_BOOK_SEARCH_TIMEOUT_SECONDS:5}
     limit: ${MARGINS_BOOK_SEARCH_LIMIT:5}

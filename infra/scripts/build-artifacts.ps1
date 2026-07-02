@@ -142,7 +142,8 @@ try {
     "OPENAI_API_KEY="
     "OPENAI_MODEL=gpt-5.5"
     "MARGINS_BOOK_SEARCH_AI_FALLBACK_ENABLED=false"
-    "MARGINS_BOOK_SEARCH_PROVIDER=kakao"
+    "MARGINS_BOOK_SEARCH_PROVIDER=google"
+    "GOOGLE_BOOKS_API_KEY="
     "SPRING_PROFILES_ACTIVE=prod"
   ) | Set-Content -LiteralPath (Join-Path $runtimeDir "env.example") -Encoding UTF8
 

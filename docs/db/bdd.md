@@ -18,7 +18,7 @@ And no duplicate book row is inserted
 
 ### Scenario: Provider ISBN is stored with a saved book
 
-Given a Kakao book candidate includes an ISBN
+Given a Google Books candidate includes an ISBN
 When the user saves that candidate as a book
 Then `books.isbn` stores the candidate ISBN
 And `books.source_ref` keeps the provider candidate identifier

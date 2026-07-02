@@ -1,6 +1,8 @@
-import { FormEvent, lazy, Suspense, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { LoadingSpinner } from '../atoms/LoadingSpinner';
 import { Skeleton } from '../atoms/Skeleton';
+import { MarkdownContent } from '../molecules/MarkdownContent';
+import { ReflectionMarkdownEditor } from '../molecules/ReflectionMarkdownEditor';
 import { useI18n } from '../../i18n';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { useSessionFlow } from '../../hooks/useSessionFlow';
@@ -10,62 +12,15 @@ import type { SessionDisplayMessage } from '../../types/view-models/sessionFlow'
 import type { MarginsPage } from '../../types/view-models/sessionFlow';
 import { confirmDelete } from '../../utils/deleteConfirmation';
 import { debateTopicFromWindowTitle, personaIcon } from '../../utils/debateDisplay';
+import { markdownToPlainText } from '../../utils/markdown';
 import { selectNextDebatePersona } from '../../utils/personaSelection';
 import { testAttr } from '../../utils/testAttrs';
-
-const ReflectionRichEditor = lazy(() => import('../molecules/ReflectionRichEditor').then((module) => ({ default: module.ReflectionRichEditor })));
 
 function messageName(message: SessionDisplayMessage, userLabel: string) {
   if (message.role === 'user') {
     return userLabel;
   }
   return message.personaDisplayName || 'AI';
-}
-
-function htmlToText(value: string) {
-  if (typeof document === 'undefined') {
-    return value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  const container = document.createElement('div');
-  container.innerHTML = value;
-  return (container.textContent || '').replace(/\s+/g, ' ').trim();
-}
-
-function sanitizeReflectionHtml(value: string) {
-  if (typeof document === 'undefined') {
-    return value;
-  }
-
-  const allowedTags = new Set(['A', 'BLOCKQUOTE', 'BR', 'EM', 'H2', 'H3', 'I', 'LI', 'OL', 'P', 'STRONG', 'UL']);
-  const container = document.createElement('div');
-  container.innerHTML = value;
-
-  Array.from(container.querySelectorAll('script, style')).forEach((node) => node.remove());
-
-  Array.from(container.querySelectorAll('*')).forEach((element) => {
-    if (!allowedTags.has(element.tagName)) {
-      element.replaceWith(...Array.from(element.childNodes));
-      return;
-    }
-
-    Array.from(element.attributes).forEach((attribute) => {
-      if (element.tagName !== 'A' || attribute.name !== 'href') {
-        element.removeAttribute(attribute.name);
-      }
-    });
-
-    if (element.tagName === 'A') {
-      const href = element.getAttribute('href') || '';
-      if (!/^(https?:|mailto:)/i.test(href)) {
-        element.removeAttribute('href');
-      }
-      element.setAttribute('rel', 'noreferrer');
-      element.setAttribute('target', '_blank');
-    }
-  });
-
-  return container.innerHTML.trim();
 }
 
 function BookCandidateSkeleton() {
@@ -206,8 +161,7 @@ export function ReadingPortal() {
     : [];
   const showQuestionSkeleton = pendingQuestionGeneration || questionGenerationPending;
   const showDebateReplySkeleton = flow.state.loading && page === 'debate' && flow.state.window?.windowType === 'debate';
-  const reflectionDraftHtml = sanitizeReflectionHtml(reflectionContent);
-  const reflectionDraftText = htmlToText(reflectionContent);
+  const reflectionDraftText = markdownToPlainText(reflectionContent);
   const pageLabels: Record<MarginsPage, string> = {
     'book-search': t('pageBookSearch'),
     'book-list': t('pageBookList'),
@@ -371,7 +325,7 @@ export function ReadingPortal() {
     void flow.createSessionInsight({
       insightType: 'reflection',
       title: selectedBook ? `${selectedBook.title} ${t('review')}` : t('review'),
-      content: reflectionDraftHtml,
+      content: reflectionContent.trim(),
       evidence: reflectionEvidence.trim() || undefined,
     }).then((saved) => {
       if (saved) {
@@ -768,10 +722,8 @@ export function ReadingPortal() {
                 </div>
                 <div className="grid min-h-[62vh] gap-3 rounded border border-stone-300 bg-stone-100 p-4" {...testAttr('reflection-editor-shell')}>
                   <input className="min-w-0 rounded border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-stone-500" onChange={(event) => setReflectionEvidence(event.target.value)} placeholder={t('reviewEvidencePlaceholder')} value={reflectionEvidence} {...testAttr('reflection-evidence-input')} />
-                  <div className="reflection-rich-editor min-h-[54vh] rounded border border-stone-200 bg-white shadow-sm" {...testAttr('reflection-content-input')}>
-                    <Suspense fallback={<div className="p-4 text-sm text-stone-500">{t('editorLoading')}</div>}>
-                      <ReflectionRichEditor onChange={setReflectionContent} placeholder={t('reviewPlaceholder')} value={reflectionContent} />
-                    </Suspense>
+                  <div className="reflection-markdown-shell min-h-[54vh] rounded border border-stone-200 bg-white shadow-sm" {...testAttr('reflection-content-input')}>
+                    <ReflectionMarkdownEditor onChange={setReflectionContent} placeholder={t('reviewPlaceholder')} textareaTestId="reflection-content-textarea" value={reflectionContent} />
                   </div>
                   <div className="flex justify-end">
                     <SpeechDraftControl disabled={flow.state.loading} label="reflection-content" onChange={setReflectionContent} value={reflectionContent} />
@@ -822,7 +774,7 @@ export function ReadingPortal() {
                 {flow.state.insights.map((insight) => (
                   <article className="rounded border border-stone-200 p-3" key={insight.insightId}>
                     <div className="text-xs font-semibold uppercase text-stone-500">{insight.insightType}</div>
-                    <div className="mt-1 text-sm leading-6 [&_blockquote]:border-l-2 [&_blockquote]:border-stone-300 [&_blockquote]:pl-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5" dangerouslySetInnerHTML={{ __html: sanitizeReflectionHtml(insight.content) }} />
+                    <MarkdownContent className="mt-1 text-sm leading-6" value={insight.content} />
                     {insight.evidence && <div className="mt-1 text-xs text-stone-600">{insight.evidence}</div>}
                   </article>
                 ))}

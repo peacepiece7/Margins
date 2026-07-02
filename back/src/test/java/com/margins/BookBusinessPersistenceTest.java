@@ -59,15 +59,15 @@ class BookBusinessPersistenceTest {
         BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
 
         business.saveBook(SaveBookRequest.builder()
-            .candidateId("kakao:9788996991342")
+            .candidateId("google:9788996991342")
             .title("미움받을 용기")
             .author("기시미 이치로, 고가 후미타케")
             .publishedYear(2014)
             .build());
 
-        assertThat(mapper.inserted.getSource()).isEqualTo("kakao");
-        assertThat(mapper.inserted.getSourceRef()).isEqualTo("kakao:9788996991342");
-        assertThat(mapper.inserted.getRawMetadata()).contains("\"provider\":\"kakao\"");
+        assertThat(mapper.inserted.getSource()).isEqualTo("google");
+        assertThat(mapper.inserted.getSourceRef()).isEqualTo("google:9788996991342");
+        assertThat(mapper.inserted.getRawMetadata()).contains("\"provider\":\"google\"");
     }
 
     @Test
@@ -175,9 +175,19 @@ class BookBusinessPersistenceTest {
                 BookCandidateDto.builder()
                     .candidateId("  " + "c".repeat(300) + "  ")
                     .isbn("  " + "9".repeat(40) + "  ")
+                    .isbn10("  0441478123  ")
+                    .isbn13("  9780441478125  ")
                     .title("  " + "t".repeat(300) + "  ")
+                    .subtitle("  " + "s".repeat(300) + "  ")
                     .author("  " + "a".repeat(300) + "  ")
+                    .authors(List.of("  Ursula K. Le Guin  ", " "))
+                    .publisher("  Ace  ")
+                    .publishedDate("  2019-02-05  ")
                     .publishedYear(2026)
+                    .description("  " + "d".repeat(300) + "  ")
+                    .thumbnail("  http://books.google.com/thumb.jpg  ")
+                    .language("  en  ")
+                    .pageCount(304)
                     .reason("reader match")
                     .build(),
                 BookCandidateDto.builder()
@@ -202,9 +212,19 @@ class BookBusinessPersistenceTest {
             .satisfies((candidate) -> {
                 assertThat(candidate.getCandidateId()).hasSize(255).doesNotStartWith(" ");
                 assertThat(candidate.getIsbn()).hasSize(32).doesNotStartWith(" ");
+                assertThat(candidate.getIsbn10()).isEqualTo("0441478123");
+                assertThat(candidate.getIsbn13()).isEqualTo("9780441478125");
                 assertThat(candidate.getTitle()).hasSize(255).doesNotStartWith(" ");
+                assertThat(candidate.getSubtitle()).hasSize(255).doesNotStartWith(" ");
                 assertThat(candidate.getAuthor()).hasSize(255).doesNotStartWith(" ");
+                assertThat(candidate.getAuthors()).containsExactly("Ursula K. Le Guin");
+                assertThat(candidate.getPublisher()).isEqualTo("Ace");
+                assertThat(candidate.getPublishedDate()).isEqualTo("2019-02-05");
                 assertThat(candidate.getPublishedYear()).isEqualTo(2026);
+                assertThat(candidate.getDescription()).hasSize(255).doesNotStartWith(" ");
+                assertThat(candidate.getThumbnail()).isEqualTo("http://books.google.com/thumb.jpg");
+                assertThat(candidate.getLanguage()).isEqualTo("en");
+                assertThat(candidate.getPageCount()).isEqualTo(304);
                 assertThat(candidate.getReason()).isEqualTo("reader match");
             });
     }
@@ -247,7 +267,7 @@ class BookBusinessPersistenceTest {
     @Test
     void searchCandidatesUsesConfiguredProviderBeforeFallbackProviders() {
         ExternalBookSearchProperties properties = new ExternalBookSearchProperties();
-        properties.setProvider("kakao");
+        properties.setProvider("google");
         BookBusiness business = new BookBusiness(
             new CandidateAiProvider(BookCandidateSearchResponse.builder()
                 .aiModel("should-not-be-used")
@@ -264,8 +284,8 @@ class BookBusinessPersistenceTest {
                     .author("Frank Herbert")
                     .publishedYear(1965)
                     .build())),
-                new NamedExternalBookSearchProvider("kakao", List.of(BookCandidateDto.builder()
-                    .candidateId("kakao:9788996991342")
+                new NamedExternalBookSearchProvider("google", List.of(BookCandidateDto.builder()
+                    .candidateId("google:9788996991342")
                     .title("미움받을 용기")
                     .author("기시미 이치로, 고가 후미타케")
                     .publishedYear(2014)
@@ -279,10 +299,10 @@ class BookBusinessPersistenceTest {
             .query("미움받을 용기")
             .build());
 
-        assertThat(response.getAiModel()).isEqualTo("kakao");
+        assertThat(response.getAiModel()).isEqualTo("google");
         assertThat(response.getCandidates()).singleElement()
             .satisfies((candidate) -> {
-                assertThat(candidate.getCandidateId()).isEqualTo("kakao:9788996991342");
+                assertThat(candidate.getCandidateId()).isEqualTo("google:9788996991342");
                 assertThat(candidate.getTitle()).isEqualTo("미움받을 용기");
                 assertThat(candidate.getAuthor()).isEqualTo("기시미 이치로, 고가 후미타케");
             });
@@ -291,7 +311,7 @@ class BookBusinessPersistenceTest {
     @Test
     void searchCandidatesReturnsEmptyWhenExternalProvidersReturnEmptyAndAiFallbackIsDisabled() {
         ExternalBookSearchProperties properties = new ExternalBookSearchProperties();
-        properties.setProvider("kakao");
+        properties.setProvider("google");
         properties.setAiFallbackEnabled(false);
         BookBusiness business = new BookBusiness(
             new CandidateAiProvider(BookCandidateSearchResponse.builder()
@@ -303,7 +323,7 @@ class BookBusinessPersistenceTest {
                     .build()))
                 .build()),
             List.of(
-                new NamedExternalBookSearchProvider("kakao", List.of()),
+                new NamedExternalBookSearchProvider("google", List.of()),
                 new NamedExternalBookSearchProvider("openlibrary", List.of())
             ),
             properties,

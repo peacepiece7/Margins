@@ -14,8 +14,8 @@ $distributionName = "gradle-$GradleVersion"
 $distributionUrl = "https://services.gradle.org/distributions/$distributionName-bin.zip"
 $zipPath = Join-Path $toolsDir "$distributionName-bin.zip"
 $gradleRoot = Join-Path $toolsDir $distributionName
-$isWindows = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
-$gradleExecutableName = if ($isWindows) { "gradle.bat" } else { "gradle" }
+$isWindowsPlatform = [System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT
+$gradleExecutableName = if ($isWindowsPlatform) { "gradle.bat" } else { "gradle" }
 $gradleExecutable = Join-Path (Join-Path $gradleRoot "bin") $gradleExecutableName
 
 New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
@@ -38,7 +38,7 @@ if (-not (Test-Path -LiteralPath $gradleExecutable)) {
   throw "Gradle executable was not found after setup: $gradleExecutable"
 }
 
-if (-not $isWindows) {
+if (-not $isWindowsPlatform) {
   chmod 755 $gradleExecutable
 }
 

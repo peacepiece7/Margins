@@ -56,11 +56,11 @@ When the user logs out
 Then the UI clears the stored auth session and selected session id
 And returns to the login form
 
-### Scenario: User adds a book from AI candidates
+### Scenario: User adds a book from external candidates
 
 Given the user is signed in or using single-user mode
-When the user searches for a book title or description
-Then the UI shows external or AI-fallback candidates with title, author, stable candidate identifier, and ISBN when present
+When the user searches for a book title, author, or ISBN
+Then the UI shows Google Books, fallback external, or AI-fallback candidates with title, author, stable candidate identifier, and ISBN when present
 And selecting one candidate creates a saved book without requiring a reading session to be created immediately
 
 ### Scenario: User sees progress while an API search is running
@@ -86,7 +86,7 @@ And the publication year is shown when the backend provides it
 
 ### Scenario: User manually registers a book when search is missing
 
-Given the user cannot find the intended book from AI candidates
+Given the user cannot find the intended book from external or AI-fallback candidates
 When the user enters a book title and author in the manual registration form
 Then the frontend saves the book through the backend book API
 And the saved book appears in the registered book list
@@ -128,7 +128,8 @@ Given the user opened a registered book detail page
 When the user starts the reflection page and writes a personal note
 Then the frontend creates or uses a reading session for that book
 And stores the note as a persisted session insight
-And the reflection body is written in a large CKEditor post-style editor area
+And the reflection body is written in a large Markdown editor with 16px default body text
+And saved reflection content is persisted as Markdown text and rendered in the review list
 And selected-question answers and debate messages keep their compact composer layout
 
 ### Scenario: User generates questions from a book detail

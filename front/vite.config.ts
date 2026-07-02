@@ -11,9 +11,6 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules/ckeditor5') || id.includes('node_modules/@ckeditor')) {
-            return 'ckeditor';
-          }
           if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
             return 'react-vendor';
           }

@@ -61,16 +61,16 @@ When `/api/books/search-candidates` is called
 Then the backend first searches the external book metadata provider
 And returns candidates with title, author, and external candidate identifier when external results are available
 
-### Scenario: Backend searches Kakao before fallback providers
+### Scenario: Backend searches Google Books before fallback providers
 
-Given `MARGINS_BOOK_SEARCH_PROVIDER` is `kakao`
-And `KAKAO_REST_API_KEY` is configured
+Given `MARGINS_BOOK_SEARCH_PROVIDER` is `google`
 When `/api/books/search-candidates` is called
-Then the backend calls Kakao Daum Book Search with `Authorization: KakaoAK ${KAKAO_REST_API_KEY}`
-And maps Kakao ISBN into both `candidateId` and the separate `isbn` candidate field
-And maps Kakao title, authors, publisher, status, and publish date into save-compatible candidates
-And if Kakao returns no usable records for the exact submitted query, the backend continues to the remaining external providers before AI fallback
-And the backend logs provider status, skipped configuration, candidate counts, and exception class without logging API keys
+Then the backend calls Google Books Volumes API
+And preserves `intitle:`, `inauthor:`, and `isbn:` query syntax where supplied
+And maps Google Books ISBN-10 and ISBN-13 from `volumeInfo.industryIdentifiers`
+And maps title, subtitle, authors, publisher, published date, description, thumbnail, language, and page count into compatible candidate metadata
+And if Google Books returns no usable records for the submitted query, the backend continues to the remaining external providers before AI fallback
+And the backend logs provider status, skipped configuration, candidate counts, and exception class without logging response bodies
 
 ### Scenario: External book search debugging can disable AI fallback
 
