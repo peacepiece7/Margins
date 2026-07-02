@@ -93,6 +93,18 @@ async function run(cmd, cmdArgs = [], options = {}) {
   });
 }
 
+async function scpWithFallback(scpArgs) {
+  try {
+    await run('scp', scpArgs);
+  } catch (error) {
+    if (process.platform === 'win32') {
+      throw error;
+    }
+    console.warn('scp failed; retrying with legacy scp protocol.');
+    await run('scp', ['-O', ...scpArgs], { label: 'scp -O' });
+  }
+}
+
 async function capture(cmd, cmdArgs = [], options = {}) {
   return await new Promise((resolveRun) => {
     const child = spawn(cmd, cmdArgs, {
@@ -532,7 +544,7 @@ async function deployPi() {
   }
   if (!rollback) {
     await run('ssh', [...options, target, `mkdir -p ${shellSingleQuote(env.deployDir)}`]);
-    await run('scp', [...options, artifactPath, `${target}:${remoteZip}`]);
+    await scpWithFallback([...options, artifactPath, `${target}:${remoteZip}`]);
   }
   await run('ssh', [...options, target, remoteCommand]);
   if (smokeHealthUrl) {
@@ -619,7 +631,7 @@ async function uploadProdEnv() {
   }
   const remoteTmp = `/tmp/margins.env.${randomUUID().replaceAll('-', '')}`;
   const remoteDir = dirname(remoteEnvPath);
-  await run('scp', [...options, runtimeEnvPath, `${target}:${remoteTmp}`]);
+  await scpWithFallback([...options, runtimeEnvPath, `${target}:${remoteTmp}`]);
   const backupFlag = noBackup ? '0' : '1';
   const remoteCommand = `set -e
 remote_env=${shellSingleQuote(remoteEnvPath)}
