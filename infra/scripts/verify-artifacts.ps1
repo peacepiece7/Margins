@@ -96,7 +96,7 @@ try {
   }
 
   $nginxText = Get-Content -LiteralPath (Join-Path $verifyRoot "runtime\nginx\margins.conf.example") -Raw -Encoding UTF8
-  foreach ($needle in @("root /opt/margins/current/front/dist;", "proxy_pass http://127.0.0.1:8080;", 'try_files $uri /index.html;')) {
+  foreach ($needle in @("root /opt/margins/current/front/dist;", "proxy_pass http://127.0.0.1:8080;", 'try_files $uri /index.html;', 'Cache-Control "no-cache, no-store, must-revalidate"', 'Cache-Control "public, max-age=31536000, immutable"')) {
     if (-not $nginxText.Contains($needle)) {
       throw "Nginx example is missing required text: $needle"
     }
