@@ -43,6 +43,7 @@ Infra owns local service execution, Raspberry Pi deployment flow, Docker boundar
 - `harness/scripts/verify-local-quality.ps1 -DeploymentPreflight -SshPreflight` adds the non-mutating SSH authentication preflight after artifact verification and dry-run validation. It requires Raspberry Pi SSH credentials in the runner.
 - `harness/scripts/verify-local-quality.ps1 -DeploymentPreflight -ArtifactRuntimeSmoke -ArtifactFrontendSmoke -SshPreflight -LiveDeploySmoke -DeploySmokeHealthUrl <url>` is the explicit full Raspberry Pi completion gate. It builds and verifies the artifact, audits dry-run output, runs artifact runtime smoke for the backend, runs artifact frontend smoke for the packaged `front/dist`, checks SSH auth, transfers the artifact, restarts configured services, and then runs the configured HTTP health smoke. This option intentionally requires deployment preflight, SSH preflight, live deploy smoke, and a health URL so local quality runs cannot deploy by accident.
 - `harness/scripts/audit-live-deploy-guard.ps1` verifies the safety contract for `-LiveDeploySmoke`: it must fail before any audit, SSH, transfer, or restart work unless deployment preflight, SSH preflight, and a health URL are all explicit. The audit clears process `MARGINS_DEPLOY_HEALTH_URL` during the missing-health-url check so local machine secrets cannot turn the guard test into a live deploy attempt.
+- Root `.env.example` documents the local deployment environment contract for new operator machines. Each local computer copies it to ignored `.env`, fills its own `MARGINS_DEPLOY_SSH_KEY` private key path and target values, and can run the same SSH preflight/deploy scripts without committing secret values or machine-specific paths.
 
 ## Local MySQL Defaults
 
@@ -60,13 +61,15 @@ These defaults are local-development values only. Raspberry Pi deployment should
 
 ## Raspberry Pi Deployment Variables
 
+New local computers should copy `.env.example` to `.env` and fill machine-specific values there. `.env` and `.env.*` remain ignored; only `.env.example` is versioned.
+
 | Variable | Required | Notes |
 | --- | --- | --- |
 | `MARGINS_DEPLOY_HOST` | yes | Raspberry Pi hostname or IP. Only letters, numbers, dot, underscore, and hyphen are accepted by the deploy script. |
 | `MARGINS_DEPLOY_USER` | yes | SSH username. Only letters, numbers, dot, underscore, and hyphen are accepted by the deploy script. |
 | `MARGINS_DEPLOY_DIR` | yes | Absolute remote release directory. It cannot be `/` and may contain only letters, numbers, slash, dot, underscore, and hyphen. |
 | `MARGINS_SERVICE_MANAGER` | yes | `systemd`, `manual`, or `artifact`. |
-| `MARGINS_DEPLOY_SSH_KEY` | no | Optional SSH private key path. If provided, the deploy script verifies the local file exists before SSH/SCP and does not print the path in dry-run output. If omitted, default SSH agent/key lookup is used. |
+| `MARGINS_DEPLOY_SSH_KEY` | no | Optional SSH private key path stored in each operator's local `.env` or process environment. If provided, deployment scripts verify the local file exists before SSH/SCP and do not print the path in dry-run output. If omitted, default SSH agent/key lookup is used. |
 | `MARGINS_BACKEND_SERVICE` | no | systemd backend service name. Default is `margins-back`; only letters, numbers, dot, underscore, at sign, and hyphen are accepted. |
 | `MARGINS_FRONTEND_SERVICE` | no | optional systemd frontend service name; only letters, numbers, dot, underscore, at sign, and hyphen are accepted. |
 | `MARGINS_DEPLOY_HEALTH_URL` | no | Optional backend or frontend health URL used only after full deploy transfer/restart. The deploy script does not print the URL value in dry-run output. |

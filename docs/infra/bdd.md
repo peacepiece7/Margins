@@ -97,12 +97,29 @@ And no secret value is printed or stored in the repository
 
 ### Scenario: Raspberry Pi SSH authentication is preflighted
 
-Given Raspberry Pi host, user, deploy directory, service manager, and SSH authentication are configured
+Given Raspberry Pi host, user, deploy directory, service manager, and `MARGINS_DEPLOY_SSH_KEY` SSH authentication are configured in `.env`
 When `infra/scripts/deploy-raspberry-pi.ps1 -SshPreflight` runs
 Then the script opens only a non-mutating SSH command
 And no release artifact is transferred
 And no backend or frontend service is restarted
 And the script reports that SSH preflight passed
+
+### Scenario: Raspberry Pi SSH key is portable per local env
+
+Given a different local computer has its own private key file path
+And its ignored `.env` contains `MARGINS_DEPLOY_SSH_KEY` pointing to that local path
+When a Raspberry Pi PowerShell deployment script loads `.env`
+Then the script uses the same private key path for SSH/SCP operations
+And validates that the key file exists before opening SSH
+And dry-run output does not print the key path
+
+### Scenario: New local computer can prepare deployment env
+
+Given a developer clones the repository on another local computer
+When they copy `.env.example` to `.env`
+Then the file includes `MARGINS_DEPLOY_HOST`, `MARGINS_DEPLOY_USER`, `MARGINS_DEPLOY_DIR`, `MARGINS_SERVICE_MANAGER`, and `MARGINS_DEPLOY_SSH_KEY`
+And the filled `.env` remains ignored by git
+And deployment scripts can read the configured SSH key path from `.env`
 
 ### Scenario: Local deployment preflight can include live SSH auth
 
