@@ -86,7 +86,7 @@ function statsFromSummaries(summaries: ReadingSessionSummary[]): ReadingLibraryS
 
 function defaultWindowWarning(error: unknown) {
   const detail = error instanceof Error ? error.message : 'Unknown error';
-  return `Session started, but default windows could not all be created: ${detail}`;
+  return `Session started, but the default window could not be created: ${detail}`;
 }
 
 function libraryRefreshWarning(error: unknown) {
@@ -1049,7 +1049,6 @@ export async function createDefaultSessionPatch(
   try {
     const questionWindow = await marginsRepository.createWindow(session, 'question', 'Reflection Window');
     preferredWindowId = questionWindow.windowId;
-    await marginsRepository.createWindow(session, 'debate', 'Persona Debate');
   } catch (error) {
     warning = defaultWindowWarning(error);
   }

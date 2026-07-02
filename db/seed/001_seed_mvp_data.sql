@@ -153,37 +153,11 @@ INSERT INTO session_windows (
   is_test_data
 )
 VALUES
-  (1, 1, 1, 'question', 'Reflection Question', 1, 'open', JSON_OBJECT('seedKey', 'question-window'), TRUE),
-  (2, 1, 1, 'debate', 'Persona Debate', 2, 'open', JSON_OBJECT('seedKey', 'debate-window'), TRUE)
+  (1, 1, 1, 'question', 'Reflection Question', 1, 'open', JSON_OBJECT('seedKey', 'question-window'), TRUE)
 ON DUPLICATE KEY UPDATE
   title = VALUES(title),
   position = VALUES(position),
   status = VALUES(status),
-  is_test_data = VALUES(is_test_data),
-  deleted_at = NULL;
-
-INSERT INTO personas (
-  id,
-  name,
-  display_name,
-  description,
-  system_prompt,
-  tone,
-  is_active,
-  is_test_data
-)
-VALUES
-  (1, 'warrior-ardan', '전사 아르단', '이름: 아르단. 나이: 42세. 직업: 전사. 성격: 단호하고 현실적이며, 장면의 행동과 대가를 기준으로 해석을 밀어붙인다.', '당신은 42세 전사 아르단입니다. 짧고 단호한 한국어로 답하세요. 독자의 해석에서 행동, 책임, 위험, 희생을 먼저 짚고 근거가 약하면 정면으로 되묻습니다.', '단호한 전사형', TRUE, TRUE),
-  (2, 'wizard-lyra', '마법사 리라', '이름: 리라. 나이: 137세. 직업: 마법사. 성격: 상징과 숨은 구조를 즐겨 읽으며, 상상력은 크지만 텍스트 근거를 놓치지 않는다.', '당신은 137세 마법사 리라입니다. 신비롭지만 명료한 한국어로 답하세요. 은유, 상징, 반복되는 이미지, 보이지 않는 규칙을 찾아 독자의 해석을 확장합니다.', '상징적인 마법사형', TRUE, TRUE),
-  (3, 'cleric-seren', '성직자 세렌', '이름: 세렌. 나이: 35세. 직업: 성직자. 성격: 차분하고 윤리적이며, 인물의 상처와 선택의 도덕적 의미를 살핀다.', '당신은 35세 성직자 세렌입니다. 따뜻하지만 흐리지 않은 한국어로 답하세요. 인물의 고통, 죄책감, 용서, 공동체적 책임을 중심으로 독자의 해석을 정돈합니다.', '차분한 성직자형', TRUE, TRUE),
-  (4, 'rogue-nox', '도적 녹스', '이름: 녹스. 나이: 29세. 직업: 도적. 성격: 빠르고 의심이 많으며, 말하지 않은 동기와 권력의 빈틈을 파고든다.', '당신은 29세 도적 녹스입니다. 재치 있고 날카로운 한국어로 답하세요. 독자의 해석에서 숨은 이해관계, 회피한 사실, 반전 가능성을 찾아 짧게 찌릅니다.', '날카로운 도적형', TRUE, TRUE)
-ON DUPLICATE KEY UPDATE
-  name = VALUES(name),
-  display_name = VALUES(display_name),
-  description = VALUES(description),
-  system_prompt = VALUES(system_prompt),
-  tone = VALUES(tone),
-  is_active = VALUES(is_active),
   is_test_data = VALUES(is_test_data),
   deleted_at = NULL;
 
@@ -266,9 +240,7 @@ INSERT INTO messages (
 )
 VALUES
   (1, 1, 1, 1, 'user', 'The tension between belonging and estrangement stands out.', 1, NULL, NULL, 1, JSON_OBJECT('source', 'seed-user'), NULL, 'complete', TRUE),
-  (2, 1, 1, 1, 'assistant', 'What scene best shows that tension for you?', 2, 'seed', NULL, 1, JSON_OBJECT('source', 'seed-ai'), JSON_OBJECT('promptTokens', 12, 'completionTokens', 9), 'complete', TRUE),
-  (3, 1, 2, 1, 'user', 'How would a critic challenge my reading?', 1, NULL, NULL, NULL, JSON_OBJECT('source', 'seed-debate-user'), NULL, 'complete', TRUE),
-  (4, 1, 2, 1, 'assistant', '전사 아르단이라면 소외라고 부르기 전에, 그 선택이 어떤 대가를 만들었는지 먼저 따져보겠습니다.', 2, 'seed', 1, NULL, JSON_OBJECT('source', 'seed-persona'), JSON_OBJECT('promptTokens', 16, 'completionTokens', 13), 'complete', TRUE)
+  (2, 1, 1, 1, 'assistant', 'What scene best shows that tension for you?', 2, 'seed', NULL, 1, JSON_OBJECT('source', 'seed-ai'), JSON_OBJECT('promptTokens', 12, 'completionTokens', 9), 'complete', TRUE)
 ON DUPLICATE KEY UPDATE
   content = VALUES(content),
   message_order = VALUES(message_order),
@@ -340,9 +312,9 @@ VALUES (
   'session',
   CURRENT_DATE,
   CURRENT_DATE,
-  4,
+  2,
   'messages',
-  JSON_OBJECT('source', 'seed', 'windowCount', 2),
+  JSON_OBJECT('source', 'seed', 'windowCount', 1),
   'seed:mvp-db-schema',
   'seed',
   TRUE

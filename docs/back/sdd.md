@@ -231,7 +231,7 @@ Response DTO:
 
 - `personas[]`: `personaId`, `name`, `displayName`, `description`, `tone`
 
-Seed personas include fantasy debate roles exposed through the same API contract: `전사 아르단`, `마법사 리라`, `성직자 세렌`, and `도적 녹스`. The seed also includes professional reading lenses: literary critic, philosopher, psychologist, historian, sociologist, editor, skeptical reader, and book-club facilitator. The MVP schema does not add separate age/job/lens columns; profile metadata is carried in `description`, the debate voice is carried in `system_prompt`, and the compact UI label is carried in `tone`.
+Seed personas include professional reading lenses exposed through the same API contract: literary critic, philosopher, psychologist, historian, sociologist, editor, skeptical reader, and book-club facilitator. Temporary fantasy-role personas (`전사 아르단`, `마법사 리라`, `성직자 세렌`, `도적 녹스`) are deactivated and soft-deleted by schema `008_remove_temporary_fantasy_personas.sql`. The MVP schema does not add separate job/lens columns; profile metadata is carried in `description`, the debate voice is carried in `system_prompt`, and the compact UI label is carried in `tone`.
 
 `POST /api/personas` accepts:
 

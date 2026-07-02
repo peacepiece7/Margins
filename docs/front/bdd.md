@@ -95,7 +95,8 @@ And the saved book appears in the registered book list
 
 Given the user has a saved book in the sidebar
 When the user starts a session from that saved book
-Then the UI creates a new reading session with reflection and debate windows
+Then the UI creates a new reading session with a reflection window
+And no default debate room is created
 And the user does not need to search for the book again
 
 ### Scenario: User filters saved books
@@ -187,19 +188,18 @@ When the user starts a reading session
 Then the session page opens with at least one usable session window
 And the session is recoverable after refresh
 
-### Scenario: Partial default-window creation still opens the created session
+### Scenario: Default reflection-window creation failure still opens the created session
 
 Given a book exists
-And the backend creates the reading session and first default window
-When a later default window request fails
+When the backend creates the reading session but the default reflection window request fails
 Then the frontend loads the created session timeline
-And selects the usable window that was created
-And shows a warning that default windows could not all be created
+And selects any usable existing window in the returned timeline
+And shows a warning that the default window could not be created
 
 ### Scenario: Failed library refresh does not hide a newly created session
 
 Given a book exists
-And the backend creates the reading session and default windows
+And the backend creates the reading session and default reflection window
 When the follow-up session library refresh fails
 Then the frontend still loads the created session timeline
 And shows a warning that library summaries could not be refreshed
@@ -783,7 +783,7 @@ And messages from other debate rooms remain hidden
 
 ### Scenario: User chooses a professional reading lens
 
-Given fantasy and professional personas are available
+Given professional personas are available
 When the user opens the debate participant selector
 Then professional personas show their display name, tone, and short lens description
 And selecting one sends its `personaId` through the existing debate request path

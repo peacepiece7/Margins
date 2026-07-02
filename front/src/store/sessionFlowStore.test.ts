@@ -69,7 +69,7 @@ describe('createDefaultSessionPatch', () => {
     };
   }
 
-  it('loads the created session when a default window create fails', async () => {
+  it('loads the created session when the default reflection window create fails', async () => {
     const book: SaveBookResponse = {
       bookId: 7,
       title: 'Dune',
@@ -81,18 +81,8 @@ describe('createDefaultSessionPatch', () => {
       title: 'Dune reflection',
       status: 'active',
     };
-    const questionWindow: CreateSessionWindowResponse = {
-      windowId: 21,
-      sessionId: 11,
-      windowType: 'question',
-      title: 'Reflection Window',
-      status: 'open',
-    };
-
     vi.mocked(marginsRepository.createSession).mockResolvedValue(session);
-    vi.mocked(marginsRepository.createWindow)
-      .mockResolvedValueOnce(questionWindow)
-      .mockRejectedValueOnce(new Error('Debate window failed'));
+    vi.mocked(marginsRepository.createWindow).mockRejectedValueOnce(new Error('Reflection window failed'));
     vi.mocked(marginsRepository.sessionTimeline).mockResolvedValue(timelineFor());
     vi.mocked(marginsRepository.sessions).mockResolvedValue({ sessions: [] });
     vi.mocked(marginsRepository.readingStats).mockResolvedValue(readerStats());
@@ -104,7 +94,7 @@ describe('createDefaultSessionPatch', () => {
     expect(patch.selectedBook?.bookId).toBe(7);
     expect(patch.window?.windowId).toBe(21);
     expect(patch.windows).toHaveLength(1);
-    expect(patch.error).toBe('Session started, but default windows could not all be created: Debate window failed');
+    expect(patch.error).toBe('Session started, but the default window could not be created: Reflection window failed');
   });
 
   it('loads the created session when library refresh fails after creation', async () => {
@@ -128,15 +118,7 @@ describe('createDefaultSessionPatch', () => {
     };
 
     vi.mocked(marginsRepository.createSession).mockResolvedValue(session);
-    vi.mocked(marginsRepository.createWindow)
-      .mockResolvedValueOnce(questionWindow)
-      .mockResolvedValueOnce({
-        windowId: 22,
-        sessionId: 11,
-        windowType: 'debate',
-        title: 'Persona Debate',
-        status: 'open',
-      });
+    vi.mocked(marginsRepository.createWindow).mockResolvedValueOnce(questionWindow);
     vi.mocked(marginsRepository.sessionTimeline).mockResolvedValue(timelineFor());
     vi.mocked(marginsRepository.sessions).mockRejectedValue(new Error('Library unavailable'));
     vi.mocked(marginsRepository.readingStats).mockResolvedValue(readerStats());
@@ -147,6 +129,7 @@ describe('createDefaultSessionPatch', () => {
     expect(patch.window?.windowId).toBe(21);
     expect(patch.windows).toHaveLength(1);
     expect(patch.error).toBe('Session started, but library summaries could not be refreshed: Library unavailable');
+    expect(marginsRepository.createWindow).toHaveBeenCalledTimes(1);
   });
 
   it('creates a topic-specific debate window and selects it', async () => {

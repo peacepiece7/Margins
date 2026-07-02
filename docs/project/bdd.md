@@ -64,7 +64,7 @@ And uncertain generated metadata remains traceable through source and confidence
 
 ### Scenario: Professional personas add diverse reading lenses
 
-Given professional personas are available alongside fantasy personas
+Given professional personas are available
 When the reader selects a literary critic, psychologist, historian, or philosopher for debate
 Then the AI response uses that persona's structured lens and avoid rules
 And the debate history keeps the selected persona identity visible

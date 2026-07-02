@@ -8,11 +8,11 @@ describe('debate display helpers', () => {
     expect(debateTopicFromWindowTitle('Open room')).toBe('Open room');
   });
 
-  it('maps professional and seeded persona labels to stable icons', () => {
-    expect(personaIcon({ displayName: 'Warrior Ardan', name: 'warrior' })).toBe('⚔️');
-    expect(personaIcon({ displayName: '전사 아르단', name: 'seed-warrior' })).toBe('⚔️');
-    expect(personaIcon({ displayName: 'Wizard Lyra', name: 'wizard' })).toBe('🪄');
-    expect(personaIcon({ displayName: '성직자 세렌', name: 'seed-cleric' })).toBe('✚');
-    expect(personaIcon({ displayName: 'Skeptical Reader', name: 'skeptic' })).toBe('👤');
+  it('maps professional persona labels to stable icons', () => {
+    expect(personaIcon({ displayName: '문학평론가', name: 'literary-critic' })).toBe('§');
+    expect(personaIcon({ displayName: '철학자', name: 'philosopher' })).toBe('?');
+    expect(personaIcon({ displayName: '심리학자', name: 'psychologist' })).toBe('Ψ');
+    expect(personaIcon({ displayName: 'Skeptical Reader', name: 'skeptical-reader' })).toBe('!');
+    expect(personaIcon({ displayName: 'Custom Reader', name: 'reader-custom' })).toBe('•');
   });
 });

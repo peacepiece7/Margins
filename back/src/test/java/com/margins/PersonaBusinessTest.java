@@ -22,10 +22,10 @@ class PersonaBusinessTest {
 
         PersonaListResponse response = business.findActive();
 
-        assertThat(response.getPersonas()).hasSize(4);
-        assertThat(response.getPersonas().get(0).getPersonaId()).isEqualTo(1L);
-        assertThat(response.getPersonas().get(0).getDisplayName()).isEqualTo("전사 아르단");
-        assertThat(response.getPersonas().get(1).getTone()).isEqualTo("상징적인 마법사형");
+        assertThat(response.getPersonas()).hasSize(8);
+        assertThat(response.getPersonas().get(0).getPersonaId()).isEqualTo(5L);
+        assertThat(response.getPersonas().get(0).getDisplayName()).isEqualTo("문학평론가");
+        assertThat(response.getPersonas().get(1).getTone()).isEqualTo("윤리와 의미");
     }
 
     @Test
@@ -79,35 +79,67 @@ class PersonaBusinessTest {
         public List<PersonaRecord> findActive() {
             List<PersonaRecord> seedPersonas = List.of(
                 PersonaRecord.builder()
-                    .id(1L)
-                    .name("warrior-ardan")
-                    .displayName("전사 아르단")
-                    .description("이름: 아르단. 나이: 42세. 직업: 전사.")
-                    .tone("단호한 전사형")
+                    .id(5L)
+                    .name("literary-critic")
+                    .displayName("문학평론가")
+                    .description("personaType: professional; primaryLens: structure, symbol, narrator, style.")
+                    .tone("구조와 상징")
                     .active(true)
                     .build(),
                 PersonaRecord.builder()
-                    .id(2L)
-                    .name("wizard-lyra")
-                    .displayName("마법사 리라")
-                    .description("이름: 리라. 나이: 137세. 직업: 마법사.")
-                    .tone("상징적인 마법사형")
+                    .id(6L)
+                    .name("philosopher")
+                    .displayName("철학자")
+                    .description("personaType: professional; primaryLens: ethics, freedom, responsibility, meaning.")
+                    .tone("윤리와 의미")
                     .active(true)
                     .build(),
                 PersonaRecord.builder()
-                    .id(3L)
-                    .name("cleric-seren")
-                    .displayName("성직자 세렌")
-                    .description("이름: 세렌. 나이: 35세. 직업: 성직자.")
-                    .tone("차분한 성직자형")
+                    .id(7L)
+                    .name("psychologist")
+                    .displayName("심리학자")
+                    .description("personaType: professional; primaryLens: motivation, defense, relationship.")
+                    .tone("동기와 관계")
                     .active(true)
                     .build(),
                 PersonaRecord.builder()
-                    .id(4L)
-                    .name("rogue-nox")
-                    .displayName("도적 녹스")
-                    .description("이름: 녹스. 나이: 29세. 직업: 도적.")
-                    .tone("날카로운 도적형")
+                    .id(8L)
+                    .name("historian")
+                    .displayName("역사학자")
+                    .description("personaType: professional; primaryLens: period, institution, power.")
+                    .tone("시대와 권력")
+                    .active(true)
+                    .build(),
+                PersonaRecord.builder()
+                    .id(9L)
+                    .name("sociologist")
+                    .displayName("사회학자")
+                    .description("personaType: professional; primaryLens: group, norm, class, gender, culture.")
+                    .tone("규범과 집단")
+                    .active(true)
+                    .build(),
+                PersonaRecord.builder()
+                    .id(10L)
+                    .name("editor")
+                    .displayName("편집자")
+                    .description("personaType: professional; primaryLens: scene, plot, pacing, reader experience.")
+                    .tone("장면과 독자 경험")
+                    .active(true)
+                    .build(),
+                PersonaRecord.builder()
+                    .id(11L)
+                    .name("skeptical-reader")
+                    .displayName("회의적인 독자")
+                    .description("personaType: professional; primaryLens: evidence check, counterargument.")
+                    .tone("근거 점검")
+                    .active(true)
+                    .build(),
+                PersonaRecord.builder()
+                    .id(12L)
+                    .name("book-club-facilitator")
+                    .displayName("독서 모임 진행자")
+                    .description("personaType: professional; primaryLens: dialogue balance, synthesis, next question.")
+                    .tone("대화 진행")
                     .active(true)
                     .build()
             );

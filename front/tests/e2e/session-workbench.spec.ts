@@ -121,22 +121,22 @@ test('follows the owner replan page flow from book registration to reflection an
     page.getByTestId('debate-session-submit').click(),
   ]);
   await expect(page.getByTestId('debate-message-list')).toContainText('How does ritual shape political authority?');
-  await expect(page.getByTestId('debate-message-list')).toContainText('전사 아르단', { timeout: 20000 });
+  await expect(page.getByTestId('debate-message-list')).toContainText('문학평론가', { timeout: 20000 });
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/api/session-windows/') && response.url().endsWith('/debate/all') && response.request().method() === 'POST' && response.status() === 200),
     page.getByTestId('debate-all-submit').click(),
   ]);
-  await expect(page.getByTestId('debate-message-list')).toContainText('마법사 리라', { timeout: 20000 });
-  await expect(page.getByTestId('debate-message-list')).toContainText('성직자 세렌', { timeout: 20000 });
+  await expect(page.getByTestId('debate-message-list')).toContainText('철학자', { timeout: 20000 });
+  await expect(page.getByTestId('debate-message-list')).toContainText('심리학자', { timeout: 20000 });
 
   await page.reload();
   await expect(page.getByTestId('auth-session-bar')).toContainText(e2eDisplayName);
   await expect(page.getByTestId('portal-sidebar')).toContainText('Dune: Edited');
   await page.getByTestId('portal-nav-debate').click();
   await expect(page.getByTestId('debate-message-list')).toContainText('How does ritual shape political authority?');
-  await expect(page.getByTestId('debate-message-list')).toContainText('전사 아르단');
-  await expect(page.getByTestId('debate-message-list')).toContainText('마법사 리라');
-  await expect(page.getByTestId('debate-message-list')).toContainText('성직자 세렌');
+  await expect(page.getByTestId('debate-message-list')).toContainText('문학평론가');
+  await expect(page.getByTestId('debate-message-list')).toContainText('철학자');
+  await expect(page.getByTestId('debate-message-list')).toContainText('심리학자');
 });
 
 test('supports manual registration and saved-book deletion from the page shell', async ({ page }) => {
