@@ -16,22 +16,32 @@ public interface BookMapper {
         INSERT INTO books (
           user_id,
           title,
+          subtitle,
           author,
+          publisher,
           isbn,
           published_year,
+          language_code,
+          description,
           source,
           source_ref,
+          cover_image_url,
           raw_metadata,
           is_test_data
         )
         VALUES (
           #{userId},
           #{title},
+          #{subtitle},
           #{author},
+          #{publisher},
           #{isbn},
           #{publishedYear},
+          #{languageCode},
+          #{description},
           #{source},
           #{sourceRef},
+          #{coverImageUrl},
           #{rawMetadata},
           #{testData}
         )
@@ -44,11 +54,16 @@ public interface BookMapper {
           id,
           user_id,
           title,
+          subtitle,
           author,
+          publisher,
           isbn,
           published_year,
+          language_code AS languageCode,
+          description,
           source,
           source_ref,
+          cover_image_url AS coverImageUrl,
           raw_metadata AS rawMetadata,
           is_test_data
         FROM books
@@ -76,11 +91,16 @@ public interface BookMapper {
           id,
           user_id,
           title,
+          subtitle,
           author,
+          publisher,
           isbn,
           published_year,
+          language_code AS languageCode,
+          description,
           source,
           source_ref,
+          cover_image_url AS coverImageUrl,
           raw_metadata AS rawMetadata,
           is_test_data
         FROM books
@@ -95,11 +115,16 @@ public interface BookMapper {
           id,
           user_id,
           title,
+          subtitle,
           author,
+          publisher,
           isbn,
           published_year,
+          language_code AS languageCode,
+          description,
           source,
           source_ref,
+          cover_image_url AS coverImageUrl,
           raw_metadata AS rawMetadata,
           is_test_data
         FROM books
@@ -123,6 +148,41 @@ public interface BookMapper {
           AND deleted_at IS NULL
         """)
     int update(BookRecord record);
+
+    @Update("""
+        UPDATE books
+        SET
+          subtitle = CASE WHEN (subtitle IS NULL OR TRIM(subtitle) = '') THEN #{subtitle} ELSE subtitle END,
+          publisher = CASE WHEN (publisher IS NULL OR TRIM(publisher) = '') THEN #{publisher} ELSE publisher END,
+          isbn = CASE WHEN (isbn IS NULL OR TRIM(isbn) = '') THEN #{isbn} ELSE isbn END,
+          published_year = COALESCE(published_year, #{publishedYear}),
+          language_code = CASE WHEN (language_code IS NULL OR TRIM(language_code) = '') THEN #{languageCode} ELSE language_code END,
+          description = CASE WHEN (description IS NULL OR TRIM(description) = '') THEN #{description} ELSE description END,
+          source = CASE
+            WHEN (source IS NULL OR TRIM(source) = '' OR source = 'ai') AND #{source} <> 'ai' THEN #{source}
+            ELSE source
+          END,
+          source_ref = CASE
+            WHEN #{source} <> 'ai'
+              AND (source IS NULL OR TRIM(source) = '' OR source = 'ai' OR source_ref IS NULL OR TRIM(source_ref) = '' OR source_ref LIKE 'manual-%')
+              THEN #{sourceRef}
+            WHEN (source_ref IS NULL OR TRIM(source_ref) = '') THEN #{sourceRef}
+            ELSE source_ref
+          END,
+          cover_image_url = CASE WHEN (cover_image_url IS NULL OR TRIM(cover_image_url) = '') THEN #{coverImageUrl} ELSE cover_image_url END,
+          raw_metadata = CASE
+            WHEN #{source} <> 'ai'
+              AND (source IS NULL OR TRIM(source) = '' OR source = 'ai' OR source_ref IS NULL OR TRIM(source_ref) = '' OR source_ref LIKE 'manual-%')
+              THEN #{rawMetadata}
+            WHEN raw_metadata IS NULL THEN #{rawMetadata}
+            ELSE raw_metadata
+          END,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{id}
+          AND user_id = #{userId}
+          AND deleted_at IS NULL
+        """)
+    int fillMissingProviderMetadata(BookRecord record);
 
     @Update("""
         UPDATE books

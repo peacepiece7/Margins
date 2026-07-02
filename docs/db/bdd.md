@@ -22,6 +22,15 @@ Given a Google Books candidate includes an ISBN
 When the user saves that candidate as a book
 Then `books.isbn` stores the candidate ISBN
 And `books.source_ref` keeps the provider candidate identifier
+And available provider fields such as publisher, language, cover image, and raw provider metadata are retained with the saved book
+
+### Scenario: Duplicate saved book provider metadata is enriched conservatively
+
+Given a saved book already exists for the same normalized title and author
+When a later external provider candidate is saved for that book
+Then the existing book row is reused
+And blank provider metadata fields may be filled from the candidate
+And existing reader-facing title and author values are preserved
 
 ### Scenario: Book AI profile stores generated reading context
 

@@ -25,7 +25,15 @@ export interface BookCandidateSearchResponse {
 export interface SaveBookResponse {
   bookId: number;
   title: string;
+  subtitle?: string;
   author: string;
+  publisher?: string;
+  publishedYear?: number;
+  isbn?: string;
+  source?: string;
+  sourceRef?: string;
+  coverImageUrl?: string;
+  language?: string;
 }
 
 export interface BookListResponse {

@@ -35,18 +35,42 @@ class BookBusinessPersistenceTest {
         SaveBookResponse response = business.saveBook(SaveBookRequest.builder()
             .candidateId("candidate-1")
             .title("  Persisted Book  ")
+            .subtitle("  A Field Guide  ")
             .author("  Reader  ")
+            .authors(List.of("  Reader  ", "Co Reader"))
+            .publisher("  Margins Press  ")
+            .publishedDate("  2026-07-02  ")
             .isbn("  9788996991342  ")
+            .isbn10("  8996991341  ")
+            .isbn13("  9788996991342  ")
             .publishedYear(2026)
+            .description("  Provider description  ")
+            .thumbnail("  https://books.example/cover.jpg  ")
+            .language("  ko  ")
+            .pageCount(304)
             .build());
 
         assertThat(response.getBookId()).isEqualTo(42L);
         assertThat(response.getTitle()).isEqualTo("Persisted Book");
+        assertThat(response.getSubtitle()).isEqualTo("A Field Guide");
+        assertThat(response.getPublisher()).isEqualTo("Margins Press");
+        assertThat(response.getPublishedYear()).isEqualTo(2026);
+        assertThat(response.getIsbn()).isEqualTo("9788996991342");
+        assertThat(response.getCoverImageUrl()).isEqualTo("https://books.example/cover.jpg");
+        assertThat(response.getLanguage()).isEqualTo("ko");
         assertThat(mapper.inserted.getUserId()).isEqualTo(1L);
+        assertThat(mapper.inserted.getSubtitle()).isEqualTo("A Field Guide");
+        assertThat(mapper.inserted.getPublisher()).isEqualTo("Margins Press");
         assertThat(mapper.inserted.getIsbn()).isEqualTo("9788996991342");
+        assertThat(mapper.inserted.getLanguageCode()).isEqualTo("ko");
+        assertThat(mapper.inserted.getDescription()).isEqualTo("Provider description");
+        assertThat(mapper.inserted.getCoverImageUrl()).isEqualTo("https://books.example/cover.jpg");
         assertThat(mapper.inserted.getSource()).isEqualTo("ai");
         assertThat(mapper.inserted.getSourceRef()).isEqualTo("candidate-1");
         assertThat(mapper.inserted.getRawMetadata())
+            .contains("\"providerMetadata\"")
+            .contains("\"isbn13\":\"9788996991342\"")
+            .contains("\"pageCount\":304")
             .contains("\"aiProfile\"")
             .contains("\"isbn\":\"9788996991342\"")
             .contains("\"discussionAngles\"")
@@ -91,8 +115,56 @@ class BookBusinessPersistenceTest {
         assertThat(response.getBookId()).isEqualTo(99L);
         assertThat(response.getTitle()).isEqualTo("Dune");
         assertThat(mapper.inserted).isNull();
+        assertThat(mapper.enriched.getId()).isEqualTo(99L);
         assertThat(mapper.duplicateLookupTitle).isEqualTo("dune");
         assertThat(mapper.duplicateLookupAuthor).isEqualTo("ai candidate");
+    }
+
+    @Test
+    void saveBookEnrichesExistingDuplicateWithMissingProviderFieldsOnly() {
+        FakeBookMapper mapper = new FakeBookMapper();
+        mapper.duplicate = BookRecord.builder()
+            .id(99L)
+            .userId(1L)
+            .title("Dune")
+            .author("Frank Herbert")
+            .source("ai")
+            .sourceRef("manual-123")
+            .rawMetadata("{\"providerMetadata\":{\"provider\":\"manual\",\"candidateId\":\"manual-123\"},\"aiProfile\":{\"title\":\"Dune\"}}")
+            .build();
+        mapper.bookById = mapper.duplicate;
+        BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
+
+        SaveBookResponse response = business.saveBook(SaveBookRequest.builder()
+            .candidateId("google:9780441172719")
+            .title("Dune")
+            .subtitle("Deluxe Edition")
+            .author("Frank Herbert")
+            .publisher("Ace")
+            .isbn("9780441172719")
+            .publishedYear(1965)
+            .thumbnail("https://books.example/dune.jpg")
+            .language("en")
+            .build());
+
+        assertThat(mapper.inserted).isNull();
+        assertThat(mapper.enriched.getSource()).isEqualTo("google");
+        assertThat(mapper.enriched.getSourceRef()).isEqualTo("google:9780441172719");
+        assertThat(mapper.bookById.getTitle()).isEqualTo("Dune");
+        assertThat(mapper.bookById.getAuthor()).isEqualTo("Frank Herbert");
+        assertThat(mapper.bookById.getSubtitle()).isEqualTo("Deluxe Edition");
+        assertThat(mapper.bookById.getPublisher()).isEqualTo("Ace");
+        assertThat(mapper.bookById.getIsbn()).isEqualTo("9780441172719");
+        assertThat(mapper.bookById.getCoverImageUrl()).isEqualTo("https://books.example/dune.jpg");
+        assertThat(mapper.bookById.getSourceRef()).isEqualTo("google:9780441172719");
+        assertThat(mapper.bookById.getRawMetadata())
+            .contains("\"providerMetadata\"")
+            .contains("\"provider\":\"google\"")
+            .contains("\"candidateId\":\"google:9780441172719\"");
+        assertThat(response.getBookId()).isEqualTo(99L);
+        assertThat(response.getSource()).isEqualTo("google");
+        assertThat(response.getSourceRef()).isEqualTo("google:9780441172719");
+        assertThat(response.getIsbn()).isEqualTo("9780441172719");
     }
 
     @Test
@@ -129,6 +201,11 @@ class BookBusinessPersistenceTest {
             .userId(1L)
             .title("Before")
             .author("Old")
+            .source("google")
+            .sourceRef("google:9780441478125")
+            .isbn("9780441478125")
+            .languageCode("en")
+            .rawMetadata("{\"providerMetadata\":{\"provider\":\"google\",\"candidateId\":\"google:9780441478125\",\"isbn13\":\"9780441478125\",\"publisher\":\"Ace\",\"thumbnail\":\"https://books.example/cover.jpg\",\"pageCount\":304},\"aiProfile\":{\"title\":\"Before\",\"author\":\"Old\"}}")
             .build();
         BookBusiness business = business(new NoopAiProvider(), new EmptyExternalBookSearchProvider(), mapper);
 
@@ -143,6 +220,11 @@ class BookBusinessPersistenceTest {
         assertThat(mapper.updated.getAuthor()).isEqualTo("Updated Author");
         assertThat(mapper.updated.getPublishedYear()).isEqualTo(2026);
         assertThat(mapper.updated.getRawMetadata())
+            .contains("\"providerMetadata\"")
+            .contains("\"candidateId\":\"google:9780441478125\"")
+            .contains("\"isbn13\":\"9780441478125\"")
+            .contains("\"thumbnail\":\"https://books.example/cover.jpg\"")
+            .contains("\"pageCount\":304")
             .contains("\"title\":\"Updated Book\"")
             .contains("\"author\":\"Updated Author\"")
             .contains("\"publishedYear\":2026")
@@ -352,6 +434,7 @@ class BookBusinessPersistenceTest {
     private static class FakeBookMapper implements BookMapper {
         private BookRecord inserted;
         private BookRecord updated;
+        private BookRecord enriched;
         private BookRecord duplicate;
         private BookRecord bookById;
         private Long deletedBookId;
@@ -392,6 +475,55 @@ class BookBusinessPersistenceTest {
         public int update(BookRecord record) {
             this.updated = record;
             this.bookById = record;
+            return 1;
+        }
+
+        @Override
+        public int fillMissingProviderMetadata(BookRecord record) {
+            this.enriched = record;
+            if (bookById == null) {
+                bookById = duplicate;
+            }
+            if (bookById != null) {
+                if (bookById.getSubtitle() == null || bookById.getSubtitle().isBlank()) {
+                    bookById.setSubtitle(record.getSubtitle());
+                }
+                if (bookById.getPublisher() == null || bookById.getPublisher().isBlank()) {
+                    bookById.setPublisher(record.getPublisher());
+                }
+                if (bookById.getIsbn() == null || bookById.getIsbn().isBlank()) {
+                    bookById.setIsbn(record.getIsbn());
+                }
+                if (bookById.getPublishedYear() == null) {
+                    bookById.setPublishedYear(record.getPublishedYear());
+                }
+                if (bookById.getLanguageCode() == null || bookById.getLanguageCode().isBlank()) {
+                    bookById.setLanguageCode(record.getLanguageCode());
+                }
+                if (bookById.getDescription() == null || bookById.getDescription().isBlank()) {
+                    bookById.setDescription(record.getDescription());
+                }
+                boolean externalUpgrade = !"ai".equals(record.getSource())
+                    && (bookById.getSource() == null
+                        || bookById.getSource().isBlank()
+                        || "ai".equals(bookById.getSource())
+                        || bookById.getSourceRef() == null
+                        || bookById.getSourceRef().isBlank()
+                        || bookById.getSourceRef().startsWith("manual-"));
+                if ((bookById.getSource() == null || bookById.getSource().isBlank() || "ai".equals(bookById.getSource()))
+                    && !"ai".equals(record.getSource())) {
+                    bookById.setSource(record.getSource());
+                }
+                if (externalUpgrade || bookById.getSourceRef() == null || bookById.getSourceRef().isBlank()) {
+                    bookById.setSourceRef(record.getSourceRef());
+                }
+                if (bookById.getCoverImageUrl() == null || bookById.getCoverImageUrl().isBlank()) {
+                    bookById.setCoverImageUrl(record.getCoverImageUrl());
+                }
+                if (externalUpgrade || bookById.getRawMetadata() == null || bookById.getRawMetadata().isBlank()) {
+                    bookById.setRawMetadata(record.getRawMetadata());
+                }
+            }
             return 1;
         }
 

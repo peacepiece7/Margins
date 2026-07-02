@@ -142,7 +142,15 @@ export function ReadingPortal() {
     || flow.state.selectedBook;
   const debateWindows = flow.state.windows.filter((window) => window.windowType === 'debate');
   const fallbackDebateWindow = debateWindows[debateWindows.length - 1];
-  const questionWindow = flow.state.windows.find((window) => window.windowType === 'question') || flow.state.windows[0];
+  const activeSessionMatchesSelectedBook = Boolean(
+    selectedBook && flow.state.session && flow.state.session.bookId === selectedBook.bookId,
+  );
+  const currentSession = activeSessionMatchesSelectedBook ? flow.state.session : undefined;
+  const currentStats = activeSessionMatchesSelectedBook ? flow.state.stats : undefined;
+  const currentQuestions = activeSessionMatchesSelectedBook ? flow.state.questions : [];
+  const questionWindow = activeSessionMatchesSelectedBook
+    ? flow.state.windows.find((window) => window.windowType === 'question') || flow.state.windows[0]
+    : undefined;
   const selectedDebatePersonas = flow.state.personas.filter((persona) => selectedDebatePersonaIds.includes(persona.personaId));
   const activeMessages = flow.state.window
     ? flow.state.messages.filter((message) => message.windowId === flow.state.window?.windowId)
@@ -152,7 +160,7 @@ export function ReadingPortal() {
       .filter((message) => message.role === 'user' && message.questionId !== undefined)
       .map((message) => message.questionId as number),
   );
-  const selectedQuestion = flow.state.questions.find((question) => question.questionId === flow.state.selectedQuestionId);
+  const selectedQuestion = currentQuestions.find((question) => question.questionId === flow.state.selectedQuestionId);
   const selectedQuestionMessages = selectedQuestion
     ? flow.state.messages.filter((message) => (
       message.windowId === selectedQuestion.windowId
@@ -177,12 +185,12 @@ export function ReadingPortal() {
   }, [flow.state.hydrated, flow.state.loading]);
 
   useEffect(() => {
-    if (selectedBook) {
-      setSelectedBookId(selectedBook.bookId);
-      setEditTitle(selectedBook.title);
-      setEditAuthor(selectedBook.author || '');
+    if (flow.state.selectedBook) {
+      setSelectedBookId(flow.state.selectedBook.bookId);
+      setEditTitle(flow.state.selectedBook.title);
+      setEditAuthor(flow.state.selectedBook.author || '');
     }
-  }, [selectedBook?.bookId, selectedBook?.title, selectedBook?.author]);
+  }, [flow.state.selectedBook?.bookId, flow.state.selectedBook?.title, flow.state.selectedBook?.author]);
 
   useEffect(() => {
     if (page === 'debate' && fallbackDebateWindow && flow.state.window?.windowType !== 'debate') {
@@ -457,11 +465,11 @@ export function ReadingPortal() {
             <div className="mt-1 text-lg font-semibold">{selectedBook?.title || t('noBookSelected')}</div>
             {selectedBook?.author && <div className="text-sm text-stone-600">{selectedBook.author}</div>}
           </div>
-          {flow.state.session && (
+          {currentSession && (
             <div className="rounded bg-stone-100 p-3 text-sm leading-6">
-              <div className="font-medium">{flow.state.session.title}</div>
+              <div className="font-medium">{currentSession.title}</div>
               <div className="text-stone-600">
-                {t('questionCount')} {flow.state.stats?.answeredQuestionCount || 0}/{flow.state.stats?.questionCount || 0} · {t('messageCount')} {flow.state.stats?.messageCount || 0}
+                {t('questionCount')} {currentStats?.answeredQuestionCount || 0}/{currentStats?.questionCount || 0} · {t('messageCount')} {currentStats?.messageCount || 0}
               </div>
             </div>
           )}
@@ -501,15 +509,32 @@ export function ReadingPortal() {
                 {bookSearchPending && [0, 1, 2].map((item) => <BookCandidateSkeleton key={item} />)}
                 {flow.state.candidates.map((candidate) => (
                   <article className="grid gap-3 rounded border border-stone-300 bg-stone-50/95 p-4 shadow-[0_12px_36px_rgba(23,23,23,0.05)]" key={candidate.candidateId} {...testAttr('book-candidate-card')}>
-                    <div>
-                      <div className="text-lg font-semibold" {...testAttr('book-candidate-title')}>{candidate.title}</div>
-                      <div className="text-sm text-stone-600">{candidate.author}</div>
-                      <div className="mt-2 text-xs font-medium text-stone-500" {...testAttr('book-candidate-id')}>
-                        {t('bookId')} {candidate.candidateId}
-                        {candidate.publishedYear ? ` · ${candidate.publishedYear}` : ''}
+                    <div className="grid gap-3 sm:grid-cols-[72px_minmax(0,1fr)]">
+                      {candidate.thumbnail ? (
+                        <img
+                          alt=""
+                          className="h-28 w-[72px] rounded border border-stone-200 bg-white object-cover"
+                          src={candidate.thumbnail}
+                          {...testAttr('book-candidate-cover')}
+                        />
+                      ) : (
+                        <div className="h-28 w-[72px] rounded border border-stone-200 bg-stone-100" aria-hidden="true" />
+                      )}
+                      <div>
+                        <div className="text-lg font-semibold" {...testAttr('book-candidate-title')}>{candidate.title}</div>
+                        {candidate.subtitle && <div className="text-sm text-stone-500">{candidate.subtitle}</div>}
+                        <div className="text-sm text-stone-600">{candidate.author}</div>
+                        <div className="mt-2 text-xs font-medium text-stone-500" {...testAttr('book-candidate-id')}>
+                          {t('bookId')} {candidate.candidateId}
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs font-medium text-stone-500">
+                          {candidate.publisher && <span>{candidate.publisher}</span>}
+                          {candidate.publishedYear && <span>{candidate.publishedYear}</span>}
+                          {candidate.language && <span>{candidate.language.toUpperCase()}</span>}
+                        </div>
+                        {candidate.isbn && <div className="mt-1 text-xs font-medium text-stone-500">ISBN {candidate.isbn}</div>}
+                        {candidate.reason && <p className="mt-2 text-sm leading-6 text-stone-600">{candidate.reason}</p>}
                       </div>
-                      {candidate.isbn && <div className="mt-1 text-xs font-medium text-stone-500">ISBN {candidate.isbn}</div>}
-                      {candidate.reason && <p className="mt-2 text-sm leading-6 text-stone-600">{candidate.reason}</p>}
                     </div>
                     <button
                       className="rounded border border-stone-950 px-3 py-2 text-sm font-medium"
@@ -562,9 +587,28 @@ export function ReadingPortal() {
               <h2 className="font-display text-3xl font-semibold tracking-normal">{t('bookList')}</h2>
               {flow.state.savedBooks.map((book) => (
                 <article className="flex flex-col gap-3 rounded border border-stone-300 bg-stone-50/95 p-4 shadow-[0_12px_36px_rgba(23,23,23,0.05)] md:flex-row md:items-center md:justify-between" key={book.bookId} {...testAttr('saved-book-row')}>
-                  <button className="text-left" onClick={() => goToBook(book)} type="button" {...testAttr('saved-book-detail-link')}>
-                    <div className="text-lg font-semibold">{book.title}</div>
-                    <div className="text-sm text-stone-600">{book.author}</div>
+                  <button className="grid min-w-0 gap-3 text-left sm:grid-cols-[56px_minmax(0,1fr)]" onClick={() => goToBook(book)} type="button" {...testAttr('saved-book-detail-link')}>
+                    {book.coverImageUrl ? (
+                      <img
+                        alt=""
+                        className="h-20 w-14 rounded border border-stone-200 bg-white object-cover"
+                        src={book.coverImageUrl}
+                        {...testAttr('saved-book-cover')}
+                      />
+                    ) : (
+                      <div className="h-20 w-14 rounded border border-stone-200 bg-stone-100" aria-hidden="true" />
+                    )}
+                    <div className="min-w-0">
+                      <div className="text-lg font-semibold">{book.title}</div>
+                      {book.subtitle && <div className="text-sm text-stone-500">{book.subtitle}</div>}
+                      <div className="text-sm text-stone-600">{book.author}</div>
+                      <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-xs text-stone-500">
+                        {book.publisher && <span>{book.publisher}</span>}
+                        {book.publishedYear && <span>{book.publishedYear}</span>}
+                        {book.source && <span>{book.source}</span>}
+                        {book.isbn && <span>ISBN {book.isbn}</span>}
+                      </div>
+                    </div>
                   </button>
                   <div className="flex gap-2">
                     <button className="rounded border border-stone-300 px-3 py-2 text-sm" onClick={() => goToBook(book)} type="button" {...testAttr('saved-book-edit-open')}>
@@ -627,7 +671,7 @@ export function ReadingPortal() {
                 </div>
                 <div className="mt-4 grid gap-2">
                   {showQuestionSkeleton && [0, 1, 2].map((item) => <QuestionRowSkeleton key={item} />)}
-                  {flow.state.questions.map((question) => {
+                  {currentQuestions.map((question) => {
                     const answered = answeredQuestionIds.has(question.questionId);
 
                     return (
@@ -668,7 +712,7 @@ export function ReadingPortal() {
                       </div>
                     );
                   })}
-                  {!showQuestionSkeleton && !flow.state.questions.length && <div className="rounded bg-stone-100 p-4 text-sm text-stone-500">{t('questionEmpty')}</div>}
+                  {!showQuestionSkeleton && !currentQuestions.length && <div className="rounded bg-stone-100 p-4 text-sm text-stone-500">{t('questionEmpty')}</div>}
                 </div>
               </div>
 

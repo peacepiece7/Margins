@@ -1,6 +1,7 @@
 package com.margins.book.business;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -32,6 +33,8 @@ public class BookBusiness {
     private static final long DEFAULT_USER_ID = 1L;
     private static final int SAVE_TEXT_LIMIT = 255;
     private static final int ISBN_TEXT_LIMIT = 32;
+    private static final int LANGUAGE_TEXT_LIMIT = 16;
+    private static final int URL_TEXT_LIMIT = 1000;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final AiProvider aiProvider;
@@ -93,26 +96,42 @@ public class BookBusiness {
         String author = request.getAuthor() == null ? null : request.getAuthor().trim();
         BookRecord existing = bookMapper.findDuplicate(DEFAULT_USER_ID, title, author);
         if (existing != null) {
-            return toResponse(existing);
+            BookRecord enrichment = recordFromRequest(request, title, author);
+            enrichment.setId(existing.getId());
+            bookMapper.fillMissingProviderMetadata(enrichment);
+            BookRecord refreshed = bookMapper.findByIdForUser(existing.getId(), DEFAULT_USER_ID);
+            return toResponse(refreshed == null ? existing : refreshed);
         }
 
-        BookRecord record = BookRecord.builder()
-            .userId(DEFAULT_USER_ID)
-            .title(title)
-            .author(author)
-            .isbn(trimIsbn(request.getIsbn()))
-            .publishedYear(request.getPublishedYear())
-            .source(sourceFromCandidateId(request.getCandidateId()))
-            .sourceRef(request.getCandidateId())
-            .rawMetadata(bookAiProfileMetadata(title, author, trimIsbn(request.getIsbn()), request.getPublishedYear(), request.getCandidateId()))
-            .testData(true)
-            .build();
+        BookRecord record = recordFromRequest(request, title, author);
 
         if (bookMapper.insert(record) <= 0) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Book could not be saved");
         }
 
         return toResponse(record);
+    }
+
+    private BookRecord recordFromRequest(SaveBookRequest request, String title, String author) {
+        String isbn = trimIsbn(request.getIsbn());
+        String source = sourceFromCandidateId(request.getCandidateId());
+
+        return BookRecord.builder()
+            .userId(DEFAULT_USER_ID)
+            .title(title)
+            .subtitle(trimOptionalToLimit(request.getSubtitle()))
+            .author(author)
+            .publisher(trimOptionalToLimit(request.getPublisher()))
+            .isbn(isbn)
+            .publishedYear(request.getPublishedYear())
+            .languageCode(trimOptionalToLimit(request.getLanguage(), LANGUAGE_TEXT_LIMIT))
+            .description(trimOptionalToLimit(request.getDescription(), URL_TEXT_LIMIT))
+            .source(source)
+            .sourceRef(request.getCandidateId())
+            .coverImageUrl(trimOptionalToLimit(request.getThumbnail(), URL_TEXT_LIMIT))
+            .rawMetadata(bookMetadata(title, author, isbn, request))
+            .testData(true)
+            .build();
     }
 
     public SaveBookResponse updateBook(Long bookId, UpdateBookRequest request) {
@@ -134,7 +153,7 @@ public class BookBusiness {
             .title(title)
             .author(author)
             .publishedYear(request.getPublishedYear())
-            .rawMetadata(bookAiProfileMetadata(title, author, existing.getIsbn(), request.getPublishedYear(), existing.getSourceRef()))
+            .rawMetadata(metadataWithUpdatedAiProfile(existing.getRawMetadata(), title, author, existing.getIsbn(), request.getPublishedYear(), existing.getLanguageCode(), existing.getSource()))
             .build();
         if (bookMapper.update(update) <= 0) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Book could not be updated");
@@ -159,7 +178,15 @@ public class BookBusiness {
         return SaveBookResponse.builder()
             .bookId(record.getId())
             .title(record.getTitle())
+            .subtitle(record.getSubtitle())
             .author(record.getAuthor())
+            .publisher(record.getPublisher())
+            .publishedYear(record.getPublishedYear())
+            .isbn(record.getIsbn())
+            .source(record.getSource())
+            .sourceRef(record.getSourceRef())
+            .coverImageUrl(record.getCoverImageUrl())
+            .language(record.getLanguageCode())
             .build();
     }
 
@@ -236,8 +263,23 @@ public class BookBusiness {
     }
 
     private String trimOptionalToLimit(String value) {
-        String trimmed = trimToLimit(value);
+        return trimOptionalToLimit(value, SAVE_TEXT_LIMIT);
+    }
+
+    private String trimOptionalToLimit(String value, int limit) {
+        String trimmed = trimToLimit(value, limit);
         return trimmed.isBlank() ? null : trimmed;
+    }
+
+    private String trimToLimit(String value, int limit) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() <= limit) {
+            return trimmed;
+        }
+        return trimmed.substring(0, limit);
     }
 
     private String sourceFromCandidateId(String candidateId) {
@@ -249,16 +291,88 @@ public class BookBusiness {
         return source.isBlank() ? "ai" : trimToLimit(source);
     }
 
-    private String bookAiProfileMetadata(String title, String author, String isbn, Integer publishedYear, String candidateId) {
+    private String bookMetadata(String title, String author, String isbn, SaveBookRequest request) {
         ObjectNode root = OBJECT_MAPPER.createObjectNode();
-        ObjectNode profile = root.putObject("aiProfile");
+        ObjectNode provider = root.putObject("providerMetadata");
+        provider.put("candidateId", request.getCandidateId());
+        provider.put("provider", sourceFromCandidateId(request.getCandidateId()));
+        putOptional(provider, "isbn", isbn);
+        putOptional(provider, "isbn10", trimIsbn(request.getIsbn10()));
+        putOptional(provider, "isbn13", trimIsbn(request.getIsbn13()));
+        putOptional(provider, "title", title);
+        putOptional(provider, "subtitle", trimOptionalToLimit(request.getSubtitle()));
+        putOptional(provider, "author", author);
+        ArrayNode authors = provider.putArray("authors");
+        if (request.getAuthors() != null) {
+            request.getAuthors().stream()
+                .map(this::trimToLimit)
+                .filter((value) -> !value.isBlank())
+                .forEach(authors::add);
+        }
+        putOptional(provider, "publisher", trimOptionalToLimit(request.getPublisher()));
+        putOptional(provider, "publishedDate", trimOptionalToLimit(request.getPublishedDate()));
+        if (request.getPublishedYear() != null) {
+            provider.put("publishedYear", request.getPublishedYear());
+        }
+        putOptional(provider, "description", trimOptionalToLimit(request.getDescription(), URL_TEXT_LIMIT));
+        putOptional(provider, "thumbnail", trimOptionalToLimit(request.getThumbnail(), URL_TEXT_LIMIT));
+        putOptional(provider, "language", trimOptionalToLimit(request.getLanguage(), LANGUAGE_TEXT_LIMIT));
+        if (request.getPageCount() != null) {
+            provider.put("pageCount", request.getPageCount());
+        }
+
+        root.set("aiProfile", aiProfileMetadata(
+            title,
+            author,
+            isbn,
+            request.getPublishedYear(),
+            trimOptionalToLimit(request.getLanguage(), LANGUAGE_TEXT_LIMIT),
+            sourceFromCandidateId(request.getCandidateId())
+        ));
+        try {
+            return OBJECT_MAPPER.writeValueAsString(root);
+        } catch (JsonProcessingException exception) {
+            return "{\"aiProfile\":{\"source\":{\"confidence\":\"missing\"}}}";
+        }
+    }
+
+    private String metadataWithUpdatedAiProfile(String existingRawMetadata, String title, String author, String isbn, Integer publishedYear, String language, String sourceProvider) {
+        ObjectNode root = OBJECT_MAPPER.createObjectNode();
+        if (existingRawMetadata != null && !existingRawMetadata.isBlank()) {
+            try {
+                JsonNode existing = OBJECT_MAPPER.readTree(existingRawMetadata);
+                if (existing.isObject()) {
+                    root = (ObjectNode) existing.deepCopy();
+                }
+            } catch (JsonProcessingException exception) {
+                log.warn("Book metadata refresh ignored invalid existing raw metadata. error={}", exception.getClass().getSimpleName());
+            }
+        }
+
+        root.set("aiProfile", aiProfileMetadata(
+            title,
+            author,
+            isbn,
+            publishedYear,
+            trimOptionalToLimit(language, LANGUAGE_TEXT_LIMIT),
+            sourceProvider == null || sourceProvider.isBlank() ? "ai" : sourceProvider
+        ));
+        try {
+            return OBJECT_MAPPER.writeValueAsString(root);
+        } catch (JsonProcessingException exception) {
+            return "{\"aiProfile\":{\"source\":{\"confidence\":\"missing\"}}}";
+        }
+    }
+
+    private ObjectNode aiProfileMetadata(String title, String author, String isbn, Integer publishedYear, String language, String sourceProvider) {
+        ObjectNode profile = OBJECT_MAPPER.createObjectNode();
         profile.put("isbn", isbn == null ? "" : isbn);
         profile.put("title", title);
         profile.put("author", author == null ? "" : author);
         if (publishedYear != null) {
             profile.put("publishedYear", publishedYear);
         }
-        profile.put("language", "");
+        profile.put("language", language == null ? "" : language);
         profile.putArray("genre");
         profile.putArray("mood");
         profile.put("pace", "unknown");
@@ -274,14 +388,16 @@ public class BookBusiness {
         discussionAngles.add("역사/사회적 관점");
         profile.put("spoilerLevel", "unknown");
         ObjectNode source = profile.putObject("source");
-        source.put("provider", sourceFromCandidateId(candidateId));
+        source.put("provider", sourceProvider == null || sourceProvider.isBlank() ? "ai" : sourceProvider);
         source.put("confidence", "low");
         profile.put("generatedAt", "book-save");
         profile.put("reviewedByUser", false);
-        try {
-            return OBJECT_MAPPER.writeValueAsString(root);
-        } catch (JsonProcessingException exception) {
-            return "{\"aiProfile\":{\"source\":{\"confidence\":\"missing\"}}}";
+        return profile;
+    }
+
+    private void putOptional(ObjectNode node, String field, String value) {
+        if (value != null && !value.isBlank()) {
+            node.put(field, value);
         }
     }
 

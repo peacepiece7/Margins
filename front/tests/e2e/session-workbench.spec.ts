@@ -159,11 +159,26 @@ test('supports manual registration and saved-book deletion from the page shell',
     page.getByTestId('manual-book-submit').click(),
   ]);
   await expect(page.getByTestId('book-list-page')).toContainText('Manual Margins Book');
+  await expect(page.getByTestId('portal-sidebar')).toContainText('Manual Margins Book');
+
+  await page.getByTestId('saved-book-detail-link').filter({ hasText: 'Manual Margins Book' }).click();
+  await page.getByTestId('book-start-review').click();
+  await expect(page.getByTestId('portal-sidebar')).toContainText('Manual Margins Book reflection');
+
+  await page.getByTestId('portal-nav-book-search').click();
+  await page.getByTestId('manual-book-title-input').fill('Second Manual Margins Book');
+  await page.getByTestId('manual-book-author-input').fill('Second Reader Author');
+  await Promise.all([
+    page.waitForResponse((response) => response.url().endsWith('/api/books') && response.request().method() === 'POST' && response.status() === 200),
+    page.getByTestId('manual-book-submit').click(),
+  ]);
+  await expect(page.getByTestId('portal-sidebar')).toContainText('Second Manual Margins Book');
+  await expect(page.getByTestId('portal-sidebar')).not.toContainText('Manual Margins Book reflection');
 
   await Promise.all([
     page.waitForResponse((response) => response.url().includes('/api/books/') && response.request().method() === 'DELETE' && response.status() === 200),
-    page.getByTestId('saved-book-delete').filter({ hasText: 'Delete' }).first().click(),
+    page.getByTestId('saved-book-row').filter({ hasText: 'Second Manual Margins Book' }).getByTestId('saved-book-delete').click(),
   ]);
   expect(deleteDialogCount).toBe(1);
-  await expect(page.getByTestId('book-list-page')).not.toContainText('Manual Margins Book');
+  await expect(page.getByTestId('book-list-page')).not.toContainText('Second Manual Margins Book');
 });

@@ -61,6 +61,7 @@ And returns to the login form
 Given the user is signed in or using single-user mode
 When the user searches for a book title, author, or ISBN
 Then the UI shows Google Books, fallback external, or AI-fallback candidates with title, author, stable candidate identifier, and ISBN when present
+And shows cover, subtitle, publisher, language, and publication year when those fields are available
 And selecting one candidate creates a saved book without requiring a reading session to be created immediately
 
 ### Scenario: User sees progress while an API search is running
@@ -82,7 +83,7 @@ And existing content is not replaced by skeletons for short edit, delete, or arc
 Given the backend returns external book candidates
 When the search results render
 Then each candidate card shows the book title, author, candidate identifier, and ISBN when present
-And the publication year is shown when the backend provides it
+And the publication year, cover, publisher, and language are shown when the backend provides them
 
 ### Scenario: User manually registers a book when search is missing
 

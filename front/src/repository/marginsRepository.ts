@@ -325,9 +325,19 @@ export const marginsRepository = {
     return postJson('/api/books', {
       candidateId: candidate.candidateId,
       isbn: candidate.isbn,
+      isbn10: candidate.isbn10,
+      isbn13: candidate.isbn13,
       title: candidate.title,
+      subtitle: candidate.subtitle,
       author: candidate.author,
+      authors: candidate.authors,
+      publisher: candidate.publisher,
+      publishedDate: candidate.publishedDate,
       publishedYear: candidate.publishedYear,
+      description: candidate.description,
+      thumbnail: candidate.thumbnail,
+      language: candidate.language,
+      pageCount: candidate.pageCount,
     });
   },
 

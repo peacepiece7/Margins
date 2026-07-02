@@ -221,12 +221,14 @@ Given the single-user reader already saved a book
 When `/api/books` is called with the same title and author using different casing or whitespace
 Then the backend returns the existing `bookId`
 And does not insert another `books` row
+And fills blank provider metadata fields from the candidate without overwriting the saved title or author
 
 ### Scenario: Saved books are listed
 
 Given the single-user reader has saved books
 When `/api/books` is called
 Then the backend returns non-deleted saved books in newest-first order
+And includes saved provider metadata such as ISBN, source, publisher, year, language, and cover URL when present
 And each book can be used to start a new reading session
 
 ### Scenario: Saved book metadata is edited

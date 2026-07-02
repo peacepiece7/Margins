@@ -203,3 +203,64 @@ describe('marginsRepository.createSession', () => {
     expect(body.title.endsWith(' reflection')).toBe(true);
   });
 });
+
+describe('marginsRepository.saveBook', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sends provider metadata from external candidates', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(apiResponse(200, {
+        success: true,
+        data: {
+          bookId: 9,
+          title: 'The Martian',
+          author: 'Andy Weir',
+          isbn: '9780553418026',
+          source: 'google',
+        },
+      })),
+    );
+
+    await marginsRepository.saveBook({
+      candidateId: 'google:9780553418026',
+      isbn: '9780553418026',
+      isbn10: '0553418025',
+      isbn13: '9780553418026',
+      title: 'The Martian',
+      subtitle: 'A Novel',
+      author: 'Andy Weir',
+      authors: ['Andy Weir'],
+      publisher: 'Crown',
+      publishedDate: '2014-02-11',
+      publishedYear: 2014,
+      description: 'Mars survival story',
+      thumbnail: 'https://books.example/martian.jpg',
+      language: 'en',
+      pageCount: 384,
+    });
+
+    expect(fetch).toHaveBeenCalledWith('/api/books', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        candidateId: 'google:9780553418026',
+        isbn: '9780553418026',
+        isbn10: '0553418025',
+        isbn13: '9780553418026',
+        title: 'The Martian',
+        subtitle: 'A Novel',
+        author: 'Andy Weir',
+        authors: ['Andy Weir'],
+        publisher: 'Crown',
+        publishedDate: '2014-02-11',
+        publishedYear: 2014,
+        description: 'Mars survival story',
+        thumbnail: 'https://books.example/martian.jpg',
+        language: 'en',
+        pageCount: 384,
+      }),
+    }));
+  });
+});
